@@ -267,7 +267,13 @@ namespace MailDemon
                             {
                                 // read initial client string
                                 string line = await reader.ReadLineAsync() ?? string.Empty;
-                                if (line.StartsWith("EHLO"))
+                                if (line == "RSET")
+                                {
+                                    await writer.WriteLineAsync($"250 2.0.0 Resetting");
+                                    foundUser = null;
+                                    ehlo = false;
+                                }
+                                else if (line.StartsWith("EHLO"))
                                 {
                                     await writer.WriteLineAsync($"250-SIZE 104857600");
                                     await writer.WriteLineAsync($"250-8BITMIME");
