@@ -194,7 +194,7 @@ namespace MailDemon
         private int port;
         private readonly List<MailDemonUser> users = new List<MailDemonUser>();
         private X509Certificate2 sslCertificate;
-        private Regex ignoreCertificateErrorsRegex;
+        private Dictionary<string, Regex> ignoreCertificateErrorsRegex = new Dictionary<string, Regex>(StringComparer.OrdinalIgnoreCase); // domain,regex
 
         public string Domain { get; private set; }
 
@@ -217,19 +217,16 @@ namespace MailDemon
             {
                 sslCertificate = new X509Certificate2(sslCertificateFile, rootSection["sslCertificatePassword"]);
             }
-            StringBuilder ignoreRegexStringBuilder = new StringBuilder();
             IConfigurationSection ignoreRegexSection = rootSection.GetSection("ignoreCertificateErrorsRegex");
             if (ignoreRegexSection != null)
             {
                 foreach (var child in ignoreRegexSection.GetChildren())
                 {
-                    ignoreRegexStringBuilder.Append(child.Value);
-                    ignoreRegexStringBuilder.Append('|');
-                }
-                if (ignoreRegexStringBuilder.Length != 0)
-                {
-                    ignoreRegexStringBuilder.Length--;
-                    ignoreCertificateErrorsRegex = new Regex(ignoreRegexStringBuilder.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+                    Regex re = new Regex(child["regex"].ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+                    foreach (var domain in child.GetSection("domains").GetChildren())
+                    {
+                        ignoreCertificateErrorsRegex[domain.Value] = re;
+                    }
                 }
             }
         }
@@ -408,12 +405,13 @@ namespace MailDemon
         private async Task SendMessage(MimeMessage msg, string from, IEnumerable<string> addresses)
         {
             Console.WriteLine("Sending from {0}", from);
-
+            string toDomain = null;
             using (SmtpClient client = new SmtpClient()
             {
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
-                    return sslPolicyErrors == SslPolicyErrors.None || ignoreCertificateErrorsRegex.IsMatch(certificate.Subject);
+                    return (sslPolicyErrors == SslPolicyErrors.None ||
+                        (ignoreCertificateErrorsRegex.TryGetValue(toDomain, out Regex re) && re.IsMatch(certificate.Subject)));
                 }
             })
             {
@@ -424,9 +422,9 @@ namespace MailDemon
                     bool sent = false;
                     if (pos >= 0)
                     {
-                        string domain = address.Substring(++pos);
+                        toDomain = address.Substring(++pos);
                         LookupClient lookup = new LookupClient();
-                        IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX);
+                        IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX);
                         foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                         {
                             // attempt to send, if fail, try next address
