@@ -237,7 +237,6 @@ namespace MailDemon
             server = new TcpListenerActive(IPAddress.Any, 25);
             server.Start();
             Console.CancelKeyPress += Console_CancelKeyPress;
-            Console.WriteLine("Mail Demon Running, Press Ctrl-C to quit");
 
             while (server.Active)
             {
@@ -247,6 +246,9 @@ namespace MailDemon
                     {
                         string ipAddress = client.Client.RemoteEndPoint.ToString();
                         MailDemonUser foundUser = null;
+                        client.ReceiveTimeout = 5000;
+                        client.SendTimeout = 5000;
+
                         using (NetworkStream stream = client.GetStream())
                         {
                             // create comm streams
@@ -271,12 +273,13 @@ namespace MailDemon
                                     await writer.WriteLineAsync($"250-8BITMIME");
                                     await writer.WriteLineAsync($"250-AUTH PLAIN");
                                     await writer.WriteLineAsync($"250-PIPELINING");
+                                    await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
+                                    await writer.WriteLineAsync($"250-SMTPUTF8");
+                                    await writer.WriteLineAsync($"250-BINARYMIME");
                                     if (sslCertificate != null && sslStream == null)
                                     {
                                         await writer.WriteLineAsync($"250-STARTTLS");
                                     }
-                                    await writer.WriteLineAsync($"250-SMTPUTF8");
-                                    await writer.WriteLineAsync($"250-BINARYMIME");
                                     await writer.WriteLineAsync($"250 CHUNKING");
                                     ehlo = true;
                                 }
@@ -382,6 +385,7 @@ namespace MailDemon
                                 }
                             }
                         }
+                        Console.WriteLine("{0} disconnected", ipAddress);
                     }
                     catch (Exception ex)
                     {
