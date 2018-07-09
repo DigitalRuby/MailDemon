@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -167,7 +168,7 @@ namespace MailDemon
             }
         }
 
-        private class MailDemonUser
+        public class MailDemonUser
         {
             public MailDemonUser(string name, string password)
             {
@@ -180,12 +181,16 @@ namespace MailDemon
                     throw new ArgumentException("Password must not be null or empty", nameof(password));
                 }
                 Name = name;
-                Password = password;
+                Password = new SecureString();
+                foreach (char c in password)
+                {
+                    Password.AppendChar(c);
+                }
                 Plain = string.Format("\0{0}\0{1}", name, password);
             }
 
             public string Name { get; private set; }
-            public string Password { get; private set; }
+            public SecureString Password { get; private set; }
             public string Plain { get; private set; }
         }
 
@@ -197,6 +202,7 @@ namespace MailDemon
         private Dictionary<string, Regex> ignoreCertificateErrorsRegex = new Dictionary<string, Regex>(StringComparer.OrdinalIgnoreCase); // domain,regex
 
         public string Domain { get; private set; }
+        public IReadOnlyList<MailDemonUser> Users { get { return users; } }
 
         private void ParseConfiguration(string[] args, IConfiguration configuration)
         {
@@ -268,7 +274,11 @@ namespace MailDemon
                             {
                                 // read initial client string
                                 string line = await reader.ReadLineAsync() ?? string.Empty;
-                                if (line == "RSET")
+                                if (line.StartsWith("QUIT"))
+                                {
+                                    break;
+                                }
+                                else if (line.StartsWith("RSET"))
                                 {
                                     await writer.WriteLineAsync($"250 2.0.0 Resetting");
                                     foundUser = null;
@@ -412,7 +422,7 @@ namespace MailDemon
                                             // send all emails in one shot for each domain in order to batch
                                             foreach (var group in addressGroups)
                                             {
-                                                await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, group.Value);
+                                                await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, group.Key, group.Value);
                                             }
                                         }
                                         else
@@ -455,65 +465,56 @@ namespace MailDemon
             Dispose();
         }
 
-        private async Task SendMessage(MimeMessage msg, string from, IEnumerable<string> addresses)
+        private async Task SendMessage(MimeMessage msg, string from, string domain, IEnumerable<string> addresses)
         {
             Console.WriteLine("Sending from {0}", from);
-            string toDomain = null;
             using (SmtpClient client = new SmtpClient()
             {
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
                     return (sslPolicyErrors == SslPolicyErrors.None ||
-                        (ignoreCertificateErrorsRegex.TryGetValue(toDomain, out Regex re) && re.IsMatch(certificate.Subject)));
+                        (ignoreCertificateErrorsRegex.TryGetValue(domain, out Regex re) && re.IsMatch(certificate.Subject)));
                 }
             })
             {
-                foreach (string address in addresses)
+                IPHostEntry ip = null;
+                bool sent = false;
+                LookupClient lookup = new LookupClient();
+                IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX);
+                foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
-                    IPHostEntry ip = null;
-                    int pos = address.IndexOf('@');
-                    bool sent = false;
-                    if (pos >= 0)
+                    // attempt to send, if fail, try next address
+                    try
                     {
-                        toDomain = address.Substring(++pos);
-                        LookupClient lookup = new LookupClient();
-                        IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX);
-                        foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
+                        ip = await Dns.GetHostEntryAsync(record.Exchange);
+                        foreach (IPAddress ipAddress in ip.AddressList)
                         {
-                            // attempt to send, if fail, try next address
+                            string host = ip.HostName;
                             try
                             {
-                                ip = await Dns.GetHostEntryAsync(record.Exchange);
-                                foreach (IPAddress ipAddress in ip.AddressList)
-                                {
-                                    string host = ip.HostName;
-                                    try
-                                    {
-                                        await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
-                                        await client.SendAsync(msg);
-                                        sent = true;
-                                        break;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine("Error sending message: {0}", ex);
-                                    }
-                                    finally
-                                    {
-                                        await client.DisconnectAsync(true);
-                                    }
-                                }
+                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
+                                await client.SendAsync(msg);
+                                sent = true;
+                                break;
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("Failed to send email via {0}, trying next entry. Error: {1}.", ip, ex);
+                                Console.WriteLine("Error sending message: {0}", ex);
                             }
-
-                            if (sent)
+                            finally
                             {
-                                break;
+                                await client.DisconnectAsync(true);
                             }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Failed to send email via {0}, trying next entry. Error: {1}.", ip, ex);
+                    }
+
+                    if (sent)
+                    {
+                        break;
                     }
                 }
             }
