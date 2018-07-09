@@ -22,6 +22,13 @@ namespace MailDemon
 {
     public class MailDemonApp
     {
+        private static MailDemon demon;
+
+        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            demon?.Dispose();
+        }
+
         private static async Task TestClientConnectionAsync(MailDemon demon, string to)
         {
             SmtpClient client = new SmtpClient()
@@ -47,8 +54,9 @@ namespace MailDemon
             string path = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
             var builder = new ConfigurationBuilder().SetBasePath(path).AddJsonFile("appsettings.json");
             IConfigurationRoot configuration = builder.Build();
-            MailDemon demon = new MailDemon();
-            demon.RunAsync(args, configuration).ConfigureAwait(false);
+            demon = new MailDemon(args, configuration);
+            Console.CancelKeyPress += Console_CancelKeyPress;
+            demon.StartAsync().ConfigureAwait(false);
             Console.WriteLine("Mail demon running, press Ctrl-C to exit");
             if (args.Length > 1 && args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
             {
