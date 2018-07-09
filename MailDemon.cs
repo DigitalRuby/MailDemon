@@ -1,27 +1,38 @@
-﻿using System;
+﻿#region Imports
+
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 
 using DnsClient;
 
 using MailKit;
 using MailKit.Net;
 using MailKit.Net.Smtp;
-using Microsoft.Extensions.Configuration;
+
 using MimeKit;
-using System.Threading;
-using System.Globalization;
+
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
+
+#endregion Imports
 
 namespace MailDemon
 {
@@ -216,7 +227,8 @@ namespace MailDemon
         private readonly TcpListenerActive server;
         private readonly IPAddress ip;
         private readonly int port;
-        private readonly string sslCertificatePath;
+        private readonly string sslCertificateFile;
+        private readonly string sslCertificatePrivateKeyFile;
         private readonly SecureString sslCertificatePassword;
         private readonly Timer sslCertificateTimer;
 
@@ -250,8 +262,9 @@ namespace MailDemon
             {
                 users.Add(new MailDemonUser(child["name"], child["password"]));
             }
-            sslCertificatePath = rootSection["sslCertificate"];
-            if (!string.IsNullOrWhiteSpace(sslCertificatePath))
+            sslCertificateFile = rootSection["sslCertificateFile"];
+            sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
+            if (!string.IsNullOrWhiteSpace(sslCertificateFile))
             {
                 sslCertificatePassword = new SecureString();
                 foreach (char c in rootSection["sslCertificatePassword"] ?? string.Empty)
@@ -289,7 +302,9 @@ namespace MailDemon
                     {
                         client.ReceiveTimeout = 5000;
                         client.SendTimeout = 5000;
+
                         ipAddress = (client.Client.RemoteEndPoint as IPEndPoint).Address.ToString();
+                        Console.WriteLine("Connection from {0}", ipAddress);
 
                         // immediately drop if client is blocked
                         if (CheckBlocked(ipAddress))
@@ -317,9 +332,10 @@ namespace MailDemon
                             while (true)
                             {
                                 // read initial client string
-                                string line = await reader.ReadLineAsync() ?? string.Empty;
-                                if (line.StartsWith("QUIT"))
+                                string line = await ReadLineAsync(reader);
+                                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("QUIT"))
                                 {
+                                    // empty line or QUIT terminates session
                                     break;
                                 }
                                 else if (line.StartsWith("RSET"))
@@ -354,7 +370,14 @@ namespace MailDemon
                                 // TODO: consider changing this
                                 else if (foundUser != null)
                                 {
-                                    await SendMail(foundUser, reader, writer, line);
+                                    if (line.StartsWith("MAIL FROM:<"))
+                                    {
+                                        await SendMail(foundUser, reader, writer, line);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Ignoring client command: " + line);
+                                    }
                                 }
                                 else
                                 {
@@ -385,6 +408,13 @@ namespace MailDemon
             server.Dispose();
         }
 
+        private async Task<string> ReadLineAsync(StreamReader reader)
+        {
+            string line = await reader.ReadLineAsync();
+            Console.WriteLine("CLIENT: " + line);
+            return line;
+        }
+
         private async Task HandleEhlo(StreamWriter writer, SslStream sslStream)
         {
             await writer.WriteLineAsync($"250-SIZE 65536");
@@ -407,7 +437,7 @@ namespace MailDemon
             if (line == "AUTH PLAIN")
             {
                 await writer.WriteLineAsync($"334");
-                line = await reader.ReadLineAsync() ?? string.Empty;
+                line = await ReadLineAsync(reader) ?? string.Empty;
             }
             else
             {
@@ -472,70 +502,64 @@ namespace MailDemon
 
         private async Task SendMail(MailDemonUser foundUser, StreamReader reader, StreamWriter writer, string line)
         {
-            if (line.StartsWith("MAIL FROM:<"))
+            string fromAddress = line.Substring(11).Trim('>');
+            if (!MailboxAddress.TryParse(fromAddress, out _))
             {
-                string fromAddress = line.Substring(11).Trim('>');
-                if (!MailboxAddress.TryParse(fromAddress, out _))
+                throw new ArgumentException("Invalid from address: " + fromAddress);
+            }
+
+            // denote success
+            await writer.WriteLineAsync($"250 2.1.0 OK");
+
+            // read to addresses
+            line = await ReadLineAsync(reader);
+            Dictionary<string, List<string>> addressGroups = new Dictionary<string, List<string>>();
+            while (line.StartsWith("RCPT TO:<"))
+            {
+                string toAddress = line.Substring(9).Trim('>');
+
+                if (!MailboxAddress.TryParse(toAddress, out _))
                 {
-                    throw new ArgumentException("Invalid from address: " + fromAddress);
+                    throw new ArgumentException("Invalid to address: " + toAddress);
+                }
+
+                // group addresses by domain
+                int pos = toAddress.LastIndexOf('@');
+                if (pos > 0)
+                {
+                    string addressDomain = toAddress.Substring(++pos);
+                    if (!addressGroups.TryGetValue(addressDomain, out List<string> addressList))
+                    {
+                        addressGroups[addressDomain] = addressList = new List<string>();
+                    }
+                    addressList.Add(toAddress);
                 }
 
                 // denote success
                 await writer.WriteLineAsync($"250 2.1.0 OK");
+                line = await ReadLineAsync(reader);
+            }
 
-                // read to addresses
-                line = await reader.ReadLineAsync();
-                Dictionary<string, List<string>> addressGroups = new Dictionary<string, List<string>>();
-                while (line.StartsWith("RCPT TO:<"))
+            // if no to addresses, fail
+            if (addressGroups.Count == 0)
+            {
+                throw new InvalidOperationException("Invalid message: " + line);
+            }
+
+            if (line.StartsWith("DATA"))
+            {
+                await writer.WriteLineAsync($"354");
+                SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
+                MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
+                await writer.WriteLineAsync($"250 2.0.0 OK");
+
+                // send all emails in one shot for each domain in order to batch
+                foreach (var group in addressGroups)
                 {
-                    string toAddress = line.Substring(9).Trim('>');
-                    if (!MailboxAddress.TryParse(toAddress, out _))
-                    {
-                        throw new ArgumentException("Invalid to address: " + toAddress);
-                    }
-
-                    // group addresses by domain
-                    int pos = toAddress.LastIndexOf('@');
-                    if (pos > 0)
-                    {
-                        string addressDomain = toAddress.Substring(++pos);
-                        if (!addressGroups.TryGetValue(addressDomain, out List<string> addressList))
-                        {
-                            addressGroups[addressDomain] = addressList = new List<string>();
-                        }
-                        addressList.Add(toAddress);
-                    }
-
-                    // denote success
-                    await writer.WriteLineAsync($"250 2.1.0 OK");
-                    line = await reader.ReadLineAsync();
-                }
-
-                // if no to addresses, fail
-                if (addressGroups.Count == 0)
-                {
-                    throw new InvalidOperationException("Invalid message: " + line);
-                }
-
-                if (line == "DATA")
-                {
-                    await writer.WriteLineAsync($"354");
-                    SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
-                    MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
-                    await writer.WriteLineAsync($"250 2.0.0 OK");
-
-                    // send all emails in one shot for each domain in order to batch
-                    foreach (var group in addressGroups)
-                    {
-                        await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, group.Key, group.Value);
-                    }
-                }
-                else
-                {
-                    throw new InvalidOperationException("Invalid message: " + line);
+                    await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, group.Key, group.Value);
                 }
             }
-            else
+            else if (line.Length > 0)
             {
                 throw new InvalidOperationException("Invalid message: " + line);
             }
@@ -564,13 +588,24 @@ namespace MailDemon
             LoadSslCertificate();
         }
 
+        private RSACryptoServiceProvider GetRSAProviderForPrivateKey(string pemPrivateKey)
+        {
+            RSACryptoServiceProvider rsaKey = new RSACryptoServiceProvider();
+            PemReader reader = new PemReader(new StringReader(pemPrivateKey));
+            RsaPrivateCrtKeyParameters rkp = reader.ReadObject() as RsaPrivateCrtKeyParameters;
+            RSAParameters rsaParameters = DotNetUtilities.ToRSAParameters(rkp);
+            rsaKey.ImportParameters(rsaParameters);
+            return rsaKey;
+        }
+
         private void LoadSslCertificate()
         {
-            if (!string.IsNullOrWhiteSpace(sslCertificatePath))
+            sslCertificate = new X509Certificate2(File.ReadAllBytes(sslCertificateFile), sslCertificatePassword);
+            if (!sslCertificate.HasPrivateKey && !string.IsNullOrWhiteSpace(sslCertificatePrivateKeyFile))
             {
-                sslCertificate = new X509Certificate2(sslCertificatePath, sslCertificatePassword);
-                Console.WriteLine("Loaded ssl certificate {0}", sslCertificate);
+                sslCertificate = sslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(File.ReadAllText(sslCertificatePrivateKeyFile)));
             }
+            Console.WriteLine("Loaded ssl certificate {0}", sslCertificate);
         }
 
         private async Task SendMessage(MimeMessage msg, string from, string domain, IEnumerable<string> addresses)
