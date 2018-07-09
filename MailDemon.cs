@@ -96,6 +96,7 @@ namespace MailDemon
             {
                 if (state == 5)
                 {
+                    state = 0;
                     return 0;
                 }
 
@@ -159,7 +160,12 @@ namespace MailDemon
                                 if (buffer[i] == '\n')
                                 {
                                     state = 5;
-                                    return read;
+
+                                    // don't return the ending \r\n.\r\n, that is part of the protocol
+                                    // there is a rare chance that a read of this terminator can split over
+                                    // two Read(...) method calls, in which case the \r\n.\r\n will be
+                                    // part of the message... this edge case is not handled yet
+                                    return (read >= 5 ? read - 5 : read);
                                 }
                                 else
                                 {
