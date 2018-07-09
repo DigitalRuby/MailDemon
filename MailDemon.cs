@@ -242,9 +242,10 @@ namespace MailDemon
             {
                 using (TcpClient client = await server.AcceptTcpClientAsync())
                 {
+                    string ipAddress = null;
                     try
                     {
-                        string ipAddress = client.Client.RemoteEndPoint.ToString();
+                        ipAddress = client.Client.RemoteEndPoint.ToString();
                         MailDemonUser foundUser = null;
                         client.ReceiveTimeout = 5000;
                         client.SendTimeout = 5000;
@@ -358,44 +359,86 @@ namespace MailDemon
                                 {
                                     if (line.StartsWith("MAIL FROM:<"))
                                     {
+                                        string fromAddress = line.Substring(11).Trim('>');
+                                        if (!MailboxAddress.TryParse(fromAddress, out _))
+                                        {
+                                            throw new ArgumentException("Invalid from address: " + fromAddress);
+                                        }
+
+                                        // denote success
                                         await writer.WriteLineAsync($"250 2.1.0 OK");
+
+                                        // read to addresses
                                         line = await reader.ReadLineAsync();
-                                        List<string> addresses = new List<string>();
+                                        Dictionary<string, List<string>> addressGroups = new Dictionary<string, List<string>>();
                                         while (line.StartsWith("RCPT TO:<"))
                                         {
-                                            addresses.Add(line.Substring(9).Trim('>'));
+                                            string toAddress = line.Substring(9).Trim('>');
+                                            if (!MailboxAddress.TryParse(toAddress, out _))
+                                            {
+                                                throw new ArgumentException("Invalid to address: " + toAddress);
+                                            }
+
+                                            // group addresses by domain
+                                            int pos = toAddress.LastIndexOf('@');
+                                            if (pos > 0)
+                                            {
+                                                string addressDomain = toAddress.Substring(++pos);
+                                                if (!addressGroups.TryGetValue(addressDomain, out List<string> addressList))
+                                                {
+                                                    addressGroups[addressDomain] = addressList = new List<string>();
+                                                }
+                                                addressList.Add(toAddress);
+                                            }
+
+                                            // denote success
                                             await writer.WriteLineAsync($"250 2.1.0 OK");
                                             line = await reader.ReadLineAsync();
                                         }
+
+                                        // if no to addresses, fail
+                                        if (addressGroups.Count == 0)
+                                        {
+                                            throw new InvalidOperationException("Invalid message: " + line);
+                                        }
+
                                         if (line == "DATA")
                                         {
                                             await writer.WriteLineAsync($"354");
                                             SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
                                             MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
                                             await writer.WriteLineAsync($"250 2.0.0 OK");
-                                            await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, addresses);
+
+                                            // send all emails in one shot for each domain in order to batch
+                                            foreach (var group in addressGroups)
+                                            {
+                                                await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, group.Value);
+                                            }
                                         }
                                         else
                                         {
-                                            throw new InvalidOperationException("Invalid smtp line");
+                                            throw new InvalidOperationException("Invalid message: " + line);
                                         }
                                     }
                                     else
                                     {
-                                        break; // disconnect
+                                        throw new InvalidOperationException("Invalid message: " + line);
                                     }
                                 }
                                 else
                                 {
-                                    throw new InvalidOperationException("Invalid line: " + line + ", not authenticated");
+                                    throw new InvalidOperationException("Invalid message: " + line + ", not authenticated");
                                 }
                             }
                         }
-                        Console.WriteLine("{0} disconnected", ipAddress);
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex);
+                    }
+                    finally
+                    {
+                        Console.WriteLine("{0} disconnected", ipAddress);
                     }
                 }
             }
