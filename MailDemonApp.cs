@@ -43,12 +43,13 @@ namespace MailDemon
 
         public static void Main(string[] args)
         {
-            var builder = new ConfigurationBuilder().SetBasePath(AppDomain.CurrentDomain.BaseDirectory).AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            string path = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            var builder = new ConfigurationBuilder().SetBasePath(path).AddJsonFile("appsettings.json");
             IConfigurationRoot configuration = builder.Build();
             MailDemon demon = new MailDemon();
             demon.RunAsync(args, configuration).ConfigureAwait(false);
             Console.WriteLine("Mail demon running, press Ctrl-C to exit");
-            if (args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
+            if (args.Length > 1 && args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
             {
                 TestClientConnectionAsync(demon, args[1]).ConfigureAwait(false).GetAwaiter().GetResult();
             }
