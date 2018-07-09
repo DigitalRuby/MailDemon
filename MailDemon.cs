@@ -275,18 +275,18 @@ namespace MailDemon
                                 }
                                 else if (line.StartsWith("EHLO"))
                                 {
-                                    await writer.WriteLineAsync($"250-SIZE 104857600");
+                                    await writer.WriteLineAsync($"250-SIZE 65536");
                                     await writer.WriteLineAsync($"250-8BITMIME");
                                     await writer.WriteLineAsync($"250-AUTH PLAIN");
                                     await writer.WriteLineAsync($"250-PIPELINING");
-                                    await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
-                                    await writer.WriteLineAsync($"250-SMTPUTF8");
-                                    await writer.WriteLineAsync($"250-BINARYMIME");
+                                    //await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
+                                    //await writer.WriteLineAsync($"250-BINARYMIME");
+                                    //await writer.WriteLineAsync($"250-CHUNKING");
                                     if (sslCertificate != null && sslStream == null)
                                     {
                                         await writer.WriteLineAsync($"250-STARTTLS");
                                     }
-                                    await writer.WriteLineAsync($"250 CHUNKING");
+                                    await writer.WriteLineAsync($"250 SMTPUTF8");
                                     ehlo = true;
                                 }
                                 else if (line.StartsWith("HELO"))
