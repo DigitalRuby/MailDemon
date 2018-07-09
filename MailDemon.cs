@@ -295,6 +295,7 @@ namespace MailDemon
                         if (CheckBlocked(ipAddress))
                         {
                             client.Close();
+                            Console.WriteLine("Blocking {0}", ipAddress);
                             continue;
                         }
 
@@ -568,6 +569,7 @@ namespace MailDemon
             if (!string.IsNullOrWhiteSpace(sslCertificatePath))
             {
                 sslCertificate = new X509Certificate2(sslCertificatePath, sslCertificatePassword);
+                Console.WriteLine("Loaded ssl certificate {0}", sslCertificate);
             }
         }
 
