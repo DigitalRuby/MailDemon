@@ -12,6 +12,8 @@ The code is the documentation right now, see MailDemon.cs and MailDemonApp.cs.
 
 Thanks to MimeKit and MailKit for their tremendous codebase.
 
+Mail Demon is great for sending notifications, announcements and even text messages. See <a href='http://smsemailgateway.com/'>SMS Email Gateway</a> for more information on text messages.
+
 Setup Instructions:
 - Download code, open in Visual Studio, set release configuration.
 - Update appsettings.json with your settings. I recommend an SSL certificate. Lets encrypt is a great option.
