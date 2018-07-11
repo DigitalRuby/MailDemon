@@ -1,4 +1,4 @@
-# & MailDemon &
+# & Mail Demon &
 
 Mail Demon is a simple and lightweight C# smtp server. Code is simple and easy to follow.
 
