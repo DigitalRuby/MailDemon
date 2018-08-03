@@ -28,7 +28,6 @@ namespace MailDemon
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             cancel.Cancel();
-            demon?.Dispose();
         }
 
         private static async Task TestClientConnectionAsync(MailDemonService demon, string to)
