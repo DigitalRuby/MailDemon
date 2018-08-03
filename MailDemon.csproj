@@ -11,6 +11,13 @@
 
   <ItemGroup>
     <None Remove="localhost.pfx" />
+    <None Remove="nlog.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +32,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
     <PackageReference Include="MimeKit" Version="2.0.5" />
+    <PackageReference Include="NLog" Version="4.5.7" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
   </ItemGroup>
 
