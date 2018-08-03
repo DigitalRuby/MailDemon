@@ -230,18 +230,9 @@ namespace MailDemon
             IConfigurationSection rootSection = configuration.GetSection("mailDemon");
             Domain = (rootSection["domain"] ?? Domain);
             ip = (string.IsNullOrWhiteSpace(rootSection["ip"]) ? IPAddress.Any : IPAddress.Parse(rootSection["ip"]));
-            if (int.TryParse(rootSection["port"].ToString(CultureInfo.InvariantCulture), out int _port))
-            {
-                port = _port;
-            }
-            if (int.TryParse(rootSection["maxFailuresPerIPAddress"].ToString(CultureInfo.InvariantCulture), out int _maxFailuresPerIPAddress))
-            {
-                maxFailuresPerIPAddress = _maxFailuresPerIPAddress;
-            }
-            if (int.TryParse(rootSection["maxConnectionCount"].ToString(CultureInfo.InvariantCulture), out int _maxConnectionCount))
-            {
-                maxConnectionCount = _maxConnectionCount;
-            }
+            port = GetConfig(rootSection, "port", port);
+            maxFailuresPerIPAddress = GetConfig(rootSection, "maxFailuresPerIPAddress", maxFailuresPerIPAddress);
+            maxConnectionCount = GetConfig(rootSection, "maxConnectionCount", maxConnectionCount);
             greeting = (rootSection["greeting"] ?? greeting).Replace("\r", string.Empty).Replace("\n", string.Empty);
             if (TimeSpan.TryParse(rootSection["failureLockoutTimespan"], out TimeSpan _failureLockoutTimespan))
             {
@@ -308,6 +299,16 @@ namespace MailDemon
             {
             }
             server = null;
+        }
+
+        private T GetConfig<T>(IConfiguration config, string key, T defaultValue)
+        {
+            string value = config["key"];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return defaultValue;
+            }
+            return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
         }
 
         private async Task ProcessConnection()
