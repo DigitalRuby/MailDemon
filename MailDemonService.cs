@@ -226,29 +226,29 @@ namespace MailDemon
                         {
                             // read initial client string
                             string line = await ReadLineAsync(reader);
-                            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("QUIT"))
+                            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("QUIT", StringComparison.OrdinalIgnoreCase))
                             {
                                 // empty line or QUIT terminates session
                                 break;
                             }
-                            else if (line.StartsWith("RSET"))
+                            else if (line.StartsWith("RSET", StringComparison.OrdinalIgnoreCase))
                             {
                                 await writer.WriteLineAsync($"250 2.0.0 Resetting");
                                 authenticatedUser = null;
                             }
-                            else if (line.StartsWith("EHLO"))
+                            else if (line.StartsWith("EHLO", StringComparison.OrdinalIgnoreCase))
                             {
                                 await HandleEhlo(writer, sslStream);
                             }
-                            else if (line.StartsWith("HELO"))
+                            else if (line.StartsWith("HELO", StringComparison.OrdinalIgnoreCase))
                             {
                                 await writer.WriteLineAsync($"220 {Domain} Hello {line.Substring(4).Trim()}");
                             }
-                            else if (line.StartsWith("AUTH PLAIN"))
+                            else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
                             {
                                 authenticatedUser = await Authenticate(reader, writer, line);
                             }
-                            else if (line.StartsWith("STARTTLS"))
+                            else if (line.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (sslStream != null)
                                 {
@@ -274,7 +274,7 @@ namespace MailDemon
                             // TODO: consider changing this
                             else if (authenticatedUser != null)
                             {
-                                if (line.StartsWith("MAIL FROM:<"))
+                                if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                                 {
                                     await SendMail(authenticatedUser, reader, writer, line);
                                 }
@@ -285,12 +285,15 @@ namespace MailDemon
                             }
                             else
                             {
-                                if (line.StartsWith("MAIL FROM:<"))
+                                if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                                 {
                                     // non-authenticated user, forward message on if possible, check settings
                                     await ReceiveMail(reader, writer, line);
                                 }
-                                throw new InvalidOperationException("Invalid message: " + line + ", not authenticated");
+                                else
+                                {
+                                    throw new InvalidOperationException("Invalid message: " + line + ", not authenticated");
+                                }
                             }
                         }
                     }
@@ -403,19 +406,24 @@ namespace MailDemon
 
         private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, StreamReader reader, StreamWriter writer, string line)
         {
-            string fromAddress = line.Substring(11).Trim('>');
+            string fromAddress = line.Substring(11);
+            int pos = fromAddress.IndexOf('>');
+            if (pos >= 0)
+            {
+                fromAddress = fromAddress.Substring(0, pos);
+            }
             if (!MailboxAddress.TryParse(fromAddress, out _))
             {
-                await writer.WriteLineAsync($"500 invalid command");
+                await writer.WriteLineAsync($"500 invalid command - bad from address format");
                 await writer.FlushAsync();
-                throw new ArgumentException("Invalid from address: " + fromAddress);
+                throw new ArgumentException("Invalid format for from address: " + fromAddress);
             }
 
             if (fromUser != null && fromUser.Address != fromAddress)
             {
                 await writer.WriteLineAsync($"500 invalid command");
                 await writer.FlushAsync();
-                throw new InvalidOperationException("Invalid from address");
+                throw new InvalidOperationException("Invalid from address - bad from address");
             }
 
             // denote success
@@ -424,13 +432,13 @@ namespace MailDemon
             // read to addresses
             line = await ReadLineAsync(reader);
             Dictionary<string, List<string>> toAddressesByDomain = new Dictionary<string, List<string>>();
-            while (line.StartsWith("RCPT TO:<"))
+            while (line.StartsWith("RCPT TO:<", StringComparison.OrdinalIgnoreCase))
             {
                 string toAddress = line.Substring(9).Trim('>');
 
                 if (!MailboxAddress.TryParse(toAddress, out _))
                 {
-                    await writer.WriteLineAsync($"500 invalid command");
+                    await writer.WriteLineAsync($"500 invalid command - bad to address format");
                     await writer.FlushAsync();
                     throw new ArgumentException("Invalid to address: " + toAddress);
                 }
@@ -438,14 +446,14 @@ namespace MailDemon
                 // if no authenticated user, the to address must match an existing user address
                 else if (fromUser == null && users.FirstOrDefault(u => u.Address == toAddress) == null)
                 {
-                    await writer.WriteLineAsync($"500 invalid command");
+                    await writer.WriteLineAsync($"500 invalid command - bad to address");
                     await writer.FlushAsync();
                     throw new InvalidOperationException("Invalid to address: " + toAddress);
                 }
                 // else user is authenticated, can send email to anyone
 
                 // group addresses by domain
-                int pos = toAddress.LastIndexOf('@');
+                pos = toAddress.LastIndexOf('@');
                 if (pos > 0)
                 {
                     string addressDomain = toAddress.Substring(++pos);
@@ -469,7 +477,7 @@ namespace MailDemon
                 throw new InvalidOperationException("Invalid message: " + line);
             }
 
-            if (line.StartsWith("DATA"))
+            if (line.StartsWith("DATA", StringComparison.OrdinalIgnoreCase))
             {
                 await writer.WriteLineAsync($"354");
                 SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
@@ -494,8 +502,8 @@ namespace MailDemon
         private async Task SendMail(MailDemonUser foundUser, StreamReader reader, StreamWriter writer, string line)
         {
             MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line);
-
             await SendMail(result);
+            await writer.WriteLineAsync($"250 2.1.0 OK");
         }
 
         private async Task SendMail(MailFromResult result)
@@ -503,7 +511,7 @@ namespace MailDemon
             // send all emails in one shot for each domain in order to batch
             foreach (var group in result.ToAddresses)
             {
-                await SendMessage(result.Message, result.From, group.Key, group.Value);
+                await SendMessage(result.Message, result.From, group.Key);
             }
         }
 
@@ -545,12 +553,15 @@ namespace MailDemon
                         };
 
                         // forward the message on and clear the forward headers
-                        await SendMail(result);
+                        MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", newResult.From, address, forwardToAddress);
+                        await SendMail(newResult);
                         result.Message.ResentFrom.Remove(forwardFrom);
                         result.Message.ResentTo.Remove(forwardTo);
                     }
                 }
             }
+
+            await writer.WriteLineAsync($"250 2.1.0 OK");
         }
 
         private bool CheckBlocked(string ipAddress)
@@ -603,7 +614,7 @@ namespace MailDemon
             }
         }
 
-        private async Task SendMessage(MimeMessage msg, string from, string domain, IEnumerable<string> addresses)
+        private async Task SendMessage(MimeMessage msg, string from, string domain)
         {
             MailDemonLog.Write(LogLevel.Info, "Sending from {0}", from);
             using (SmtpClient client = new SmtpClient()
