@@ -526,25 +526,29 @@ namespace MailDemon
                     }
 
                     // setup forward headers
-                    MailboxAddress forwardFrom = new MailboxAddress(user.Address);
-                    MailboxAddress forwardTo = new MailboxAddress((string.IsNullOrWhiteSpace(user.ForwardAddress) ? globalForwardAddress : user.ForwardAddress));
-                    result.Message.ResentFrom.Add(forwardFrom);
-                    result.Message.ResentTo.Add(forwardTo);
-                    result.Message.ResentDate = DateTime.UtcNow;
-                    string toDomain = user.ForwardAddress.Substring(user.ForwardAddress.IndexOf('@') + 1);
-
-                    // make a new result to forward
-                    MailFromResult newResult = new MailFromResult
+                    string forwardToAddress = (string.IsNullOrWhiteSpace(user.ForwardAddress) ? globalForwardAddress : user.ForwardAddress);
+                    if (!string.IsNullOrWhiteSpace(forwardToAddress))
                     {
-                        From = result.From,
-                        Message = result.Message,
-                        ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { user.ForwardAddress } } }
-                    };
+                        MailboxAddress forwardFrom = new MailboxAddress(user.Address);
+                        MailboxAddress forwardTo = new MailboxAddress(forwardToAddress);
+                        result.Message.ResentFrom.Add(forwardFrom);
+                        result.Message.ResentTo.Add(forwardTo);
+                        result.Message.ResentDate = DateTime.UtcNow;
+                        string toDomain = user.ForwardAddress.Substring(user.ForwardAddress.IndexOf('@') + 1);
 
-                    // forward the message on and clear the forward headers
-                    await SendMail(result);
-                    result.Message.ResentFrom.Remove(forwardFrom);
-                    result.Message.ResentTo.Remove(forwardTo);
+                        // make a new result to forward
+                        MailFromResult newResult = new MailFromResult
+                        {
+                            From = result.From,
+                            Message = result.Message,
+                            ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { user.ForwardAddress } } }
+                        };
+
+                        // forward the message on and clear the forward headers
+                        await SendMail(result);
+                        result.Message.ResentFrom.Remove(forwardFrom);
+                        result.Message.ResentTo.Remove(forwardTo);
+                    }
                 }
             }
         }
