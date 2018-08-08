@@ -17,7 +17,7 @@ namespace MailDemon
         /// <param name="password">Password</param>
         /// <param name="address">Full email address</param>
         /// <param name="forwardAddress">Forward address</param>
-        public MailDemonUser(string name, string password, string address, string forwardAddress)
+        public MailDemonUser(string name, string displayName, string password, string address, string forwardAddress)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -28,6 +28,7 @@ namespace MailDemon
                 throw new ArgumentException("Password must not be null or empty", nameof(password));
             }
             Name = name.Trim();
+            DisplayName = (string.IsNullOrWhiteSpace(displayName) ? Name : displayName);
             Password = new SecureString();
             foreach (char c in password)
             {
@@ -46,6 +47,11 @@ namespace MailDemon
         /// User name
         /// </summary>
         public string Name { get; private set; }
+
+        /// <summary>
+        /// Display name
+        /// </summary>
+        public string DisplayName { get; private set; }
 
         /// <summary>
         /// User password

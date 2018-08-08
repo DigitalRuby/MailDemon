@@ -93,7 +93,7 @@ namespace MailDemon
             IConfigurationSection userSection = rootSection.GetSection("users");
             foreach (var child in userSection.GetChildren())
             {
-                users.Add(new MailDemonUser(child["name"], child["password"], child["address"], child["forwardAddress"]));
+                users.Add(new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"]));
             }
             sslCertificateFile = rootSection["sslCertificateFile"];
             sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
@@ -487,7 +487,11 @@ namespace MailDemon
                 SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
                 MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
                 await writer.WriteLineAsync($"250 2.0.0 OK");
-
+                if (fromUser != null)
+                {
+                    mimeMessage.From.Clear();
+                    mimeMessage.From.Add(new MailboxAddress(fromUser.DisplayName, fromUser.Address));
+                }
                 return new MailFromResult
                 {
                     From = fromAddress,
