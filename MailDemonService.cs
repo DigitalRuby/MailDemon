@@ -32,6 +32,7 @@ using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using System.Runtime.InteropServices;
+using MimeKit.Utils;
 
 #endregion Imports
 
@@ -151,20 +152,23 @@ namespace MailDemon
             server = null;
         }
 
-        private static string ToUnsecureString(SecureString securePassword)
+        public static string ToUnsecureString(SecureString s)
         {
-            IntPtr unmanagedString = IntPtr.Zero;
+            if (s == null)
+            {
+                return null;
+            }
+            IntPtr valuePtr = IntPtr.Zero;
             try
             {
-                unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(securePassword);
-                return Marshal.PtrToStringUni(unmanagedString);
+                valuePtr = Marshal.SecureStringToGlobalAllocUnicode(s);
+                char[] buffer = new char[s.Length];
+                Marshal.Copy(valuePtr, buffer, 0, s.Length);
+                return new string(buffer);
             }
             finally
             {
-                if (unmanagedString != IntPtr.Zero)
-                {
-                    Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
-                }
+                Marshal.ZeroFreeGlobalAllocUnicode(valuePtr);
             }
         }
 
@@ -537,26 +541,32 @@ namespace MailDemon
                     string forwardToAddress = (string.IsNullOrWhiteSpace(user.ForwardAddress) ? globalForwardAddress : user.ForwardAddress);
                     if (!string.IsNullOrWhiteSpace(forwardToAddress))
                     {
-                        MailboxAddress forwardFrom = new MailboxAddress(user.Address);
-                        MailboxAddress forwardTo = new MailboxAddress(forwardToAddress);
-                        result.Message.ResentFrom.Add(forwardFrom);
-                        result.Message.ResentTo.Add(forwardTo);
-                        result.Message.ResentDate = DateTime.UtcNow;
+                        MimeMessage message = result.Message;
+                        message.ResentSender = null;
+                        message.ResentFrom.Clear();
+                        message.ResentReplyTo.Clear();
+                        message.ResentTo.Clear();
+                        message.ResentCc.Clear();
+                        message.ResentBcc.Clear();
+
+                        message.ResentFrom.Add(new MailboxAddress(address));
+                        message.ResentReplyTo.Add(new MailboxAddress(address));
+                        message.ResentTo.Add(new MailboxAddress(forwardToAddress));
+                        message.ResentMessageId = MimeUtils.GenerateMessageId();
+                        message.ResentDate = DateTimeOffset.Now;
                         string toDomain = user.ForwardAddress.Substring(user.ForwardAddress.IndexOf('@') + 1);
 
                         // make a new result to forward
                         MailFromResult newResult = new MailFromResult
                         {
-                            From = result.From,
+                            From = address,
                             Message = result.Message,
                             ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { user.ForwardAddress } } }
                         };
 
                         // forward the message on and clear the forward headers
-                        MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", newResult.From, address, forwardToAddress);
+                        MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
                         await SendMail(newResult);
-                        result.Message.ResentFrom.Remove(forwardFrom);
-                        result.Message.ResentTo.Remove(forwardTo);
                     }
                 }
             }
