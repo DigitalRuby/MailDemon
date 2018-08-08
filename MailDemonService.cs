@@ -570,7 +570,7 @@ namespace MailDemon
                         {
                             From = user.MailAddress,
                             Message = message,
-                            ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { user.ForwardAddress } } }
+                            ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { forwardToAddress } } }
                         };
 
                         // forward the message on and clear the forward headers
