@@ -31,6 +31,7 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
+using System.Runtime.InteropServices;
 
 #endregion Imports
 
@@ -46,162 +47,9 @@ namespace MailDemon
             public new bool Active => base.Active;
         }
 
-        private class SmtpMimeMessageStream : Stream
-        {
-            private Stream baseStream;
-            private int state; // 0 = none, 1 = has \r, 2 = has \n, 3 = has ., 4 = has \r 5 = has \n done!
-
-            public SmtpMimeMessageStream(Stream baseStream)
-            {
-                this.baseStream = baseStream;
-            }
-
-            public override bool CanRead => baseStream.CanRead;
-
-            public override bool CanSeek => baseStream.CanSeek;
-
-            public override bool CanWrite => baseStream.CanWrite;
-
-            public override long Length => baseStream.Length;
-
-            public override long Position { get => baseStream.Position; set => baseStream.Position = value; }
-
-            public override void Flush()
-            {
-                baseStream.Flush();
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                if (state == 5)
-                {
-                    state = 0;
-                    return 0;
-                }
-
-                int read = baseStream.Read(buffer, offset, count);
-                if (read > 0)
-                {
-                    int end = offset + read;
-                    for (int i = offset; i < end; i++)
-                    {
-                        switch (state)
-                        {
-                            case 0:
-                                if (buffer[i] == '\r')
-                                {
-                                    state = 1;
-                                }
-                                else
-                                {
-                                    state = 0;
-                                }
-                                break;
-
-                            case 1:
-                                if (buffer[i] == '\n')
-                                {
-                                    state = 2;
-                                }
-                                else
-                                {
-                                    state = 0;
-                                }
-                                break;
-
-                            case 2:
-                                if (buffer[i] == '.')
-                                {
-                                    state = 3;
-                                }
-                                else if (buffer[i] == '\r')
-                                {
-                                    state = 1;
-                                }
-                                else
-                                {
-                                    state = 0;
-                                }
-                                break;
-
-                            case 3:
-                                if (buffer[i] == '\r')
-                                {
-                                    state = 4;
-                                }
-                                else
-                                {
-                                    state = 0;
-                                }
-                                break;
-
-                            case 4:
-                                if (buffer[i] == '\n')
-                                {
-                                    state = 5;
-
-                                    // don't return the ending \r\n.\r\n, that is part of the protocol
-                                    // there is a rare chance that a read of this terminator can split over
-                                    // two Read(...) method calls, in which case the \r\n.\r\n will be
-                                    // part of the message... this edge case is not handled yet
-                                    return (read >= 5 ? read - 5 : read);
-                                }
-                                else
-                                {
-                                    state = 0;
-                                }
-                                break;
-                        }
-                    }
-                }
-                return read;
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                return baseStream.Seek(offset, origin);
-            }
-
-            public override void SetLength(long value)
-            {
-                baseStream.SetLength(value);
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                baseStream.Write(buffer, offset, count);
-            }
-        }
-
         private class CacheEntry
         {
             public int Count;
-        }
-
-        public class MailDemonUser
-        {
-            public MailDemonUser(string name, string password)
-            {
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    throw new ArgumentException("Name must not be null or empty", nameof(name));
-                }
-                if (string.IsNullOrWhiteSpace(password))
-                {
-                    throw new ArgumentException("Password must not be null or empty", nameof(password));
-                }
-                Name = name;
-                Password = new SecureString();
-                foreach (char c in password)
-                {
-                    Password.AppendChar(c);
-                }
-                Plain = string.Format("\0{0}\0{1}", name, password);
-            }
-
-            public string Name { get; private set; }
-            public SecureString Password { get; private set; }
-            public string Plain { get; private set; }
         }
 
         private TcpListenerActive server;
@@ -210,6 +58,7 @@ namespace MailDemon
         private readonly MemoryCache cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = (1024 * 1024 * 16), CompactionPercentage = 0.9 });
         private readonly Dictionary<string, Regex> ignoreCertificateErrorsRegex = new Dictionary<string, Regex>(StringComparer.OrdinalIgnoreCase); // domain,regex
         private readonly int maxConnectionCount = 128;
+        private readonly string globalForwardAddress;
         private readonly int maxFailuresPerIPAddress = 3;
         private readonly TimeSpan failureLockoutTimespan = TimeSpan.FromDays(1.0);
         private readonly IPAddress ip;
@@ -233,6 +82,7 @@ namespace MailDemon
             port = GetConfig(rootSection, "port", port);
             maxFailuresPerIPAddress = GetConfig(rootSection, "maxFailuresPerIPAddress", maxFailuresPerIPAddress);
             maxConnectionCount = GetConfig(rootSection, "maxConnectionCount", maxConnectionCount);
+            globalForwardAddress = GetConfig(rootSection, "globalForwardAddress", globalForwardAddress);
             greeting = (rootSection["greeting"] ?? greeting).Replace("\r", string.Empty).Replace("\n", string.Empty);
             if (TimeSpan.TryParse(rootSection["failureLockoutTimespan"], out TimeSpan _failureLockoutTimespan))
             {
@@ -242,7 +92,7 @@ namespace MailDemon
             IConfigurationSection userSection = rootSection.GetSection("users");
             foreach (var child in userSection.GetChildren())
             {
-                users.Add(new MailDemonUser(child["name"], child["password"]));
+                users.Add(new MailDemonUser(child["name"], child["password"], child["address"], child["forwardAddress"]));
             }
             sslCertificateFile = rootSection["sslCertificateFile"];
             sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
@@ -299,6 +149,23 @@ namespace MailDemon
             {
             }
             server = null;
+        }
+
+        private static string ToUnsecureString(SecureString securePassword)
+        {
+            IntPtr unmanagedString = IntPtr.Zero;
+            try
+            {
+                unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(securePassword);
+                return Marshal.PtrToStringUni(unmanagedString);
+            }
+            finally
+            {
+                if (unmanagedString != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
+                }
+            }
         }
 
         private T GetConfig<T>(IConfiguration config, string key, T defaultValue)
@@ -418,6 +285,11 @@ namespace MailDemon
                             }
                             else
                             {
+                                if (line.StartsWith("MAIL FROM:<"))
+                                {
+                                    // non-authenticated user, forward message on if possible, check settings
+                                    await ReceiveMail(reader, writer, line);
+                                }
                                 throw new InvalidOperationException("Invalid message: " + line + ", not authenticated");
                             }
                         }
@@ -473,7 +345,7 @@ namespace MailDemon
             string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(line));
             foreach (MailDemonUser user in users)
             {
-                if (user.Plain == sentAuth)
+                if (ToUnsecureString(user.PasswordPlain) == sentAuth)
                 {
                     foundUser = user;
                     break;
@@ -529,12 +401,21 @@ namespace MailDemon
             return new Tuple<SslStream, StreamReader, StreamWriter>(sslStream, sslReader, sslWriter);
         }
 
-        private async Task SendMail(MailDemonUser foundUser, StreamReader reader, StreamWriter writer, string line)
+        private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, StreamReader reader, StreamWriter writer, string line)
         {
             string fromAddress = line.Substring(11).Trim('>');
             if (!MailboxAddress.TryParse(fromAddress, out _))
             {
+                await writer.WriteLineAsync($"500 invalid command");
+                await writer.FlushAsync();
                 throw new ArgumentException("Invalid from address: " + fromAddress);
+            }
+
+            if (fromUser != null && fromUser.Address != fromAddress)
+            {
+                await writer.WriteLineAsync($"500 invalid command");
+                await writer.FlushAsync();
+                throw new InvalidOperationException("Invalid from address");
             }
 
             // denote success
@@ -542,24 +423,35 @@ namespace MailDemon
 
             // read to addresses
             line = await ReadLineAsync(reader);
-            Dictionary<string, List<string>> addressGroups = new Dictionary<string, List<string>>();
+            Dictionary<string, List<string>> toAddressesByDomain = new Dictionary<string, List<string>>();
             while (line.StartsWith("RCPT TO:<"))
             {
                 string toAddress = line.Substring(9).Trim('>');
 
                 if (!MailboxAddress.TryParse(toAddress, out _))
                 {
+                    await writer.WriteLineAsync($"500 invalid command");
+                    await writer.FlushAsync();
                     throw new ArgumentException("Invalid to address: " + toAddress);
                 }
+
+                // if no authenticated user, the to address must match an existing user address
+                else if (fromUser == null && users.FirstOrDefault(u => u.Address == toAddress) == null)
+                {
+                    await writer.WriteLineAsync($"500 invalid command");
+                    await writer.FlushAsync();
+                    throw new InvalidOperationException("Invalid to address: " + toAddress);
+                }
+                // else user is authenticated, can send email to anyone
 
                 // group addresses by domain
                 int pos = toAddress.LastIndexOf('@');
                 if (pos > 0)
                 {
                     string addressDomain = toAddress.Substring(++pos);
-                    if (!addressGroups.TryGetValue(addressDomain, out List<string> addressList))
+                    if (!toAddressesByDomain.TryGetValue(addressDomain, out List<string> addressList))
                     {
-                        addressGroups[addressDomain] = addressList = new List<string>();
+                        toAddressesByDomain[addressDomain] = addressList = new List<string>();
                     }
                     addressList.Add(toAddress);
                 }
@@ -570,8 +462,10 @@ namespace MailDemon
             }
 
             // if no to addresses, fail
-            if (addressGroups.Count == 0)
+            if (toAddressesByDomain.Count == 0)
             {
+                await writer.WriteLineAsync($"500 invalid command");
+                await writer.FlushAsync();
                 throw new InvalidOperationException("Invalid message: " + line);
             }
 
@@ -582,15 +476,76 @@ namespace MailDemon
                 MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
                 await writer.WriteLineAsync($"250 2.0.0 OK");
 
-                // send all emails in one shot for each domain in order to batch
-                foreach (var group in addressGroups)
+                return new MailFromResult
                 {
-                    await SendMessage(mimeMessage, foundUser.Name + "@" + Domain, group.Key, group.Value);
-                }
+                    From = fromAddress,
+                    ToAddresses = toAddressesByDomain,
+                    Message = mimeMessage
+                };
             }
-            else if (line.Length > 0)
+            else
             {
-                throw new InvalidOperationException("Invalid message: " + line);
+                await writer.WriteLineAsync($"500 invalid command");
+                await writer.FlushAsync();
+                throw new InvalidOperationException("Invalid line in mail from: " + line);
+            }
+        }
+
+        private async Task SendMail(MailDemonUser foundUser, StreamReader reader, StreamWriter writer, string line)
+        {
+            MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line);
+
+            await SendMail(result);
+        }
+
+        private async Task SendMail(MailFromResult result)
+        {
+            // send all emails in one shot for each domain in order to batch
+            foreach (var group in result.ToAddresses)
+            {
+                await SendMessage(result.Message, result.From, group.Key, group.Value);
+            }
+        }
+
+        private async Task ReceiveMail(StreamReader reader, StreamWriter writer, string line)
+        {
+            MailFromResult result = await ParseMailFrom(null, reader, writer, line);
+
+            // mail demon doesn't have an inbox, only forwarding, so see if any of the to addresses can be forwarded
+            foreach (var kv in result.ToAddresses)
+            {
+                foreach (string address in kv.Value)
+                {
+                    MailDemonUser user = users.FirstOrDefault(u => u.Address == address);
+
+                    // if no user or the forward address points to a user, fail
+                    if (user == null || users.FirstOrDefault(u => u.Address == user.ForwardAddress) != null)
+                    {
+                        await writer.WriteLineAsync($"500 invalid command");
+                        await writer.FlushAsync();
+                    }
+
+                    // setup forward headers
+                    MailboxAddress forwardFrom = new MailboxAddress(user.Address);
+                    MailboxAddress forwardTo = new MailboxAddress((string.IsNullOrWhiteSpace(user.ForwardAddress) ? globalForwardAddress : user.ForwardAddress));
+                    result.Message.ResentFrom.Add(forwardFrom);
+                    result.Message.ResentTo.Add(forwardTo);
+                    result.Message.ResentDate = DateTime.UtcNow;
+                    string toDomain = user.ForwardAddress.Substring(user.ForwardAddress.IndexOf('@') + 1);
+
+                    // make a new result to forward
+                    MailFromResult newResult = new MailFromResult
+                    {
+                        From = result.From,
+                        Message = result.Message,
+                        ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { user.ForwardAddress } } }
+                    };
+
+                    // forward the message on and clear the forward headers
+                    await SendMail(result);
+                    result.Message.ResentFrom.Remove(forwardFrom);
+                    result.Message.ResentTo.Remove(forwardTo);
+                }
             }
         }
 
