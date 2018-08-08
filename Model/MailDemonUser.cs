@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MimeKit;
+using System;
 using System.Collections.Generic;
 using System.Security;
 using System.Text;
@@ -67,6 +68,11 @@ namespace MailDemon
         /// Full email address
         /// </summary>
         public string Address { get; private set; }
+
+        /// <summary>
+        /// Email address object
+        /// </summary>
+        public InternetAddress MailAddress { get { return new MailboxAddress(DisplayName, Address); } }
 
         /// <summary>
         /// Forwarding email address

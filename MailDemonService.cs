@@ -487,14 +487,9 @@ namespace MailDemon
                 SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
                 MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
                 await writer.WriteLineAsync($"250 2.0.0 OK");
-                if (fromUser != null)
-                {
-                    mimeMessage.From.Clear();
-                    mimeMessage.From.Add(new MailboxAddress(fromUser.DisplayName, fromUser.Address));
-                }
                 return new MailFromResult
                 {
-                    From = fromAddress,
+                    From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
                     ToAddresses = toAddressesByDomain,
                     Message = mimeMessage
                 };
@@ -537,34 +532,44 @@ namespace MailDemon
                     // if no user or the forward address points to a user, fail
                     if (user == null || users.FirstOrDefault(u => u.Address == user.ForwardAddress) != null)
                     {
-                        await writer.WriteLineAsync($"500 invalid command");
+                        await writer.WriteLineAsync($"500 invalid command - cannot forward");
                         await writer.FlushAsync();
                     }
 
                     // setup forward headers
                     string forwardToAddress = (string.IsNullOrWhiteSpace(user.ForwardAddress) ? globalForwardAddress : user.ForwardAddress);
-                    if (!string.IsNullOrWhiteSpace(forwardToAddress))
+                    if (string.IsNullOrWhiteSpace(forwardToAddress))
                     {
-                        MimeMessage message = result.Message;
-                        message.ResentSender = null;
-                        message.ResentFrom.Clear();
-                        message.ResentReplyTo.Clear();
-                        message.ResentTo.Clear();
-                        message.ResentCc.Clear();
-                        message.ResentBcc.Clear();
+                        await writer.WriteLineAsync($"500 invalid command - cannot forward 2");
+                        await writer.FlushAsync();
+                    }
+                    else
+                    {
+                        // create brand new message to forward
+                        MimeMessage message = new MimeMessage();
+                        message.From.Add(user.MailAddress);
+                        message.ReplyTo.Add(user.MailAddress);
+                        message.To.Add(new MailboxAddress(forwardToAddress));
+                        message.Subject = "FW: " + result.Message.Subject;
 
-                        message.ResentFrom.Add(new MailboxAddress(address));
-                        message.ResentReplyTo.Add(new MailboxAddress(address));
-                        message.ResentTo.Add(new MailboxAddress(forwardToAddress));
-                        message.ResentMessageId = MimeUtils.GenerateMessageId();
-                        message.ResentDate = DateTimeOffset.Now;
+                        // now to create our body...
+                        BodyBuilder builder = new BodyBuilder
+                        {
+                            TextBody = result.Message.TextBody,
+                            HtmlBody = result.Message.HtmlBody
+                        };
+                        foreach (var attachment in result.Message.Attachments)
+                        {
+                            builder.Attachments.Add(attachment);
+                        }
+                        message.Body = builder.ToMessageBody();
                         string toDomain = user.ForwardAddress.Substring(user.ForwardAddress.IndexOf('@') + 1);
 
-                        // make a new result to forward
+                        // create new object to forward on
                         MailFromResult newResult = new MailFromResult
                         {
-                            From = address,
-                            Message = result.Message,
+                            From = user.MailAddress,
+                            Message = message,
                             ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { user.ForwardAddress } } }
                         };
 
@@ -628,9 +633,9 @@ namespace MailDemon
             }
         }
 
-        private async Task SendMessage(MimeMessage msg, string from, string domain)
+        private async Task SendMessage(MimeMessage msg, InternetAddress from, string domain)
         {
-            MailDemonLog.Write(LogLevel.Info, "Sending from {0}", from);
+            MailDemonLog.Write(LogLevel.Info, "Sending from {0}, to: {1}", from, msg.To.ToString());
             using (SmtpClient client = new SmtpClient()
             {
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
@@ -655,6 +660,8 @@ namespace MailDemon
                             string host = ip.HostName;
                             try
                             {
+                                msg.From.Clear();
+                                msg.From.Add(from);
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
                                 await client.SendAsync(msg);
                                 sent = true;
