@@ -44,7 +44,7 @@ namespace MailDemon
                 Body = (new BodyBuilder { HtmlBody = "<html><body><b>Test Email Bold 12345</b></body></html>" }).ToMessageBody(),
                 Subject = "test subject"
             };
-            msg.From.Add(new MailboxAddress(demon.Users.First().Name + "@" + demon.Domain));
+            msg.From.Add(new MailboxAddress(demon.Users.First().Address));
             msg.To.Add(new MailboxAddress(to));
             await client.SendAsync(msg);
             await client.DisconnectAsync(true);
