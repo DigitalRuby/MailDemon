@@ -19,7 +19,7 @@ namespace MailDemon
         /// <summary>
         /// Message from address
         /// </summary>
-        public string From { get; set; }
+        public InternetAddress From { get; set; }
 
         /// <summary>
         /// Group domain and to addresses for domain
