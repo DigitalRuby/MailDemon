@@ -140,9 +140,9 @@ namespace MailDemon
         /// </summary>
         /// <param name="text">Text</param>
         /// <param name="ex">Error</param>
-        public static void Error(string text, Exception ex)
+        public static void Error(string text, Exception ex = null)
         {
-            Write(LogLevel.Error, text + ": " + ex.ToString());
+            Write(LogLevel.Error, text + (ex == null ? string.Empty : ": " + ex.ToString()));
         }
 
         /// <summary>
