@@ -615,13 +615,15 @@ namespace MailDemon
 
         private X509Certificate2 LoadSslCertificate()
         {
-            if (sslCertificatePassword != null)
+            Exception error = null;
+            if (!string.IsNullOrWhiteSpace(sslCertificateFile))
             {
                 for (int i = 0; i < 2; i++)
                 {
                     try
                     {
-                        X509Certificate2 newSslCertificate = new X509Certificate2(File.ReadAllBytes(sslCertificateFile), sslCertificatePassword);
+                        byte[] bytes = File.ReadAllBytes(sslCertificateFile);
+                        X509Certificate2 newSslCertificate = (sslCertificatePassword == null ? new X509Certificate2(bytes) : new X509Certificate2(bytes, sslCertificatePassword));
                         if (!newSslCertificate.HasPrivateKey && !string.IsNullOrWhiteSpace(sslCertificatePrivateKeyFile))
                         {
                             newSslCertificate = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(File.ReadAllText(sslCertificatePrivateKeyFile)));
@@ -631,12 +633,16 @@ namespace MailDemon
                     }
                     catch (Exception ex)
                     {
-                        MailDemonLog.Write(LogLevel.Error, "Error loading ssl certificate: {0}", ex);
+                        error = ex;
 
                         // in case something is copying a new certificate, give it a second and try one more time
                         Thread.Sleep(1000);
                     }
                 }
+            }
+            if (error != null)
+            {
+                MailDemonLog.Write(LogLevel.Error, "Error loading ssl certificate: {0}", error);
             }
             return null;
         }
