@@ -91,7 +91,9 @@ namespace MailDemon
             IConfigurationSection userSection = rootSection.GetSection("users");
             foreach (var child in userSection.GetChildren())
             {
-                users.Add(new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"]));
+                MailDemonUser user = new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"]);
+                users.Add(user);
+                MailDemonLog.Write(LogLevel.Debug, "Loaded user {0}", user);
             }
             sslCertificateFile = rootSection["sslCertificateFile"];
             sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
@@ -120,6 +122,7 @@ namespace MailDemon
         public async Task StartAsync(CancellationToken token)
         {
             Dispose();
+            TestSslCertificate();
             server = new TcpListenerActive(IPAddress.Any, port);
             server.Start(maxConnectionCount);
             token.Register(Dispose);
@@ -148,23 +151,17 @@ namespace MailDemon
             server = null;
         }
 
-        public static string ToUnsecureString(SecureString s)
+        private void TestSslCertificate()
         {
-            if (s == null)
+            MailDemonLog.Write(LogLevel.Info, "Testing ssl certificate file {0}, private key file {1}", sslCertificateFile, sslCertificatePrivateKeyFile);
+            X509Certificate sslCert = LoadSslCertificate();
+            if (sslCert == null)
             {
-                return null;
+                MailDemonLog.Error("SSL certificate failed to load or is not setup in config!");
             }
-            IntPtr valuePtr = IntPtr.Zero;
-            try
+            else
             {
-                valuePtr = Marshal.SecureStringToGlobalAllocUnicode(s);
-                char[] buffer = new char[s.Length];
-                Marshal.Copy(valuePtr, buffer, 0, s.Length);
-                return new string(buffer);
-            }
-            finally
-            {
-                Marshal.ZeroFreeGlobalAllocUnicode(valuePtr);
+                MailDemonLog.Write(LogLevel.Info, "SSL certificate loaded succesfully!");
             }
         }
 
@@ -355,10 +352,10 @@ namespace MailDemon
             {
                 line = line.Substring(11);
             }
-            string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(line));
+            string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(line)).Replace("\0", "(null)");
             foreach (MailDemonUser user in users)
             {
-                if (ToUnsecureString(user.PasswordPlain) == sentAuth)
+                if (user.Authenticate(sentAuth))
                 {
                     foundUser = user;
                     break;
@@ -419,7 +416,7 @@ namespace MailDemon
                         }
                     }
                 }).ConfigureAwait(false).GetAwaiter();
-
+                MailDemonLog.Write(LogLevel.Info, $"Starting ssl connection from client {clientIPAddress}");
                 await sslStream.AuthenticateAsServerAsync(sslCertificate, false, System.Security.Authentication.SslProtocols.Tls12, true);
                 sslServerEnabled = true;
             }

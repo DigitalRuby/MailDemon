@@ -36,12 +36,35 @@ namespace MailDemon
                 Password.AppendChar(c);
             }
             PasswordPlain = new SecureString();
-            foreach (char c in string.Format("\0{0}\0{1}", name, password))
+            foreach (char c in string.Format("(null){0}(null){1}", name, password))
             {
                 PasswordPlain.AppendChar(c);
             }
             Address = (address ?? string.Empty).Trim();
             ForwardAddress = (forwardAddress ?? string.Empty).Trim();
+        }
+
+        /// <summary>
+        /// Authenticate against plain auth
+        /// </summary>
+        /// <param name="authPlain">Plain auth. \0 should be replaced with (null) first.</param>
+        /// <returns>True if authenticate, false otherwise</returns>
+        public bool Authenticate(string authPlain)
+        {
+            string passwordPlain = PasswordPlain.ToUnsecureString();
+            MailDemonLog.Write(LogLevel.Debug, "Attempting auth {0} against user auth {1}", authPlain, passwordPlain);
+            return (passwordPlain == authPlain);
+        }
+
+        /// <summary>
+        /// ToString
+        /// </summary>
+        /// <returns>String</returns>
+        public override string ToString()
+        {
+            string password = Password.ToUnsecureString();
+            string passwordPlain = PasswordPlain.ToUnsecureString().Replace("\0", "(null)");
+            return $"Name: {Name}, Display Name: {DisplayName}, Address: {Address}, Forward: {ForwardAddress}, Password: {password}, Password Plain: {passwordPlain}";
         }
 
         /// <summary>
