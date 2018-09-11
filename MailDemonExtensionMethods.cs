@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MailDemon
 {
@@ -26,6 +27,13 @@ namespace MailDemon
             {
                 Marshal.ZeroFreeGlobalAllocUnicode(valuePtr);
             }
+        }
+
+        public static async Task<bool> TryAwait<T>(this Task<T> task, int timeoutMilliseconds)
+        {
+            Task<Task> completed = Task.WhenAny(task, Task.Delay(timeoutMilliseconds));
+            await completed;
+            return (completed.Result == task);
         }
     }
 }

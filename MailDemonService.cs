@@ -297,10 +297,10 @@ namespace MailDemon
                     }
                 }
             }
-            catch (InvalidOperationException)
+            catch (Exception ex)
             {
                 IncrementFailure(ipAddress);
-                throw;
+                MailDemonLog.Error(ex);
             }
             finally
             {
@@ -319,9 +319,13 @@ namespace MailDemon
 
         private async Task<string> ReadLineAsync(StreamReader reader)
         {
-            string line = await reader.ReadLineAsync();
-            MailDemonLog.Write(LogLevel.Debug, "CLIENT: " + line);
-            return line;
+            Task<string> readLineTask = reader.ReadLineAsync();
+            if (!(await readLineTask.TryAwait(5000)))
+            {
+                throw new TimeoutException("Client read timed out");
+            }
+            MailDemonLog.Write(LogLevel.Debug, "CLIENT: " + readLineTask.Result);
+            return readLineTask.Result;
         }
 
         private async Task HandleEhlo(StreamWriter writer, SslStream sslStream, X509Certificate2 sslCertificate)
