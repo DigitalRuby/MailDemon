@@ -333,7 +333,7 @@ namespace MailDemon
             await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
             //await writer.WriteLineAsync($"250-BINARYMIME");
             //await writer.WriteLineAsync($"250-CHUNKING");
-            if (sslCertificate != null && sslStream == null && port != 465 && port != 587)
+            if (!string.IsNullOrWhiteSpace(sslCertificateFile) && sslStream == null && port != 465 && port != 587)
             {
                 await writer.WriteLineAsync($"250-STARTTLS");
             }
