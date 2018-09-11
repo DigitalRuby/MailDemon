@@ -513,13 +513,19 @@ namespace MailDemon
             {
                 await writer.WriteLineAsync($"354");
                 SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
-                MimeMessage mimeMessage = await MimeMessage.LoadAsync(mimeStream, true);
+                CancellationTokenSource token = new CancellationTokenSource();
+                Task<MimeMessage> mimeTask = MimeMessage.LoadAsync(mimeStream, true, token.Token);
+                if (!(await mimeTask.TryAwait(30000)))
+                {
+                    token.Cancel();
+                    throw new TimeoutException("Failed to read mime data - timeout");
+                }
                 await writer.WriteLineAsync($"250 2.0.0 OK");
                 return new MailFromResult
                 {
                     From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
                     ToAddresses = toAddressesByDomain,
-                    Message = mimeMessage
+                    Message = mimeTask.Result
                 };
             }
             else
