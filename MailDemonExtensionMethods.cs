@@ -29,6 +29,13 @@ namespace MailDemon
             }
         }
 
+        public static async Task<bool> TryAwait(this Task task, int timeoutMilliseconds)
+        {
+            Task<Task> completed = Task.WhenAny(task, Task.Delay(timeoutMilliseconds));
+            await completed;
+            return (completed == task);
+        }
+
         public static async Task<bool> TryAwait<T>(this Task<T> task, int timeoutMilliseconds)
         {
             Task<Task> completed = Task.WhenAny(task, Task.Delay(timeoutMilliseconds));

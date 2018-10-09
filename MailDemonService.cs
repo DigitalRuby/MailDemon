@@ -694,12 +694,14 @@ namespace MailDemon
                 IPHostEntry ip = null;
                 bool sent = false;
                 LookupClient lookup = new LookupClient();
+                MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", domain);
                 IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX);
                 foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
                     // attempt to send, if fail, try next address
                     try
                     {
+                        MailDemonLog.Write(LogLevel.Info, "GetHostEntryAsync for exchange {0}", record.Exchange);
                         ip = await Dns.GetHostEntryAsync(record.Exchange);
                         foreach (IPAddress ipAddress in ip.AddressList)
                         {
@@ -708,8 +710,9 @@ namespace MailDemon
                             {
                                 msg.From.Clear();
                                 msg.From.Add(from);
-                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
-                                await client.SendAsync(msg);
+                                MailDemonLog.Write(LogLevel.Info, "Sending message to host {0}", host);
+                                Task sendTask = client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable).ContinueWith(async (task) => await client.SendAsync(msg));
+                                await sendTask.TryAwait(10000);
                                 sent = true;
                                 break;
                             }
