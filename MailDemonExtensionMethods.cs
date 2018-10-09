@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MailDemon
@@ -29,18 +30,38 @@ namespace MailDemon
             }
         }
 
-        public static async Task<bool> TryAwait(this Task task, int timeoutMilliseconds)
+        public static async Task TimeoutAfter(this Task task, int milliseconds)
         {
-            Task<Task> completed = Task.WhenAny(task, Task.Delay(timeoutMilliseconds));
-            await completed;
-            return (completed == task);
+            using (CancellationTokenSource timeoutCancellationTokenSource = new CancellationTokenSource())
+            {
+                var completedTask = await Task.WhenAny(task, Task.Delay(milliseconds, timeoutCancellationTokenSource.Token));
+                if (completedTask == task)
+                {
+                    timeoutCancellationTokenSource.Cancel();
+                    await task; // Very important in order to propagate exceptions
+                }
+                else
+                {
+                    throw new TimeoutException("The operation has timed out.");
+                }
+            }
         }
 
-        public static async Task<bool> TryAwait<T>(this Task<T> task, int timeoutMilliseconds)
+        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, int milliseconds)
         {
-            Task<Task> completed = Task.WhenAny(task, Task.Delay(timeoutMilliseconds));
-            await completed;
-            return (completed.Result == task);
+            using (CancellationTokenSource timeoutCancellationTokenSource = new CancellationTokenSource())
+            {
+                var completedTask = await Task.WhenAny(task, Task.Delay(milliseconds, timeoutCancellationTokenSource.Token));
+                if (completedTask == task)
+                {
+                    timeoutCancellationTokenSource.Cancel();
+                    return await task; // Very important in order to propagate exceptions
+                }
+                else
+                {
+                    throw new TimeoutException("The operation has timed out.");
+                }
+            }
         }
     }
 }

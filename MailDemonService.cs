@@ -320,10 +320,7 @@ namespace MailDemon
         private async Task<string> ReadLineAsync(StreamReader reader)
         {
             Task<string> readLineTask = reader.ReadLineAsync();
-            if (!(await readLineTask.TryAwait(5000)))
-            {
-                throw new TimeoutException("Client read timed out");
-            }
+            await readLineTask.TimeoutAfter(5000);
             MailDemonLog.Write(LogLevel.Debug, "CLIENT: " + readLineTask.Result);
             return readLineTask.Result;
         }
@@ -515,10 +512,14 @@ namespace MailDemon
                 SmtpMimeMessageStream mimeStream = new SmtpMimeMessageStream(reader.BaseStream);
                 CancellationTokenSource token = new CancellationTokenSource();
                 Task<MimeMessage> mimeTask = MimeMessage.LoadAsync(mimeStream, true, token.Token);
-                if (!(await mimeTask.TryAwait(30000)))
+                try
+                {
+                    await mimeTask.TimeoutAfter(30000);
+                }
+                catch
                 {
                     token.Cancel();
-                    throw new TimeoutException("Failed to read mime data - timeout");
+                    throw;
                 }
                 await writer.WriteLineAsync($"250 2.0.0 OK");
                 return new MailFromResult
@@ -711,8 +712,8 @@ namespace MailDemon
                                 msg.From.Clear();
                                 msg.From.Add(from);
                                 MailDemonLog.Write(LogLevel.Info, "Sending message to host {0}", host);
-                                Task sendTask = client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable).ContinueWith(async (task) => await client.SendAsync(msg));
-                                await sendTask.TryAwait(10000);
+                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable).TimeoutAfter(10000);
+                                await client.SendAsync(msg).TimeoutAfter(10000);
                                 sent = true;
                                 break;
                             }
