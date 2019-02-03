@@ -15,10 +15,12 @@ namespace MailDemon
         /// Constructor
         /// </summary>
         /// <param name="name">Name</param>
+        /// <param name="displayName">Display name</param>
         /// <param name="password">Password</param>
         /// <param name="address">Full email address</param>
         /// <param name="forwardAddress">Forward address</param>
-        public MailDemonUser(string name, string displayName, string password, string address, string forwardAddress)
+        /// <param name="authenticated">Whether the user is authenticated</param>
+        public MailDemonUser(string name, string displayName, string password, string address, string forwardAddress, bool authenticated)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -101,5 +103,10 @@ namespace MailDemon
         /// Forwarding email address
         /// </summary>
         public string ForwardAddress { get; private set; }
+
+        /// <summary>
+        /// Whether the user is authenticated
+        /// </summary>
+        public bool Authenticated { get; private set; }
     }
 }

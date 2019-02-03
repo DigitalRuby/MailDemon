@@ -91,7 +91,7 @@ namespace MailDemon
             IConfigurationSection userSection = rootSection.GetSection("users");
             foreach (var child in userSection.GetChildren())
             {
-                MailDemonUser user = new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"]);
+                MailDemonUser user = new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"], true);
                 users.Add(user);
                 MailDemonLog.Write(LogLevel.Debug, "Loaded user {0}", user);
             }
@@ -245,6 +245,10 @@ namespace MailDemon
                         else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
                         {
                             authenticatedUser = await Authenticate(reader, writer, line);
+                            if (!authenticatedUser.Authenticated)
+                            {
+                                throw new InvalidOperationException("Authentication failed");
+                            }
                         }
                         else if (line.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase))
                         {
@@ -299,7 +303,7 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                IncrementFailure(ipAddress);
+                IncrementFailure(ipAddress, authenticatedUser?.Name);
                 MailDemonLog.Error(ex);
             }
             finally
@@ -372,7 +376,16 @@ namespace MailDemon
             // fail
             MailDemonLog.Write(LogLevel.Warn, "Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
-            throw new InvalidOperationException("Authentication failed");
+            string userName = null;
+            for (int i = 0; i < sentAuth.Length; i++)
+            {
+                if (sentAuth[i] == '\0')
+                {
+                    userName = sentAuth.Substring(0, i);
+                    break;
+                }
+            }
+            return new MailDemonUser(userName, userName, null, null, null, false);
         }
 
         private async Task<Tuple<SslStream, StreamReader, StreamWriter>> StartTls(
@@ -624,7 +637,7 @@ namespace MailDemon
             return (cache.TryGetValue(key, out CacheEntry count) && count.Count >= maxFailuresPerIPAddress);
         }
 
-        private void IncrementFailure(string ipAddress)
+        private void IncrementFailure(string ipAddress, string userName)
         {
             string key = "RateLimit_" + ipAddress;
             CacheEntry entry = cache.GetOrCreate(key, (i) =>
@@ -634,6 +647,18 @@ namespace MailDemon
                 return new CacheEntry();
             });
             Interlocked.Increment(ref entry.Count);
+            if (userName != null && Directory.Exists(@"/var/log"))
+            {
+                // write auth log failure for ipban
+                try
+                {
+                    File.AppendAllText("/var/log/ipbancustom_maildemon.log", $"{DateTime.UtcNow.ToString("u")}, ipban failed login, ip address: {ipAddress}, source: SMTP, user: {userName}");
+                }
+                catch (Exception ex)
+                {
+                    MailDemonLog.Error("Failed to write ipban auth log", ex);
+                }
+            }
         }
 
         private RSACryptoServiceProvider GetRSAProviderForPrivateKey(string pemPrivateKey)
