@@ -83,7 +83,7 @@ namespace MailDemon
             {
                 await writer.WriteLineAsync($"250-STARTTLS");
             }
-            await writer.WriteLineAsync($"250-SMTPUTF8");
+            await writer.WriteLineAsync($"250 SMTPUTF8");
         }
 
         private async Task<MailDemonUser> Authenticate(Stream reader, StreamWriter writer, string line)

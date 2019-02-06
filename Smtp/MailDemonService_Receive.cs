@@ -74,7 +74,7 @@ namespace MailDemon
 
                             // forward the message on and clear the forward headers
                             MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
-                            await SendMail(newResult);
+                            SendMail(newResult).GetAwaiter();
                         }
                     }
                 }
