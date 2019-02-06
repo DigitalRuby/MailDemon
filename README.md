@@ -2,7 +2,7 @@
 
 Mail Demon is a simple and lightweight C# smtp server for sending unlimited emails and text messages. With a focus on simplicity and performance, you'll be able to easily send thousands of messages per second even on a cheap Linux VPS.
 
-Mail Demon requires .NET core 2.1 installed, or you can build a stand-alone executable to remove this dependancy.
+Mail Demon requires .NET core 2.2+ installed, or you can build a stand-alone executable to remove this dependancy.
 
 Make sure to set appsettings.json to your required parameters before attempting to use.
 
@@ -46,7 +46,6 @@ systemctl status MailDemon
 - Setup reverse dns for your ip address to your A record. Your hosting provider should have a way to do this.
 
 Known Issues:
-- BDAT and BINARYMIME extensions not implemented yet.
 - Hotmail.com, live.com and outlook.com have had an invalid SSL certificate for quite a while now. I've added them to appsettings.json. You may need to add additional entries for mail services with bad certificates.
 
 Enjoy!

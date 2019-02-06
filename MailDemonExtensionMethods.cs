@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Configuration;
+
 namespace MailDemon
 {
     public static class MailDemonExtensionMethods
     {
+        public static Encoding Utf8EncodingNoByteMarker { get; } = new UTF8Encoding(false);
+
         public static string ToUnsecureString(this SecureString s)
         {
             if (s == null)
@@ -62,6 +67,16 @@ namespace MailDemon
                     throw new TimeoutException("The operation has timed out.");
                 }
             }
+        }
+
+        public static T GetValue<T>(this IConfiguration config, string key, T defaultValue)
+        {
+            string value = config[key];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return defaultValue;
+            }
+            return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
         }
     }
 }
