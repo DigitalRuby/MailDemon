@@ -22,21 +22,39 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
+        /// <summary>
+        /// Send mail and kicks off the send in a new task
+        /// </summary>
+        /// <param name="foundUser">Found user</param>
+        /// <param name="reader">Reader</param>
+        /// <param name="writer">Writer</param>
+        /// <param name="line">Line</param>
+        /// <returns>Task</returns>
         private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line)
         {
-            using (MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line))
-            {
-                await SendMail(result);
-            }
+            MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line);
+            SendMail(result).GetAwaiter();
             await writer.WriteLineAsync($"250 2.1.0 OK");
         }
 
+        /// <summary>
+        /// Send mail and awaits until all messages are sent
+        /// </summary>
+        /// <param name="result">Mail result to send</param>
+        /// <returns>Task</returns>
         private async Task SendMail(MailFromResult result)
         {
-            // send all emails in one shot for each domain in order to batch
-            foreach (var group in result.ToAddresses)
+            try
             {
-                await SendMessage(result.Message, result.From, group.Key);
+                // send all emails in one shot for each domain in order to batch
+                foreach (var group in result.ToAddresses)
+                {
+                    await SendMessage(result.Message, result.From, group.Key);
+                }
+            }
+            finally
+            {
+                result.Dispose();
             }
         }
 
@@ -56,7 +74,7 @@ namespace MailDemon
                 bool sent = false;
                 LookupClient lookup = new LookupClient();
                 MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", domain);
-                IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX);
+                IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX, cancellationToken: cancelToken);
                 foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
                     // attempt to send, if fail, try next address
@@ -72,8 +90,8 @@ namespace MailDemon
                                 msg.From.Clear();
                                 msg.From.Add(from);
                                 MailDemonLog.Write(LogLevel.Info, "Sending message to host {0}", host);
-                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable).TimeoutAfter(10000);
-                                await client.SendAsync(msg).TimeoutAfter(10000);
+                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
+                                await client.SendAsync(msg, cancelToken).TimeoutAfter(30000);
                                 sent = true;
                                 break;
                             }
@@ -83,7 +101,13 @@ namespace MailDemon
                             }
                             finally
                             {
-                                await client.DisconnectAsync(true);
+                                try
+                                {
+                                    await client.DisconnectAsync(true, cancelToken);
+                                }
+                                catch
+                                {
+                                }
                             }
                         }
                     }
