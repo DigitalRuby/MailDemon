@@ -100,22 +100,23 @@ namespace MailDemon
                     await writer.FlushAsync();
                     throw new InvalidOperationException("Invalid message: " + line);
                 }
+                await writer.WriteLineAsync($"354");
                 string tempFile = Path.GetTempFileName();
+                int totalCount = 0;
                 try
                 {
-                    int totalCount = 0;
-                    using (Stream tempFileWriter = File.Create(tempFile))
+                    using (Stream tempFileWriter = File.OpenWrite(tempFile))
                     {
-                        await writer.WriteLineAsync($"354");
                         int b;
                         int state = 0;
-                        while (state != 3 && (b = reader.ReadByte()) >= 0)
+                        while (state != 5 && (b = reader.ReadByte()) >= 0)
                         {
                             if (b == (byte)'.')
                             {
-                                if (state == 0)
+                                if (state == 2)
                                 {
-                                    state = 1;
+                                    // \r\n.
+                                    state = 3;
                                 }
                                 else
                                 {
@@ -125,22 +126,28 @@ namespace MailDemon
                             }
                             else if (b == (byte)'\r')
                             {
-                                if (state == 1)
+                                if (state == 3)
                                 {
-                                    state = 2;
+                                    // \r\n.\r
+                                    state = 4;
                                 }
                                 else
                                 {
-                                    // reset
-                                    state = 0;
+                                    // \r
+                                    state = 1;
                                 }
                             }
                             else if (b == (byte)'\n')
                             {
-                                if (state == 2)
+                                if (state == 1)
                                 {
-                                    // end of message
-                                    state = 3;
+                                    // \r\n
+                                    state = 2;
+                                }
+                                else if (state == 4)
+                                {
+                                    // \r\n.\r\n
+                                    state = 5;
                                 }
                                 else
                                 {
@@ -166,22 +173,26 @@ namespace MailDemon
                     // strip off the \r\n.\r\n, that is part of the protocol
                     using (FileStream tempFileStream = File.Open(tempFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                     {
-                        if (tempFileStream.Length >= 3)
+                        if (tempFileStream.Length >= 5)
                         {
-                            tempFileStream.SetLength(tempFileStream.Length - 3);
+                            tempFileStream.SetLength(tempFileStream.Length - 5);
                         }
                     }
                     await writer.WriteLineAsync($"250 2.5.0 OK");
+                    Stream fileStream = File.OpenRead(tempFile);
+                    MimeMessage msg = await MimeMessage.LoadAsync(fileStream, true, cancelToken);
                     return new MailFromResult
                     {
                         From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
                         ToAddresses = toAddressesByDomain,
-                        Message = await MimeMessage.LoadAsync(tempFile, cancelToken)
+                        Message = msg,
+                        Stream = fileStream
                     };
                 }
-                finally
+                catch
                 {
                     File.Delete(tempFile);
+                    throw;
                 }
             }
             else if (line.StartsWith("BDAT", StringComparison.OrdinalIgnoreCase))
@@ -229,17 +240,20 @@ namespace MailDemon
                         }
                         while (!last && !cancelToken.IsCancellationRequested && (line = await ReadLineAsync(reader)) != null);
                     }
-                    MimeMessage msg = await MimeMessage.LoadAsync(tempFile, cancelToken);
+                    Stream fileStream = File.OpenRead(tempFile);
+                    MimeMessage msg = await MimeMessage.LoadAsync(fileStream, true, cancelToken);
                     return new MailFromResult
                     {
                         From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
                         ToAddresses = toAddressesByDomain,
-                        Message = msg
+                        Message = msg,
+                        Stream = fileStream
                     };
                 }
-                finally
+                catch
                 {
                     File.Delete(tempFile);
+                    throw;
                 }
             }
             else

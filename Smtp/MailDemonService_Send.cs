@@ -24,8 +24,10 @@ namespace MailDemon
     {
         private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line)
         {
-            MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line);
-            await SendMail(result);
+            using (MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line))
+            {
+                await SendMail(result);
+            }
             await writer.WriteLineAsync($"250 2.1.0 OK");
         }
 
