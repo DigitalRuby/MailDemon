@@ -44,6 +44,15 @@ namespace MailDemon
             }
             Address = (address ?? string.Empty).Trim();
             ForwardAddress = (forwardAddress ?? string.Empty).Trim();
+            Authenticated = authenticated;
+            try
+            {
+                MailAddress = new MailboxAddress(DisplayName, Address);
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException("Mail address '" + Address + "' is invalid", ex);
+            }
         }
 
         /// <summary>
@@ -97,7 +106,7 @@ namespace MailDemon
         /// <summary>
         /// Email address object
         /// </summary>
-        public InternetAddress MailAddress { get { return new MailboxAddress(DisplayName, Address); } }
+        public InternetAddress MailAddress { get; private set; }
 
         /// <summary>
         /// Forwarding email address

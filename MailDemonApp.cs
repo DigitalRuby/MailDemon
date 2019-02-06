@@ -30,7 +30,7 @@ namespace MailDemon
             cancel.Cancel();
         }
 
-        private static async Task TestClientConnectionAsync(MailDemonService demon, string to)
+        private static async Task TestClientConnectionAsync(MailDemonService demon, string to, string file)
         {
             SmtpClient client = new SmtpClient()
             {
@@ -39,13 +39,28 @@ namespace MailDemon
             };
             await client.ConnectAsync("localhost", 25, MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
             await client.AuthenticateAsync(new NetworkCredential(demon.Users.First().Name, demon.Users.First().Password));
-            MimeMessage msg = new MimeMessage
-            {
-                Body = (new BodyBuilder { HtmlBody = "<html><body><b>Test Email Bold 12345</b></body></html>" }).ToMessageBody(),
-                Subject = "test subject"
-            };
+
+            MimeMessage msg = new MimeMessage();
             msg.From.Add(new MailboxAddress(demon.Users.First().Address));
             msg.To.Add(new MailboxAddress(to));
+            msg.Subject = "Test Subject";
+            BodyBuilder bodyBuilder = new BodyBuilder();
+            Multipart multipart = new Multipart("mixed");
+            bodyBuilder.HtmlBody = "<html><body><b>Test Email Html Body Which is Bold 12345</b></body></html>";
+            multipart.Add(bodyBuilder.ToMessageBody());
+            if (file != null)
+            {
+                byte[] bytes = System.IO.File.ReadAllBytes(file);
+                var attachment = new MimePart("binary", "bin")
+                {
+                    Content = new MimeContent(new MemoryStream(bytes), ContentEncoding.Base64),
+                    ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
+                    ContentTransferEncoding = ContentEncoding.Base64, // Binary for BINARYMIME test
+                    FileName = Path.GetFileName(file)
+                };
+                multipart.Add(attachment);
+            }
+            msg.Body = multipart;
             await client.SendAsync(msg);
             await client.DisconnectAsync(true);
         }
@@ -59,11 +74,15 @@ namespace MailDemon
             Console.CancelKeyPress += Console_CancelKeyPress;
             demon.StartAsync(cancel.Token).ConfigureAwait(false);
             MailDemonLog.Write(LogLevel.Info, "Mail demon running, press Ctrl-C to exit");
+
+            // test sending with the server:
+            // test toaddress@domain.com [full path to file to attach]
             if (args.Length > 1 && args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
             {
-                TestClientConnectionAsync(demon, args[1]).ConfigureAwait(false).GetAwaiter().GetResult();
+                string file = args.Length > 1 ? args[2] : null;
+                TestClientConnectionAsync(demon, args[1], file).ConfigureAwait(false).GetAwaiter().GetResult();
             }
-            new ManualResetEvent(false).WaitOne();
+            cancel.Token.WaitHandle.WaitOne();
         }
     }
 }

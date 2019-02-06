@@ -2,20 +2,23 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace MailDemon
 {
     /// <summary>
-    /// Stream that can read a MimeMessage from a base stream
+    /// Stream that can read a MimeMessage from a base stream using DATA
     /// </summary>
     public class SmtpMimeMessageStream : Stream
     {
         private Stream baseStream;
+        private CancellationToken cancelToken;
         private int state; // 0 = none, 1 = has \r, 2 = has \n, 3 = has ., 4 = has \r 5 = has \n done!
 
-        public SmtpMimeMessageStream(Stream baseStream)
+        public SmtpMimeMessageStream(Stream baseStream, CancellationToken cancelToken)
         {
             this.baseStream = baseStream;
+            this.cancelToken = cancelToken;
         }
 
         public override bool CanRead => baseStream.CanRead;
@@ -31,7 +34,11 @@ namespace MailDemon
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (state == 5)
+            if (cancelToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException();
+            }
+            else if (state == 5)
             {
                 state = 0;
                 return 0;
