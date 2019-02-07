@@ -22,6 +22,8 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
+        private static readonly HeaderId[] headersToSign = new HeaderId[] { HeaderId.From, HeaderId.Subject, HeaderId.Date };
+
         /// <summary>
         /// Send mail and kicks off the send in a new task
         /// </summary>
@@ -87,7 +89,11 @@ namespace MailDemon
                 LookupClient lookup = new LookupClient();
                 MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", toDomain);
                 IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
-
+                if (dkimSigner != null)
+                {
+                    msg.Prepare(EncodingConstraint.SevenBit);
+                    msg.Sign(dkimSigner, headersToSign);
+                }
                 foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
                     // attempt to send, if fail, try next address
@@ -100,7 +106,6 @@ namespace MailDemon
                             string host = ip.HostName;
                             try
                             {
-
                                 MailDemonLog.Write(LogLevel.Debug, "Sending message to host {0}, from {1}, to {2}", host, msg.From, msg.To);
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
                                 await client.SendAsync(msg, cancelToken).TimeoutAfter(30000);
