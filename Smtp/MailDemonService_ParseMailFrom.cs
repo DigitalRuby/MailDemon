@@ -17,7 +17,7 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
-        private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, Stream reader, StreamWriter writer, string line)
+        private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
         {
             string fromAddress = line.Substring(11);
             int pos = fromAddress.IndexOf('>');
@@ -25,6 +25,14 @@ namespace MailDemon
             {
                 fromAddress = fromAddress.Substring(0, pos);
             }
+
+            // if this is an anonymous user, ensure spf is a match
+            if (fromUser == null || !fromUser.Authenticated)
+            {
+                // validate spf
+                await ValidateSPF(writer, endPoint, fromAddress, fromAddress.Substring(fromAddress.IndexOf('@') + 1));
+            }
+
             bool binaryMime = (line.Contains("BODY=BINARYMIME", StringComparison.OrdinalIgnoreCase));
             if (!MailboxAddress.TryParse(fromAddress, out _))
             {
@@ -241,15 +249,24 @@ namespace MailDemon
                         }
                         while (!last && !cancelToken.IsCancellationRequested && (line = await ReadLineAsync(reader)) != null);
                     }
-                    Stream fileStream = File.OpenRead(tempFile);
-                    MimeMessage msg = await MimeMessage.LoadAsync(fileStream, true, cancelToken);
-                    return new MailFromResult
+                    Stream fileStream = null;
+                    try
                     {
-                        From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
-                        ToAddresses = toAddressesByDomain,
-                        Message = msg,
-                        Stream = fileStream
-                    };
+                        fileStream = File.OpenRead(tempFile);
+                        MimeMessage msg = await MimeMessage.LoadAsync(fileStream, true, cancelToken);
+                        return new MailFromResult
+                        {
+                            From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
+                            ToAddresses = toAddressesByDomain,
+                            Message = msg,
+                            Stream = fileStream
+                        };
+                    }
+                    catch
+                    {
+                        fileStream?.Dispose();
+                        throw;
+                    }
                 }
                 catch
                 {

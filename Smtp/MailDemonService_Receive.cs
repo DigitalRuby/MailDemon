@@ -30,22 +30,24 @@ namespace MailDemon
         /// </summary>
         /// <param name="writer">Stream writer</param>
         /// <param name="connectionEndPoint">Connected end point</param>
-        /// <param name="address">Mail address</param>
-        /// <param name="addressDomain">Mail address domain</param>
+        /// <param name="fromAddress">Mail address from</param>
+        /// <param name="fromAddressDomain">Mail address from domain</param>
         /// <returns>Task</returns>
         /// <exception cref="InvalidOperationException">SPF fails to validate</exception>
-        public static async Task ValidateSPF(StreamWriter writer, IPEndPoint connectionEndPoint, string address, string addressDomain)
+        public static async Task ValidateSPF(StreamWriter writer, IPEndPoint connectionEndPoint, string fromAddress, string fromAddressDomain)
         {
+            MailDemonLog.Write(LogLevel.Info, "Validating spf for end point {0}, from address: {1}, from domain: {2}", connectionEndPoint.Address, fromAddress, fromAddressDomain);
+
             IPHostEntry entry = await Dns.GetHostEntryAsync(connectionEndPoint.Address);
             var spfValidator = new ARSoft.Tools.Net.Spf.SpfValidator();
-            ARSoft.Tools.Net.Spf.ValidationResult result = await spfValidator.CheckHostAsync(connectionEndPoint.Address, addressDomain, address);
+            ARSoft.Tools.Net.Spf.ValidationResult result = await spfValidator.CheckHostAsync(connectionEndPoint.Address, fromAddressDomain, fromAddress);
             if (result.Result != ARSoft.Tools.Net.Spf.SpfQualifier.Pass)
             {
                 if (writer != null)
                 {
-                    await writer.WriteLineAsync($"500 invalid command - SPF records from mail domain '{addressDomain}' do not match connection host '{entry.HostName}'");
+                    await writer.WriteLineAsync($"500 invalid command - SPF records from mail domain '{fromAddressDomain}' do not match connection host '{entry.HostName}'");
                 }
-                throw new InvalidOperationException($"SPF validation failed for host '{entry.HostName}', address domain '{addressDomain}', explanation: {result.Explanation}");
+                throw new InvalidOperationException($"SPF validation failed for host '{entry.HostName}', address domain '{fromAddressDomain}', explanation: {result.Explanation}");
             }
 
             /*
@@ -127,14 +129,9 @@ namespace MailDemon
         private async Task ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
         {
             IPHostEntry entry = await Dns.GetHostEntryAsync(endPoint.Address);
-            using (MailFromResult result = await ParseMailFrom(null, reader, writer, line))
+            using (MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint))
             {
-                // protect agains spoofing, only accept mail where the host matches the connection ip address
-                int pos = result.From.Address.IndexOf('@');
-                string host = result.From.Address.Substring(++pos);
-                await ValidateSPF(writer, endPoint, result.From.Address, host);
-
-                // mail demon doesn't have an inbox, only forwarding, so see if any of the to addresses can be forwarded
+                // mail demon doesn't have an inbox yet, only forwarding, so see if any of the to addresses can be forwarded
                 foreach (var kv in result.ToAddresses)
                 {
                     foreach (string address in kv.Value)
@@ -157,37 +154,26 @@ namespace MailDemon
                         }
                         else
                         {
-                            // create brand new message to forward
-                            MimeMessage message = new MimeMessage();
-                            message.From.Add(user.MailAddress);
-                            message.ReplyTo.Add(user.MailAddress);
-                            message.To.Add(new MailboxAddress(forwardToAddress));
-                            message.Subject = "FW: " + result.Message.Subject;
-
-                            // now to create our body...
-                            BodyBuilder builder = new BodyBuilder
-                            {
-                                TextBody = result.Message.TextBody,
-                                HtmlBody = result.Message.HtmlBody
-                            };
-                            foreach (var attachment in result.Message.Attachments)
-                            {
-                                builder.Attachments.Add(attachment);
-                            }
-                            message.Body = builder.ToMessageBody();
-                            string toDomain = user.ForwardAddress.Substring(user.ForwardAddress.IndexOf('@') + 1);
+                            string forwardDomain = forwardToAddress.Substring(forwardToAddress.IndexOf('@') + 1);
 
                             // create new object to forward on
                             MailFromResult newResult = new MailFromResult
                             {
+                                Stream = result.Stream,
                                 From = user.MailAddress,
-                                Message = message,
-                                ToAddresses = new Dictionary<string, List<string>> { { toDomain, new List<string> { forwardToAddress } } }
+                                Message = result.Message,
+                                ToAddresses = new Dictionary<string, List<string>> { { forwardDomain, new List<string> { forwardToAddress } } }
                             };
+
+                            newResult.Message.Subject = "FW: " + result.Message.Subject;
+                            newResult.Message.Cc.Clear();
+                            newResult.Message.Bcc.Clear();
 
                             // forward the message on and clear the forward headers
                             MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
-                            SendMail(newResult).GetAwaiter();
+                            result.Stream = null; // we took ownership of the stream
+                            SendMail(writer, newResult, endPoint, true).GetAwaiter();
+                            return; // only forward to the first valid address
                         }
                     }
                 }
