@@ -38,23 +38,25 @@ namespace MailDemon
         {
             MailDemonLog.Write(LogLevel.Info, "Validating spf for end point {0}, from address: {1}, from domain: {2}", connectionEndPoint.Address, fromAddress, fromAddressDomain);
 
+            // example smtp host: mail-it1-f173.google.com
             IPHostEntry entry = await Dns.GetHostEntryAsync(connectionEndPoint.Address);
+
             var spfValidator = new ARSoft.Tools.Net.Spf.SpfValidator();
             ARSoft.Tools.Net.Spf.ValidationResult result = await spfValidator.CheckHostAsync(connectionEndPoint.Address, fromAddressDomain, fromAddress);
-            if (result.Result != ARSoft.Tools.Net.Spf.SpfQualifier.Pass)
+
+            if (result.Result == ARSoft.Tools.Net.Spf.SpfQualifier.Pass)
             {
-                if (writer != null)
-                {
-                    await writer.WriteLineAsync($"500 invalid command - SPF records from mail domain '{fromAddressDomain}' do not match connection host '{entry.HostName}'");
-                }
-                throw new InvalidOperationException($"SPF validation failed for host '{entry.HostName}', address domain '{fromAddressDomain}', explanation: {result.Explanation}");
+                return;
+            }
+            else if (result.Result == ARSoft.Tools.Net.Spf.SpfQualifier.None)
+            {
+                // no spf record... what to do?
+                // TODO: Maybe email back to the address and tell them to setup SPF records...?
             }
 
             /*
-            // example smtp host: mail-it1-f173.google.com
-            IPHostEntry entry = await Dns.GetHostEntryAsync(connectionEndPoint.Address);
             LookupClient lookup = new LookupClient();
-            IDnsQueryResponse dnsQueryRoot = await lookup.QueryAsync(addressDomain, QueryType.TXT);
+            IDnsQueryResponse dnsQueryRoot = await lookup.QueryAsync(fromAddressDomain, QueryType.TXT);
             foreach (var record in dnsQueryRoot.AllRecords)
             {
                 MatchCollection ipMatches = ipRegex.Matches(record.ToString());
@@ -124,6 +126,12 @@ namespace MailDemon
                 }
             }
             */
+
+            if (writer != null)
+            {
+                await writer.WriteLineAsync($"500 invalid command - SPF records from mail domain '{fromAddressDomain}' do not match connection host '{entry.HostName}'");
+            }
+            throw new InvalidOperationException($"SPF validation failed for host '{entry.HostName}', address domain '{fromAddressDomain}'");
         }
 
         private async Task ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
@@ -165,9 +173,10 @@ namespace MailDemon
                                 ToAddresses = new Dictionary<string, List<string>> { { forwardDomain, new List<string> { forwardToAddress } } }
                             };
 
-                            newResult.Message.Subject = "FW: " + result.Message.Subject;
+                            newResult.Message.Subject = $"FW from {result.From}: {result.Message.Subject}";
                             newResult.Message.Cc.Clear();
                             newResult.Message.Bcc.Clear();
+                            newResult.Message.ResentFrom.Add(result.From);
 
                             // forward the message on and clear the forward headers
                             MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
