@@ -33,6 +33,7 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
+using MimeKit.Cryptography;
 
 #endregion Imports
 
@@ -58,7 +59,7 @@ namespace MailDemon
 
         private readonly int streamTimeoutMilliseconds = 5000;
         private readonly int maxMessageSize = 16777216;
-        private readonly int maxLineSize = 8192;
+        private readonly int maxLineSize = 1024;
         private readonly List<MailDemonUser> users = new List<MailDemonUser>();
         private readonly MemoryCache cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = (1024 * 1024 * 16), CompactionPercentage = 0.9 });
         private readonly int maxConnectionCount = 128;
@@ -70,6 +71,7 @@ namespace MailDemon
         private readonly string greeting = "ESMTP & MailDemon &";
         private readonly bool requireEhloIpHostMatch;
         private readonly bool requireSpfMatch = true;
+        private readonly DkimSigner dkimSigner;
 
         public string Domain { get; private set; }
         public IReadOnlyList<MailDemonUser> Users { get { return users; } }
@@ -99,6 +101,26 @@ namespace MailDemon
             }
             requireEhloIpHostMatch = rootSection.GetValue<bool>("requireEhloIpHostMatch", requireEhloIpHostMatch);
             requireSpfMatch = rootSection.GetValue<bool>("requireSpfMatch", requireSpfMatch);
+            string dkimFile = rootSection.GetValue<string>("dkimPemFile", null);
+            string dkimSelector = rootSection.GetValue<string>("dkimSelector", null);
+            if (File.Exists(dkimFile) && !string.IsNullOrWhiteSpace(dkimSelector))
+            {
+                try
+                {
+                    using (StringReader stringReader = new StringReader(File.ReadAllText(dkimFile)))
+                    {
+                        PemReader pemReader = new PemReader(stringReader);
+                        object pemObject = pemReader.ReadObject();
+                        AsymmetricKeyParameter privateKey = ((AsymmetricCipherKeyPair)pemObject).Private;
+                        dkimSigner = new DkimSigner(privateKey, Domain, dkimSelector);
+                        MailDemonLog.Write(LogLevel.Info, "Loaded dkim file at {0}", dkimFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MailDemonLog.Error(ex);
+                }
+            }
             sslCertificateFile = rootSection["sslCertificateFile"];
             sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
             if (!string.IsNullOrWhiteSpace(sslCertificateFile))
