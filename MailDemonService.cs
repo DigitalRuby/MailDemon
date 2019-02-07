@@ -68,6 +68,8 @@ namespace MailDemon
         private readonly IPAddress ip;
         private readonly int port = 25;
         private readonly string greeting = "ESMTP & MailDemon &";
+        private readonly bool requireEhloIpHostMatch;
+        private readonly bool requireSpfMatch = true;
 
         public string Domain { get; private set; }
         public IReadOnlyList<MailDemonUser> Users { get { return users; } }
@@ -95,6 +97,8 @@ namespace MailDemon
                 users.Add(user);
                 MailDemonLog.Write(LogLevel.Debug, "Loaded user {0}", user);
             }
+            requireEhloIpHostMatch = rootSection.GetValue<bool>("requireEhloIpHostMatch", requireEhloIpHostMatch);
+            requireSpfMatch = rootSection.GetValue<bool>("requireSpfMatch", requireSpfMatch);
             sslCertificateFile = rootSection["sslCertificateFile"];
             sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
             if (!string.IsNullOrWhiteSpace(sslCertificateFile))

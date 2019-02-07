@@ -34,8 +34,13 @@ namespace MailDemon
         /// <param name="fromAddressDomain">Mail address from domain</param>
         /// <returns>Task</returns>
         /// <exception cref="InvalidOperationException">SPF fails to validate</exception>
-        public static async Task ValidateSPF(StreamWriter writer, IPEndPoint connectionEndPoint, string fromAddress, string fromAddressDomain)
+        public async Task ValidateSPF(StreamWriter writer, IPEndPoint connectionEndPoint, string fromAddress, string fromAddressDomain)
         {
+            if (!requireSpfMatch)
+            {
+                return;
+            }
+
             MailDemonLog.Write(LogLevel.Info, "Validating spf for end point {0}, from address: {1}, from domain: {2}", connectionEndPoint.Address, fromAddress, fromAddressDomain);
 
             // example smtp host: mail-it1-f173.google.com
