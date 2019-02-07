@@ -1,0 +1,160 @@
+﻿ftp://ftp.wayne.edu/ldp/en/Spam-Filtering-for-MX/smtpchecks.html
+
+3. SMTP checks
+Once the SMTP dialogue is underway, you can perform various checks on the commands and arguments presented by the remote host. For instance, you will want to ensure that the name presented in the Hello greeting is valid.
+
+However, even if you decide to reject the delivery attempt early in the SMTP transaction, you may not want to perform the actual rejection right away. Instead, you may stall the sender with SMTP transaction delays until after the RCPT TO:, then reject the mail at that point.
+
+The reason is that some ratware does not understand rejections early in the SMTP transaction; they keep trying. On the other hand, most of them give up if the RCPT TO: fails.
+
+Besides, this gives a nice opportunity to do a little teergrubing.
+
+3.1. Hello (HELO/EHLO) checks
+Per RFC 2821, the first SMTP command issued by the client should be EHLO (or if unsupported, HELO), followed by its primary, Fully Qualified Domain Name. This is known as the Hello greeting. If no meaningful FQDN is available, the client can supply its IP address enclosed in square brackets: "[1.2.3.4]". This last form is known as an IPv4 address "literal" notation.
+
+Quite understandably, Ratware rarely present their own FQDN in the Hello greeting. Rather, greetings from ratware usually attempt to conceal the sending host's identity, and/or to generate confusing and/or misleading "Received:" trails in the message header. Some examples of such greetings are:
+
+Unqualified names (i.e. names without a period), such as the “local part” (username) of the recipient address.
+
+A plain IP address (i.e. not an IP literal); usually yours, but can be a random one.
+
+Your domain name, or the FQDN of your server.
+
+Third party domain names, such as yahoo.com and hotmail.com.
+
+Non-existing domain names, or domain names with non-existing name servers.
+
+No greeting at all.
+
+3.1.1. Simple HELO/EHLO syntax checks
+Some of these RFC 2821 violations are both easy to check against, and clear indications that the sending host is running some form of Ratware. You can reject such greetings -- either right away, or e.g. after the RCPT TO: command.
+
+First, feel free to reject plain IP addresses in the Hello greeting. Even if you wish to generously allow everything RFC 2821 mandates, recommends, and suggests, you will note that IP addresses should always be enclosed in square brackets when presented in lieu of a name. [7]
+
+In particular, you may wish to issue a strongly worded rejection message to hosts that introduce themselves using your IP address - or for that matter, your host name. They are plainly lying. Perhaps you want to stall the sender with an exceedingly long SMTP transaction delay in response to such a greeting; say, hours.
+
+For that matter, my own experience indicates that no legitimate sites on the internet present themselves to other internet sites using an IP address literal (the [x.y.z.w] notation) either. Nor should they; all hosts sending mail directly on the internet should use their valid Fully Qualified Domain Name. The only use of use of IP literals I have come across is from mail user agents on my local area network, such as Ximian Evolution, configured to use my server as outgoing SMTP server (smarthost). Indeed, I only accept literals from my own LAN.
+
+You may or may not also wish to reject unqualified host names (host names without a period). I find that these are rarely (but not never - how's that for double negative negations) legitimate.
+
+Similarly, you can reject host names that contain invalid characters. For internet domains, only alphanumeric letters and hyphen are valid characters; a hyphen is not allowed as the first character. (You may also want to consider the underscore a valid character, because it is quite common to see this from misconfigured, but ultimately well-meaning, Windows clients).
+
+Finally, if you receive a MAIL FROM: command without first having received a Hello greeting, well, polite people greet first.
+
+On my servers, I reject greetings that fail any of these syntax checks. However, the rejection does not actually take place until after the RCPT TO: command. In the mean time, I impose a 20 second transaction delay after each SMTP command (HELO/EHLO, MAIL FROM:, RCPT TO:).
+
+3.1.2. Verifying the Hello greeting via DNS
+Hosts that make it this far have presented at least a superficially credible greeting. Now it is time to verify the provided name via DNS. You can:
+
+Perform a forward lookup of the provided name, and match the result against the peer's IP address
+
+Perform a reverse lookup of the peer's IP address, and match it against name provided in the greeting.
+
+If either of these two checks succeeds, the name has been verified.
+
+Your MTA may have a built-in option to perform this check. For instance, in Exim (see Appendix A, Exim Implementation), you want to set "helo_try_verify_hosts = *", and create ACLs that take action based on the "verify = helo" condition.
+
+This check is a little more expensive in terms of processing time and network resources than the simple syntax checks. Moreover, unlike the syntax checks, a mismatch does not always indicate ratware; several large internet sites, such as hotmail.com, yahoo.com, and amazon.com, frequently present unverifiable Hello greetings.
+
+On my servers, I do a DNS validation of the Hello greeting if I am not already stalling the sender with transaction delays based on prior checks. Then, if this check fails, I impose a 20 second delay on every SMTP command from this point forward. I also prepare a “X-HELO-Warning:” header that I will later add to the message(s), and use to increase the SpamAssassin score for possible rejection after the message data has been received.
+
+3.2. Sender Address Checks
+After the client has presented the MAIL FROM: <address> command, you can validate the supplied Envelope Sender address as follows. [8]
+
+3.2.1. Sender Address Syntax Check
+Does the supplied address conform to the format <localpart@domain>? Is the domain part a syntactically valid Fully Qualified Domain Name?
+
+Often, your MTA performs these checks by default.
+
+3.2.2. Impostor Check
+In the case where you and your users send all your outgoing mail only through a select few servers, you can reject messages from other hosts in which the “domain” of the sender address is your own.
+
+A more general alternative to this check is Sender Policy Framework.
+
+3.2.3. Simple Sender Address Validation
+If the address is local, is the “local part” (the part before the @ sign) a valid mailbox on your system?
+
+If the address is remote, does the “domain” (the part after the @ sign) exist?
+
+3.2.4. Sender Callout Verification
+This is a mechanism that is offered by some MTAs, such as Exim and Postfix, to validate the “local part” of a remote sender address. In Postfix terminology, it is called “Sender Address Verification”.
+
+Your server contacts the MX for the domain provided in the sender address, attempting to initiate a secondary SMTP transaction as if delivering mail to this address. It does not actually send any mail; rather, once the RCPT TO: command has been either accepted or rejected by the remote host, your server sends QUIT.
+
+By default, Exim uses an empty envelope sender address for such callout verifications. The goal is to determine if a Delivery Status Notification would be accepted if returned to the sender.
+
+Postfix, on the other hand, defaults to the sender address <postmaster@domain> for address verification purposes (domain is taken from the $myorigin variable). For this reason, you may wish to treat this sender address the same way that you treat the NULL envelope sender (for instance, avoid SMTP transaction delays or Greylisting, but require Envelope Sender Signatures in recipient addresses). More on this in the implementation appendices.
+
+You may find that this check alone may not be suitable as a trigger to reject incoming mail. Occasionally, legitimate mail, such as a recurring billing statement, is sent out from automated services with an invalid return address. Also, an unfortunate side effect of spam is that some users tend to mangle the return address in their outgoing mails (though this may affect the “From:” header in the message itself more often than the Envelope Sender).
+
+Moreover, this check only verifies that an address is valid, not that it was authentic as the sender of this particular message (but see also Envelope Sender Signature).
+
+Finally, there are reports of sites, such as “aol.com”, that will unconditionally blacklist any system from which they discover sender callout requests. These sites may be frequent victims of Joe Jobs, and as a result, receive storms of sender callout requests. By taking part in these DDoS (Distributed Denial-of-Servcie) attacks, you are effectively turning yourself into a pawn in the hands of the spammer.
+
+3.3. Recipient Address Checks
+This should be simple, you say. A recipient address is either valid, in which case the mail is delivered, or invalid, in which case your MTA takes care of the rejection by default.
+
+Let us have a look, shall we?
+
+3.3.1. Open Relay Prevention
+Do not relay mail from remote hosts to remote addresses! (Unless the sender is authenticated).
+
+This may seem obvious to most of us, but apparently this is a frequently overlooked consideration. Also, not everyone may have a full grasp of the various internet standards related to e-mail addresses and delivery paths (consider “percent hack domains”, “bang (!) paths”, etc).
+
+If you are unsure whether your MTA acts as an Open Relay, you can test it via “relay-test.mail-abuse.org”. At a shell prompt on your server, type:
+
+telnet relay-test.mail-abuse.org
+This is a service that will use various tests to see whether your SMTP server appears to forward mail to remote e-mail addresses, and/or any number of address “hacks” such as the ones mentioned above.
+
+Preventing your servers from acting as open relays is extremely important. If your server is an open relay, and spammers find you, you will be listed in numerous DNS blacklists instantly. If the maintainers of certain other DNS blacklists find you (by probing, and/or by acting on complaints), you will be listed in those for an extended period of time.
+
+3.3.2. Recipient Address Lookups
+This, too may seem banal to most of us. It is not always so.
+
+If your users' mail accounts and mailboxes are stored directly on your incoming mail exchanger, you can simply check that the “local part” of the recipient address corresponds to a valid mailbox. No problem here.
+
+There are two scenarios where verification of the recipient address is more cumbersome:
+
+If your machine is a backup MX for the recipient domain.
+
+If your machine forwards all mail for your domain to another (presumably internal) server.
+
+The alternative to recipient address verification is to accept all recipient addresses within these respective domains, which in turn means that you or the destination server might have to generate a Delivery Status Notification for recipient addresses that later turn out to be invalid. Ultimately, this means that you would be generating collateral spam.
+
+With that in mind, let us see how we can verify the recipient in the scenarios listed above.
+
+3.3.2.1. Recipient Callout Verification
+This is a mechanism that is offered by some MTAs, such as Exim and Postfix, to verify the “local part” of a remote recipient address (see Sender Callout Verification for a description of how this works). In Postfix terminology, this is called “Recipient Address Verification”.
+
+In this case, server attempts to contact the final destination host to validate each recipient address before you, in turn, accept the RCPT TO: command from your peer.
+
+This solution is simple and elegant. It works with any MTA that might be running on the final destination host, and without access to any particular directory service. Moreover, if that MTA happens to perform a fuzzy match on the recipient address (this is the case with Lotus Domino servers), this check will accurately reflect whether the recipient address is eventually going to be accepted or not - something which may not be true for the mechanisms described below.
+
+Be sure to keep the original Envelope Sender intact for the recipient callout, or the response from the destination host may not be accurate. For instance, it may reject bounces (i.e. mail with no envelope sender) for system users and aliases, as described in Accept Bounces Only for Real Users.
+
+Among major MTAs, Exim and Postfix support this mechanism.
+
+3.3.2.2. Directory Services
+Another good solution would be a directory service (e.g. one or more LDAP servers) that can be queried by your MTA. The most common MTAs all support LDAP, NIS, and/or various other backends that are commonly used to provide user account information.
+
+The main sticking point is that unless the final destination host of the e-mail already uses such a directory service to map user names to mailboxes, there may be some work involved in setting this up.
+
+3.3.2.3. Replicated Mailbox Lists
+If none of the options above are viable, you could fall back to a “poor man's directory service”, where you would periodically copy a current list of mailboxes from the machine where they are located, to your MX host(s). Your MTA would then consult this list to validate RCPT TO: commands in incoming mail.
+
+If the machine(s) that host(s) your mailboxes is/are running on some flavor of UNIX or Linux, you could write a script to first generate such a list, perhaps from the local “/etc/passwd” file, and then copy it to your MX host(s) using the “scp” command from the OpenSSH suite. You could then set up a “cron” job (type man cron for details) to periodically run this script.
+
+3.3.3. Dictionary Attack Prevention
+Dictionary Attack is a term used to describe SMTP transactions where the sending host keeps issuing RCPT TO: commands to probe for possible recipient addresses based on common names (often alphabetically starting with “aaron”, but sometimes starting later in the alphabet, and/or at random). If a particular address is accepted by your server, that address is added into the spammer's arsenal.
+
+Some sites, particularly larger ones, find that they are frequent targets of such attacks. From the spammer's perspective, chances of finding a given username on a large site is better than on sites with only a few users.
+
+One effective way to combat dictionary attacks is to issue increasing transaction delays for each failed address. For instance, the first non-existing recipient address can be rejected with a 20-second delay, the second address with a 30-second delay, and so on.
+
+3.3.4. Accept only one recipient for DSNs
+Legitimate Delivery Status Notifications should be sent to only one recipient address - the originator of the original message that triggered the notification. You can drop the connection if the Envelope Sender address is empty, but there are more than one recipients.
+
+
+[7] Although this check is normally quite effective at weeding out junk, there are reports of buggy L-Soft listserv installations that greet with the plain IP address of the list server.
+
+[8] A special case is the NULL envelope sender address (i.e. MAIL FROM: <>) used in Delivery Status Notifications and other automatically generated responses. This address should always be accepted.

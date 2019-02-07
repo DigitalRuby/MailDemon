@@ -27,13 +27,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ARSoft.Tools.Net.Core" Version="2.3.0" />
     <PackageReference Include="DnsClient" Version="1.2.0" />
-    <PackageReference Include="MailKit" Version="2.0.6" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
-    <PackageReference Include="MimeKit" Version="2.0.6" />
-    <PackageReference Include="NLog" Version="4.5.10" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.3" />
+    <PackageReference Include="IPAddressRange" Version="3.2.0" />
+    <PackageReference Include="MailKit" Version="2.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="MimeKit" Version="2.1.2" />
+    <PackageReference Include="NLog" Version="4.5.11" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.4" />
   </ItemGroup>
 
 </Project>

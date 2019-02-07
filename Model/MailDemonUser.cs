@@ -106,7 +106,7 @@ namespace MailDemon
         /// <summary>
         /// Email address object
         /// </summary>
-        public InternetAddress MailAddress { get; private set; }
+        public MailboxAddress MailAddress { get; private set; }
 
         /// <summary>
         /// Forwarding email address
