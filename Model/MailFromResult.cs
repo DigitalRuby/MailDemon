@@ -28,12 +28,12 @@ namespace MailDemon
         public Dictionary<string, List<string>> ToAddresses { get; set; }
 
         /// <summary>
-        /// Backing stream of the message
+        /// Backing stream of the message, null if none
         /// </summary>
         public Stream Stream { get; set; }
 
         /// <summary>
-        /// Cleanup all resources
+        /// Cleanup all resources, delete backing file if Stream is FileStream.
         /// </summary>
         public void Dispose()
         {
@@ -44,7 +44,7 @@ namespace MailDemon
                 {
                     toDelete = fs.Name;
                 }
-                Stream.Dispose();
+                Stream?.Dispose();
                 if (toDelete != null)
                 {
                     File.Delete(toDelete);

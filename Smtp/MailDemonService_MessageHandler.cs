@@ -300,7 +300,7 @@ namespace MailDemon
                             {
                                 if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    await SendMail(authenticatedUser, reader, writer, line);
+                                    await SendMail(authenticatedUser, reader, writer, line, endPoint);
                                 }
                                 else
                                 {
