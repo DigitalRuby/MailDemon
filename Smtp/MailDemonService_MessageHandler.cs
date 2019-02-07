@@ -73,31 +73,45 @@ namespace MailDemon
         private async Task<string> ValidateGreeting(string command, string line, IPEndPoint endPoint)
         {
             string clientDomain = line.Substring(4).Trim(' ', '[', ']', '(', ')', '<', '>');
-
-            // client may not send ip in helo, must be fqdn
-            if (IPAddress.TryParse(clientDomain, out IPAddress clientDomainIp))
+            bool localHost = false;
+            if ((clientDomain == "::1" || clientDomain == "127.0.0.1" || clientDomain == "localhost"))
             {
-                throw new ArgumentException($"Client HELO with just ip '{clientDomainIp}' not allowed");
-            }
-
-            // client fqdn ip addresses must contain the connection ip address
-            IPHostEntry entry = await Dns.GetHostEntryAsync(clientDomain);
-            bool foundOne = false;
-            foreach (IPAddress ip in entry.AddressList)
-            {
-                if (ip.Equals(endPoint.Address))
+                switch (endPoint.Address.ToString())
                 {
-                    foundOne = true;
-                    break;
+                    case "127.0.0.1":
+                    case "::1":
+                        localHost = true;
+                        break;
                 }
             }
-            if (!foundOne)
+
+            if (!localHost)
             {
-                // reverse ip to host, if host matches client is OK, otherwise fail
-                entry = await Dns.GetHostEntryAsync(endPoint.Address);
-                if (!entry.HostName.Equals(clientDomain, StringComparison.OrdinalIgnoreCase))
+                // client may not send ip in helo, must be fqdn
+                if (IPAddress.TryParse(clientDomain, out IPAddress clientDomainIp))
                 {
-                    throw new ArgumentException($"Client {command} ip '{endPoint.Address}' does not match host '{clientDomain}' ip addresses");
+                    throw new ArgumentException($"Client HELO with just ip '{clientDomainIp}' not allowed");
+                }
+
+                // client fqdn ip addresses must contain the connection ip address
+                IPHostEntry entry = await Dns.GetHostEntryAsync(clientDomain);
+                bool foundOne = false;
+                foreach (IPAddress ip in entry.AddressList)
+                {
+                    if (ip.Equals(endPoint.Address))
+                    {
+                        foundOne = true;
+                        break;
+                    }
+                }
+                if (!foundOne)
+                {
+                    // reverse ip to host, if host matches client is OK, otherwise fail
+                    entry = await Dns.GetHostEntryAsync(endPoint.Address);
+                    if (!entry.HostName.Equals(clientDomain, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException($"Client {command} ip '{endPoint.Address}' does not match host '{clientDomain}' ip addresses");
+                    }
                 }
             }
 
