@@ -20,12 +20,12 @@ namespace MailDemon
         private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, Stream reader, StreamWriter writer, string line)
         {
             string fromAddress = line.Substring(11);
-            bool binaryMime = (line.Contains("BODY=BINARYMIME", StringComparison.OrdinalIgnoreCase));
             int pos = fromAddress.IndexOf('>');
             if (pos >= 0)
             {
                 fromAddress = fromAddress.Substring(0, pos);
             }
+            bool binaryMime = (line.Contains("BODY=BINARYMIME", StringComparison.OrdinalIgnoreCase));
             if (!MailboxAddress.TryParse(fromAddress, out _))
             {
                 await writer.WriteLineAsync($"500 invalid command - bad from address format");
@@ -37,12 +37,13 @@ namespace MailDemon
             {
                 await writer.WriteLineAsync($"500 invalid command");
                 await writer.FlushAsync();
-                throw new InvalidOperationException("Invalid from address - bad from address");
+                throw new InvalidOperationException($"Invalid from address - bad from address '{fromAddress}'");
             }
 
             // denote success for sender and binarymime
             string binaryMimeOk = (binaryMime ? " and BINARYMIME" : string.Empty);
-            await writer.WriteLineAsync($"250 2.1.0 sender {fromUser.Name}{binaryMimeOk} OK");
+            string fromUserName = (fromUser == null ? fromAddress : fromUser.Name);
+            await writer.WriteLineAsync($"250 2.1.0 sender {fromUserName}{binaryMimeOk} OK");
 
             // read to addresses
             line = await ReadLineAsync(reader);
@@ -53,17 +54,17 @@ namespace MailDemon
 
                 if (!MailboxAddress.TryParse(toAddress, out _))
                 {
-                    await writer.WriteLineAsync($"500 invalid command - bad to address format");
+                    await writer.WriteLineAsync($"500 invalid command - bad to address format for address '{toAddress}'");
                     await writer.FlushAsync();
-                    throw new ArgumentException("Invalid to address: " + toAddress);
+                    throw new ArgumentException($"Invalid to address '{toAddress}'");
                 }
 
                 // if no authenticated user, the to address must match an existing user address
                 else if (fromUser == null && users.FirstOrDefault(u => u.Address == toAddress) == null)
                 {
-                    await writer.WriteLineAsync($"500 invalid command - bad to address");
+                    await writer.WriteLineAsync($"500 invalid command - bad to address '{toAddress}'");
                     await writer.FlushAsync();
-                    throw new InvalidOperationException("Invalid to address: " + toAddress);
+                    throw new InvalidOperationException($"Invalid to address '{toAddress}'");
                 }
                 // else user is authenticated, can send email to anyone
 
