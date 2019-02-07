@@ -1,6 +1,6 @@
 # & Mail Demon &
 
-Mail Demon is a simple and lightweight C# smtp server for sending unlimited emails and text messages. With a focus on simplicity and performance, you'll be able to easily send thousands of messages per second even on a cheap Linux VPS.
+Mail Demon is a simple and lightweight C# smtp server for sending unlimited emails and text messages. With a focus on simplicity, async and performance, you'll be able to easily send thousands of messages per second even on a cheap Linux VPS. Memory usage and CPU usage are optimized to the max.
 
 Mail Demon requires .NET core 2.2+ installed, or you can build a stand-alone executable to remove this dependancy.
 
