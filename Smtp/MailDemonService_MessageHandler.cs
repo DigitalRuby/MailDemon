@@ -245,7 +245,7 @@ namespace MailDemon
                             if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                             {
                                 // non-authenticated user, forward message on if possible, check settings
-                                await ReceiveMail(reader, writer, line);
+                                await ReceiveMail(reader, writer, line, tcpClient.Client.RemoteEndPoint as IPEndPoint);
                             }
                             else
                             {

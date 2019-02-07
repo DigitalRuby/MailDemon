@@ -17,10 +17,19 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
-        private async Task ReceiveMail(Stream reader, StreamWriter writer, string line)
+        private async Task ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
         {
+            IPHostEntry entry = await Dns.GetHostEntryAsync(endPoint.Address);
             using (MailFromResult result = await ParseMailFrom(null, reader, writer, line))
             {
+                // protect agains spoofing, only accept mail where the host matches the connection ip address
+                int pos = result.From.Name.IndexOf('@');
+                string host = result.From.Name.Substring(++pos);
+                if (!host.Equals(entry.HostName, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"Host name in mail address '{result.From.Name}' does not match connection host of '{endPoint.Address}'");
+                }
+
                 // mail demon doesn't have an inbox, only forwarding, so see if any of the to addresses can be forwarded
                 foreach (var kv in result.ToAddresses)
                 {
