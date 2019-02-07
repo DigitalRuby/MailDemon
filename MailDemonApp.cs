@@ -37,7 +37,7 @@ namespace MailDemon
                 SslProtocols = System.Security.Authentication.SslProtocols.None,
                 Timeout = 60000 // 60 secs
             };
-            await client.ConnectAsync("localhost", 25, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.ConnectAsync("localhost", 25, MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
             await client.AuthenticateAsync(new NetworkCredential(demon.Users.First().Name, demon.Users.First().Password));
 
             MimeMessage msg = new MimeMessage();
@@ -55,7 +55,7 @@ namespace MailDemon
                 {
                     Content = new MimeContent(new MemoryStream(bytes), ContentEncoding.Binary),
                     ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
-                    ContentTransferEncoding = ContentEncoding.Base64, // Base64 for DATA test, Binary for BINARYMIME test
+                    ContentTransferEncoding = ContentEncoding.Binary, // Base64 for DATA test, Binary for BINARYMIME test
                     FileName = Path.GetFileName(file)
                 };
                 multipart.Add(attachment);
