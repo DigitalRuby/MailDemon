@@ -110,8 +110,14 @@ namespace MailDemon
                     entry = await Dns.GetHostEntryAsync(endPoint.Address);
                     if (!entry.HostName.Equals(clientDomain, StringComparison.OrdinalIgnoreCase))
                     {
-                        // throw new ArgumentException($"Client {command} ip '{endPoint.Address}' does not match host '{clientDomain}' ip addresses");
-                        MailDemonLog.Write(LogLevel.Warn, $"Client {command} ip '{endPoint.Address}' does not match host '{clientDomain}' ip addresses");
+                        if (requireEhloIpHostMatch)
+                        {
+                            throw new ArgumentException($"Client {command} ip '{endPoint.Address}' does not match host '{clientDomain}' ip addresses");
+                        }
+                        else
+                        {
+                            MailDemonLog.Write(LogLevel.Warn, $"Client {command} ip '{endPoint.Address}' does not match host '{clientDomain}' ip addresses");
+                        }
                     }
                 }
             }
