@@ -60,67 +60,74 @@ namespace MailDemon
 
         private async Task SendMessage(MimeMessage msg, InternetAddress from, string domain)
         {
-            MailDemonLog.Write(LogLevel.Info, "Sending from {0}, to: {1}", from, msg.To.ToString());
-            using (SmtpClient client = new SmtpClient()
+            try
             {
-                ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+                MailDemonLog.Write(LogLevel.Info, "Sending from {0}, to: {1}", from, msg.To.ToString());
+                using (SmtpClient client = new SmtpClient()
                 {
-                    return (sslPolicyErrors == SslPolicyErrors.None ||
-                        (ignoreCertificateErrorsRegex.TryGetValue(domain, out Regex re) && re.IsMatch(certificate.Subject)));
-                }
-            })
-            {
-                IPHostEntry ip = null;
-                bool sent = false;
-                LookupClient lookup = new LookupClient();
-                MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", domain);
-                IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX, cancellationToken: cancelToken);
-                foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
-                {
-                    // attempt to send, if fail, try next address
-                    try
+                    ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                     {
-                        MailDemonLog.Write(LogLevel.Info, "GetHostEntryAsync for exchange {0}", record.Exchange);
-                        ip = await Dns.GetHostEntryAsync(record.Exchange);
-                        foreach (IPAddress ipAddress in ip.AddressList)
+                        return (sslPolicyErrors == SslPolicyErrors.None ||
+                            (ignoreCertificateErrorsRegex.TryGetValue(domain, out Regex re) && re.IsMatch(certificate.Subject)));
+                    }
+                })
+                {
+                    IPHostEntry ip = null;
+                    bool sent = false;
+                    LookupClient lookup = new LookupClient();
+                    MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", domain);
+                    IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX, cancellationToken: cancelToken);
+                    foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
+                    {
+                        // attempt to send, if fail, try next address
+                        try
                         {
-                            string host = ip.HostName;
-                            try
+                            MailDemonLog.Write(LogLevel.Info, "GetHostEntryAsync for exchange {0}", record.Exchange);
+                            ip = await Dns.GetHostEntryAsync(record.Exchange);
+                            foreach (IPAddress ipAddress in ip.AddressList)
                             {
-                                msg.From.Clear();
-                                msg.From.Add(from);
-                                MailDemonLog.Write(LogLevel.Info, "Sending message to host {0}", host);
-                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                await client.SendAsync(msg, cancelToken).TimeoutAfter(30000);
-                                sent = true;
-                                break;
-                            }
-                            catch (Exception ex)
-                            {
-                                MailDemonLog.Error(ex);
-                            }
-                            finally
-                            {
+                                string host = ip.HostName;
                                 try
                                 {
-                                    await client.DisconnectAsync(true, cancelToken);
+                                    msg.From.Clear();
+                                    msg.From.Add(from);
+                                    MailDemonLog.Write(LogLevel.Info, "Sending message to host {0}", host);
+                                    await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
+                                    await client.SendAsync(msg, cancelToken).TimeoutAfter(30000);
+                                    sent = true;
+                                    break;
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
+                                    MailDemonLog.Error(ex);
+                                }
+                                finally
+                                {
+                                    try
+                                    {
+                                        await client.DisconnectAsync(true, cancelToken);
+                                    }
+                                    catch
+                                    {
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        MailDemonLog.Error(ex);
-                    }
+                        catch (Exception ex)
+                        {
+                            MailDemonLog.Error(ex);
+                        }
 
-                    if (sent)
-                    {
-                        break;
+                        if (sent)
+                        {
+                            break;
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                MailDemonLog.Error(ex);
             }
         }
     }

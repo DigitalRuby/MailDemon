@@ -56,16 +56,16 @@ namespace MailDemon
         private async Task ReadWriteAsync(Stream reader, Stream writer, int count)
         {
             byte[] buffer = new byte[8192];
-            ValueTask<int> readTask;
+            int readCount;
             while (!cancelToken.IsCancellationRequested && count > 0)
             {
-                readTask = reader.ReadAsync(buffer, cancelToken);
-                if (!readTask.IsCompletedSuccessfully)
+                readCount = await reader.ReadAsync(buffer, cancelToken);
+                if (readCount < 1)
                 {
-                    break;
+                    throw new InvalidDataException("No data received from client");
                 }
-                count -= readTask.Result;
-                await writer.WriteAsync(buffer, 0, readTask.Result, cancelToken);
+                count -= readCount;
+                await writer.WriteAsync(buffer, 0, readCount, cancelToken);
             }
             await writer.FlushAsync();
         }
@@ -79,7 +79,7 @@ namespace MailDemon
             await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
             await writer.WriteLineAsync($"250-BINARYMIME");
             await writer.WriteLineAsync($"250-CHUNKING");
-            if (!string.IsNullOrWhiteSpace(sslCertificateFile) && sslStream == null && port != 465 && port != 587)
+            if (!string.IsNullOrWhiteSpace(sslCertificateFile) && sslStream == null && port != 465 && port != 587 && File.Exists(sslCertificateFile))
             {
                 await writer.WriteLineAsync($"250-STARTTLS");
             }
