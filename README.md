@@ -42,8 +42,20 @@ systemctl status MailDemon
 - Ensure you have setup DNS for your domain (TXT, A and MX record)
   - Setup SPF record: v=spf1 mx -all
   - Setup MX record: @ or smtp or email, etc.
-  - Setup A record: @ or smtp or email, etc.
-- Setup reverse dns for your ip address to your A record. Your hosting provider should have a way to do this.
+  - Setup A and/or AAAA record: @ or smtp or email, etc.
+  - Setup DMARC record, https://en.wikipedia.org/wiki/DMARC
+- Setup reverse dns for your ip address to your A and/or AAAA record. Your hosting provider should have a way to do this.
+
+Supported smtp extensions:
+- 250-SIZE
+- 250-8BITMIME
+- 250-AUTH PLAIN
+- 250-PIPELINING
+- 250-ENHANCEDSTATUSCODES
+- 250-BINARYMIME
+- 250-CHUNKING
+- 250-STARTTLS
+- 250 SMTPUTF8
 
 Known Issues:
 - Hotmail.com, live.com and outlook.com have had an invalid SSL certificate for quite a while now. I've added them to appsettings.json. You may need to add additional entries for mail services with bad certificates.
