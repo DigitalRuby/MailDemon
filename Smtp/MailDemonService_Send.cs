@@ -74,8 +74,6 @@ namespace MailDemon
             msg.To.Clear();
             msg.To.AddRange(toAddresses.Select(a => new MailboxAddress(a)));
 
-            MailDemonLog.Write(LogLevel.Info, "Sending from {0}, to: {1}", from, msg.To.ToString());
-
             using (SmtpClient client = new SmtpClient()
             {
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
@@ -86,7 +84,6 @@ namespace MailDemon
             })
             {
                 IPHostEntry ip = null;
-                bool sent = false;
                 LookupClient lookup = new LookupClient();
                 MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", toDomain);
                 IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
@@ -96,7 +93,7 @@ namespace MailDemon
                     // attempt to send, if fail, try next address
                     try
                     {
-                        MailDemonLog.Write(LogLevel.Info, "GetHostEntryAsync for exchange {0}", record.Exchange);
+                        MailDemonLog.Write(LogLevel.Debug, "GetHostEntryAsync for exchange {0}", record.Exchange);
                         ip = await Dns.GetHostEntryAsync(record.Exchange);
                         foreach (IPAddress ipAddress in ip.AddressList)
                         {
@@ -104,11 +101,10 @@ namespace MailDemon
                             try
                             {
 
-                                MailDemonLog.Write(LogLevel.Info, "Sending message to host {0}", host);
+                                MailDemonLog.Write(LogLevel.Debug, "Sending message to host {0}, from {1}, to {2}", host, msg.From, msg.To);
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
                                 await client.SendAsync(msg, cancelToken).TimeoutAfter(30000);
-                                sent = true;
-                                break;
+                                return;
                             }
                             catch (Exception ex)
                             {
@@ -129,11 +125,6 @@ namespace MailDemon
                     catch (Exception ex)
                     {
                         MailDemonLog.Error(ex);
-                    }
-
-                    if (sent)
-                    {
-                        break;
                     }
                 }
             }

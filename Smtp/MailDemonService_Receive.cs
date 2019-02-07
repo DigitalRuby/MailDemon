@@ -181,7 +181,6 @@ namespace MailDemon
                             newResult.Message.Subject = $"FW from {result.From}: {result.Message.Subject}";
                             newResult.Message.Cc.Clear();
                             newResult.Message.Bcc.Clear();
-                            newResult.Message.ResentFrom.Add(result.From);
 
                             // forward the message on and clear the forward headers
                             MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
