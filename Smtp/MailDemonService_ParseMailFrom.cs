@@ -188,14 +188,11 @@ namespace MailDemon
                         }
                     }
                     await writer.WriteLineAsync($"250 2.5.0 OK");
-                    Stream fileStream = File.OpenRead(tempFile);
-                    MimeMessage msg = await MimeMessage.LoadAsync(fileStream, true, cancelToken);
                     return new MailFromResult
                     {
+                        BackingFile = tempFile,
                         From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
-                        ToAddresses = toAddressesByDomain,
-                        Message = msg,
-                        Stream = fileStream
+                        ToAddresses = toAddressesByDomain
                     };
                 }
                 catch
@@ -253,13 +250,11 @@ namespace MailDemon
                     try
                     {
                         fileStream = File.OpenRead(tempFile);
-                        MimeMessage msg = await MimeMessage.LoadAsync(fileStream, true, cancelToken);
                         return new MailFromResult
                         {
+                            BackingFile = tempFile,
                             From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
-                            ToAddresses = toAddressesByDomain,
-                            Message = msg,
-                            Stream = fileStream
+                            ToAddresses = toAddressesByDomain
                         };
                     }
                     catch
