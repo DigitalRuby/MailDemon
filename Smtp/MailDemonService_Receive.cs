@@ -172,20 +172,20 @@ namespace MailDemon
                             // create new object to forward on
                             MailFromResult newResult = new MailFromResult
                             {
-                                Stream = result.Stream,
+                                BackingFile = result.BackingFile,
                                 From = user.MailAddress,
-                                Message = result.Message,
                                 ToAddresses = new Dictionary<string, List<MailboxAddress>> { { forwardDomain, new List<MailboxAddress> { forwardToAddress } } }
                             };
 
-                            newResult.Message.Subject = $"FW from {result.From}: {result.Message.Subject}";
-                            newResult.Message.Cc.Clear();
-                            newResult.Message.Bcc.Clear();
-
                             // forward the message on and clear the forward headers
                             MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
-                            result.Stream = null; // we took ownership of the stream
-                            SendMail(writer, newResult, endPoint, true).GetAwaiter();
+                            result.BackingFile = null; // we took ownership of the file
+                            SendMail(writer, newResult, endPoint, true, (msg) =>
+                            {
+                                msg.Subject = $"FW from {result.From}: {msg.Subject}";
+                                msg.Cc.Clear();
+                                msg.Bcc.Clear();
+                            }).GetAwaiter();
                             return; // only forward to the first valid address
                         }
                     }

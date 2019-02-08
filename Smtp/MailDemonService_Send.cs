@@ -33,11 +33,12 @@ namespace MailDemon
         /// <param name="line">Line</param>
         /// <param name="endPoint">End point</param>
         /// <param name="validateSpf">Whether to validate spf</param>
+        /// <param name="onPrepare">Called before message is prepared</param>
         /// <returns>Task</returns>
-        private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
+        private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint, Action<MimeMessage> onPrepare = null)
         {
             MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line, endPoint);
-            SendMail(writer, result, endPoint, true).GetAwaiter();
+            SendMail(writer, result, endPoint, true, onPrepare).GetAwaiter();
             await writer.WriteLineAsync($"250 2.1.0 OK");
         }
 
@@ -48,8 +49,9 @@ namespace MailDemon
         /// <param name="result">Mail result to send</param>
         /// <param name="endPoint">End point</param>
         /// <param name="dispose">Whether to dispose result when done</param>
+        /// <param name="onPrepare">Called before message is prepared</param>
         /// <returns>Task</returns>
-        private async Task SendMail(StreamWriter writer, MailFromResult result, IPEndPoint endPoint, bool dispose)
+        private async Task SendMail(StreamWriter writer, MailFromResult result, IPEndPoint endPoint, bool dispose, Action<MimeMessage> onPrepare = null)
         {
             try
             {
@@ -59,7 +61,7 @@ namespace MailDemon
                 List<Task> tasks = new List<Task>();
                 foreach (var group in result.ToAddresses)
                 {
-                    tasks.Add(SendMessage(writer, (result.Stream as FileStream).Name, result.From, group.Key, group.Value, endPoint));
+                    tasks.Add(SendMailInternal(writer, result.BackingFile, result.From, group.Key, group.Value, endPoint, onPrepare));
                 }
                 await Task.WhenAll(tasks);
                 MailDemonLog.Write(LogLevel.Info, "Sent {0} batches of messages in {1:0.00} seconds", count, (DateTime.UtcNow - start).TotalSeconds);
@@ -73,7 +75,8 @@ namespace MailDemon
             }
         }
 
-        private async Task SendMessage(StreamWriter writer, string fileName, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, IPEndPoint endPoint)
+        private async Task SendMailInternal(StreamWriter writer, string fileName, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses,
+            IPEndPoint endPoint, Action<MimeMessage> onPrepare)
         {
             try
             {
@@ -86,21 +89,22 @@ namespace MailDemon
                     }
                 })
                 {
-                    using (FileStream fs = File.OpenRead(fileName))
+                    using (Stream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
                     {
+                        MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
                         IPHostEntry ip = null;
                         LookupClient lookup = new LookupClient();
                         MailDemonLog.Write(LogLevel.Debug, "QueryAsync mx for domain {0}", toDomain);
                         IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
-                        MimeMessage clone = await MimeMessage.LoadAsync(fs, true, cancelToken);
-                        clone.From.Clear();
-                        clone.From.Add(from);
-                        clone.To.Clear();
-                        clone.To.AddRange(toAddresses);
+                        message.From.Clear();
+                        message.From.Add(from);
+                        message.To.Clear();
+                        message.To.AddRange(toAddresses);
+                        onPrepare?.Invoke(message);
                         if (dkimSigner != null)
                         {
-                            clone.Prepare(EncodingConstraint.SevenBit);
-                            clone.Sign(dkimSigner, headersToSign);
+                            message.Prepare(EncodingConstraint.SevenBit);
+                            message.Sign(dkimSigner, headersToSign);
                         }
                         foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                         {
@@ -114,9 +118,9 @@ namespace MailDemon
                                     string host = ip.HostName;
                                     try
                                     {
-                                        MailDemonLog.Write(LogLevel.Debug, "Sending message to host {0}, from {1}, to {2}", host, clone.From, clone.To);
+                                        MailDemonLog.Write(LogLevel.Debug, "Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
                                         await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                        await client.SendAsync(clone, cancelToken).TimeoutAfter(30000);
+                                        await client.SendAsync(message, cancelToken).TimeoutAfter(30000);
                                         return;
                                     }
                                     catch (Exception ex)

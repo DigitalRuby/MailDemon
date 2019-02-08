@@ -13,11 +13,6 @@ namespace MailDemon
     public class MailFromResult : IDisposable
     {
         /// <summary>
-        /// Full message
-        /// </summary>
-        public MimeMessage Message { get; set; }
-
-        /// <summary>
         /// Message from address
         /// </summary>
         public MailboxAddress From { get; set; }
@@ -28,9 +23,9 @@ namespace MailDemon
         public Dictionary<string, List<MailboxAddress>> ToAddresses { get; set; }
 
         /// <summary>
-        /// Backing stream of the message, null if none
+        /// Backing file of the message
         /// </summary>
-        public Stream Stream { get; set; }
+        public string BackingFile { get; set; }
 
         /// <summary>
         /// Cleanup all resources, delete backing file if Stream is FileStream.
@@ -39,16 +34,11 @@ namespace MailDemon
         {
             try
             {
-                string toDelete = null;
-                if (Stream is FileStream fs)
+                if (File.Exists(BackingFile))
                 {
-                    toDelete = fs.Name;
+                    File.Delete(BackingFile);
                 }
-                Stream?.Dispose();
-                if (toDelete != null)
-                {
-                    File.Delete(toDelete);
-                }
+                BackingFile = null;
             }
             catch
             {
