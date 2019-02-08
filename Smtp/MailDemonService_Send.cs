@@ -90,7 +90,7 @@ namespace MailDemon
                     {
                         IPHostEntry ip = null;
                         LookupClient lookup = new LookupClient();
-                        MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", toDomain);
+                        MailDemonLog.Write(LogLevel.Debug, "QueryAsync mx for domain {0}", toDomain);
                         IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
                         MimeMessage clone = await MimeMessage.LoadAsync(fs, true, cancelToken);
                         clone.From.Clear();
