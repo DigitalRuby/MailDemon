@@ -41,7 +41,7 @@ namespace MailDemon
                 throw new ArgumentException("Invalid format for from address: " + fromAddress);
             }
 
-            if (fromUser != null && fromUser.Address != fromAddress)
+            if (fromUser != null && !fromUser.MailAddress.Equals(fromAddress))
             {
                 await writer.WriteLineAsync($"500 invalid command");
                 await writer.FlushAsync();
@@ -55,12 +55,12 @@ namespace MailDemon
 
             // read to addresses
             line = await ReadLineAsync(reader);
-            Dictionary<string, List<string>> toAddressesByDomain = new Dictionary<string, List<string>>();
+            Dictionary<string, List<MailboxAddress>> toAddressesByDomain = new Dictionary<string, List<MailboxAddress>>();
             while (line.StartsWith("RCPT TO:<", StringComparison.OrdinalIgnoreCase))
             {
                 string toAddress = line.Substring(9).Trim('>');
 
-                if (!MailboxAddress.TryParse(toAddress, out _))
+                if (!MailboxAddress.TryParse(toAddress, out MailboxAddress toAddressMail))
                 {
                     await writer.WriteLineAsync($"500 invalid command - bad to address format for address '{toAddress}'");
                     await writer.FlushAsync();
@@ -68,7 +68,7 @@ namespace MailDemon
                 }
 
                 // if no authenticated user, the to address must match an existing user address
-                else if (fromUser == null && users.FirstOrDefault(u => u.Address == toAddress) == null)
+                else if (fromUser == null && users.FirstOrDefault(u => u.MailAddress.Equals(toAddress)) == null)
                 {
                     await writer.WriteLineAsync($"500 invalid command - bad to address '{toAddress}'");
                     await writer.FlushAsync();
@@ -81,11 +81,11 @@ namespace MailDemon
                 if (pos > 0)
                 {
                     string addressDomain = toAddress.Substring(++pos);
-                    if (!toAddressesByDomain.TryGetValue(addressDomain, out List<string> addressList))
+                    if (!toAddressesByDomain.TryGetValue(addressDomain, out List<MailboxAddress> addressList))
                     {
-                        toAddressesByDomain[addressDomain] = addressList = new List<string>();
+                        toAddressesByDomain[addressDomain] = addressList = new List<MailboxAddress>();
                     }
-                    addressList.Add(toAddress);
+                    addressList.Add(toAddressMail);
                 }
 
                 // denote success for recipient
