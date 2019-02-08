@@ -25,7 +25,7 @@ namespace MailDemon
         /// <summary>
         /// Group domain and to addresses for domain
         /// </summary>
-        public Dictionary<string, List<string>> ToAddresses { get; set; }
+        public Dictionary<string, List<MailboxAddress>> ToAddresses { get; set; }
 
         /// <summary>
         /// Backing stream of the message, null if none

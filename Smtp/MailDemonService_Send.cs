@@ -54,10 +54,12 @@ namespace MailDemon
             try
             {
                 // send all emails in one shot for each domain in order to batch
+                List<Task> tasks = new List<Task>();
                 foreach (var group in result.ToAddresses)
                 {
-                    await SendMessage(writer, result.Message, result.From, group.Key, group.Value, endPoint);
+                    tasks.Add(SendMessage(writer, result.Message, result.From, group.Key, group.Value, endPoint));
                 }
+                await Task.WhenAll(tasks);
             }
             finally
             {
@@ -68,14 +70,8 @@ namespace MailDemon
             }
         }
 
-        private async Task SendMessage(StreamWriter writer, MimeMessage msg, MailboxAddress from, string toDomain, IEnumerable<string> toAddresses, IPEndPoint endPoint)
+        private async Task SendMessage(StreamWriter writer, MimeMessage msg, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, IPEndPoint endPoint)
         {
-            // ensure from and to are correct
-            msg.From.Clear();
-            msg.From.Add(from);
-            msg.To.Clear();
-            msg.To.AddRange(toAddresses.Select(a => new MailboxAddress(a)));
-
             using (SmtpClient client = new SmtpClient()
             {
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
@@ -89,10 +85,13 @@ namespace MailDemon
                 LookupClient lookup = new LookupClient();
                 MailDemonLog.Write(LogLevel.Info, "QueryAsync mx for domain {0}", toDomain);
                 IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
+                MimeMessage clone = new MimeMessage(from, toAddresses, msg.Subject, msg.Body);
+                clone.Cc.AddRange(msg.Cc);
+                clone.Date = msg.Date;
                 if (dkimSigner != null)
                 {
-                    msg.Prepare(EncodingConstraint.SevenBit);
-                    msg.Sign(dkimSigner, headersToSign);
+                    clone.Prepare(EncodingConstraint.SevenBit);
+                    clone.Sign(dkimSigner, headersToSign);
                 }
                 foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
@@ -108,7 +107,7 @@ namespace MailDemon
                             {
                                 MailDemonLog.Write(LogLevel.Debug, "Sending message to host {0}, from {1}, to {2}", host, msg.From, msg.To);
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                await client.SendAsync(msg, cancelToken).TimeoutAfter(30000);
+                                await client.SendAsync(clone, cancelToken).TimeoutAfter(30000);
                                 return;
                             }
                             catch (Exception ex)

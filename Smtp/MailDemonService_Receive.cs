@@ -147,27 +147,27 @@ namespace MailDemon
                 // mail demon doesn't have an inbox yet, only forwarding, so see if any of the to addresses can be forwarded
                 foreach (var kv in result.ToAddresses)
                 {
-                    foreach (string address in kv.Value)
+                    foreach (MailboxAddress address in kv.Value)
                     {
-                        MailDemonUser user = users.FirstOrDefault(u => u.Address == address);
+                        MailDemonUser user = users.FirstOrDefault(u => u.MailAddress.Equals(address));
 
                         // if no user or the forward address points to a user, fail
-                        if (user == null || users.FirstOrDefault(u => u.Address == user.ForwardAddress) != null)
+                        if (user == null || users.FirstOrDefault(u => u.MailAddress.Equals(user.ForwardAddress)) != null)
                         {
-                            await writer.WriteLineAsync($"500 invalid command - cannot forward");
+                            await writer.WriteLineAsync($"500 invalid command - user not found");
                             await writer.FlushAsync();
                         }
 
                         // setup forward headers
-                        string forwardToAddress = (string.IsNullOrWhiteSpace(user.ForwardAddress) ? globalForwardAddress : user.ForwardAddress);
-                        if (string.IsNullOrWhiteSpace(forwardToAddress))
+                        MailboxAddress forwardToAddress = (user.ForwardAddress ?? globalForwardAddress);
+                        if (forwardToAddress == null)
                         {
-                            await writer.WriteLineAsync($"500 invalid command - cannot forward 2");
+                            await writer.WriteLineAsync($"500 invalid command - user not found 2");
                             await writer.FlushAsync();
                         }
                         else
                         {
-                            string forwardDomain = forwardToAddress.Substring(forwardToAddress.IndexOf('@') + 1);
+                            string forwardDomain = forwardToAddress.Address.Substring(forwardToAddress.Address.IndexOf('@') + 1);
 
                             // create new object to forward on
                             MailFromResult newResult = new MailFromResult
@@ -175,7 +175,7 @@ namespace MailDemon
                                 Stream = result.Stream,
                                 From = user.MailAddress,
                                 Message = result.Message,
-                                ToAddresses = new Dictionary<string, List<string>> { { forwardDomain, new List<string> { forwardToAddress } } }
+                                ToAddresses = new Dictionary<string, List<MailboxAddress>> { { forwardDomain, new List<MailboxAddress> { forwardToAddress } } }
                             };
 
                             newResult.Message.Subject = $"FW from {result.From}: {result.Message.Subject}";

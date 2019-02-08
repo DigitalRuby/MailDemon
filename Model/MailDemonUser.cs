@@ -42,17 +42,12 @@ namespace MailDemon
             {
                 PasswordPlain.AppendChar(c);
             }
-            Address = (address ?? string.Empty).Trim();
-            ForwardAddress = (forwardAddress ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(forwardAddress))
+            {
+                ForwardAddress = new MailboxAddress(forwardAddress);
+            }
             Authenticated = authenticated;
-            try
-            {
-                MailAddress = new MailboxAddress(DisplayName, Address);
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException("Mail address '" + Address + "' is invalid", ex);
-            }
+            MailAddress = new MailboxAddress(DisplayName, address);
         }
 
         /// <summary>
@@ -75,7 +70,7 @@ namespace MailDemon
         {
             string password = Password.ToUnsecureString();
             string passwordPlain = PasswordPlain.ToUnsecureString().Replace("\0", "(null)");
-            return $"Name: {Name}, Display Name: {DisplayName}, Address: {Address}, Forward: {ForwardAddress}, Password: {password}, Password Plain: {passwordPlain}";
+            return $"Name: {Name}, Display Name: {DisplayName}, Address: {MailAddress}, Forward: {ForwardAddress}, Password: {password}, Password Plain: {passwordPlain}";
         }
 
         /// <summary>
@@ -99,11 +94,6 @@ namespace MailDemon
         public SecureString PasswordPlain { get; private set; }
 
         /// <summary>
-        /// Full email address
-        /// </summary>
-        public string Address { get; private set; }
-
-        /// <summary>
         /// Email address object
         /// </summary>
         public MailboxAddress MailAddress { get; private set; }
@@ -111,7 +101,7 @@ namespace MailDemon
         /// <summary>
         /// Forwarding email address
         /// </summary>
-        public string ForwardAddress { get; private set; }
+        public MailboxAddress ForwardAddress { get; private set; }
 
         /// <summary>
         /// Whether the user is authenticated

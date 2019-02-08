@@ -63,7 +63,7 @@ namespace MailDemon
         private readonly List<MailDemonUser> users = new List<MailDemonUser>();
         private readonly MemoryCache cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = (1024 * 1024 * 16), CompactionPercentage = 0.9 });
         private readonly int maxConnectionCount = 128;
-        private readonly string globalForwardAddress;
+        private readonly MailboxAddress globalForwardAddress;
         private readonly int maxFailuresPerIPAddress = 3;
         private readonly TimeSpan failureLockoutTimespan = TimeSpan.FromDays(1.0);
         private readonly IPAddress ip;

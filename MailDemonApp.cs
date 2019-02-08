@@ -41,7 +41,7 @@ namespace MailDemon
             await client.AuthenticateAsync(new NetworkCredential(demon.Users.First().Name, demon.Users.First().Password));
 
             MimeMessage msg = new MimeMessage();
-            msg.From.Add(new MailboxAddress(demon.Users.First().Address));
+            msg.From.Add(demon.Users.First().MailAddress);
             msg.To.Add(new MailboxAddress(to));
             msg.Subject = "Test Subject";
             BodyBuilder bodyBuilder = new BodyBuilder();
