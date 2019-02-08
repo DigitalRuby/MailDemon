@@ -30,25 +30,28 @@ namespace MailDemon
             cancel.Cancel();
         }
 
-        private static async Task TestClientConnectionAsync(MailDemonService demon, string to, string file)
+        private static async Task TestClientConnectionAsync(MailDemonService demon, string server, string to, string file)
         {
             SmtpClient client = new SmtpClient()
             {
                 SslProtocols = System.Security.Authentication.SslProtocols.None,
                 Timeout = 60000 // 60 secs
             };
-            await client.ConnectAsync("localhost", 25, MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
+            await client.ConnectAsync(server, 25, MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
             await client.AuthenticateAsync(new NetworkCredential(demon.Users.First().Name, demon.Users.First().Password));
 
             MimeMessage msg = new MimeMessage();
             msg.From.Add(demon.Users.First().MailAddress);
-            msg.To.Add(new MailboxAddress(to));
+            foreach (string toAddress in to.Split(',', ';'))
+            {
+                msg.To.Add(new MailboxAddress(toAddress));
+            }
             msg.Subject = "Test Subject";
             BodyBuilder bodyBuilder = new BodyBuilder();
             Multipart multipart = new Multipart("mixed");
             bodyBuilder.HtmlBody = "<html><body><b>Test Email Html Body Which is Bold 12345</b></body></html>";
             multipart.Add(bodyBuilder.ToMessageBody());
-            if (file != null)
+            if (file != null && File.Exists(file))
             {
                 byte[] bytes = System.IO.File.ReadAllBytes(file);
                 var attachment = new MimePart("binary", "bin")
@@ -77,12 +80,13 @@ namespace MailDemon
             MailDemonLog.Write(LogLevel.Info, "Mail demon running, press Ctrl-C to exit");
 
             // test sending with the server:
-            // test toaddress@domain.com [full path to file to attach]
+            // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]
             if (args.Length > 1 && args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
             {
-                string file = args.Length > 1 ? args[2] : null;
-                TestClientConnectionAsync(demon, args[1], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                string file = args.Length > 2 ? args[3] : null;
+                TestClientConnectionAsync(demon, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
             }
+
             cancel.Token.WaitHandle.WaitOne();
         }
     }
