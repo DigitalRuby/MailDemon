@@ -149,10 +149,10 @@ namespace MailDemon
                 {
                     foreach (MailboxAddress address in kv.Value)
                     {
-                        MailDemonUser user = users.FirstOrDefault(u => u.MailAddress.Equals(address));
+                        MailDemonUser user = users.FirstOrDefault(u => u.MailAddress.Address.Equals(address.Address, StringComparison.OrdinalIgnoreCase));
 
                         // if no user or the forward address points to a user, fail
-                        if (user == null || users.FirstOrDefault(u => u.MailAddress.Equals(user.ForwardAddress)) != null)
+                        if (user == null || users.FirstOrDefault(u => u.MailAddress.Address.Equals(user.ForwardAddress.Address, StringComparison.Ordinal)) != null)
                         {
                             await writer.WriteLineAsync($"500 invalid command - user not found");
                             await writer.FlushAsync();

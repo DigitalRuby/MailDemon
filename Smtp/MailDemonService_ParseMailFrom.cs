@@ -41,7 +41,7 @@ namespace MailDemon
                 throw new ArgumentException("Invalid format for from address: " + fromAddress);
             }
 
-            if (fromUser != null && !fromUser.MailAddress.Equals(fromAddress))
+            if (fromUser != null && !fromUser.MailAddress.Address.Equals(fromAddress))
             {
                 await writer.WriteLineAsync($"500 invalid command");
                 await writer.FlushAsync();
@@ -68,7 +68,7 @@ namespace MailDemon
                 }
 
                 // if no authenticated user, the to address must match an existing user address
-                else if (fromUser == null && users.FirstOrDefault(u => u.MailAddress.Equals(toAddress)) == null)
+                else if (fromUser == null && users.FirstOrDefault(u => u.MailAddress.Address.Equals(toAddress, StringComparison.OrdinalIgnoreCase)) == null)
                 {
                     await writer.WriteLineAsync($"500 invalid command - bad to address '{toAddress}'");
                     await writer.FlushAsync();
