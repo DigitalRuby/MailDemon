@@ -196,7 +196,7 @@ namespace MailDemon
             Interlocked.Increment(ref entry.Count);
             if (userName != null && Directory.Exists(@"/var/log"))
             {
-                // write auth log failure for ipban
+                // write auth log failure for ipban integration
                 try
                 {
                     File.AppendAllText("/var/log/ipbancustom_maildemon.log", $"{DateTime.UtcNow.ToString("u")}, ipban failed login, ip address: {ipAddress}, source: SMTP, user: {userName}");

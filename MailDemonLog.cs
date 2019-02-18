@@ -86,8 +86,8 @@ namespace MailDemon
     }
 
     /// <summary>
-    /// IPBan logger. Will never throw exceptions.
-    /// Currently the IPBan logger uses NLog internally, so make sure it is setup in your app.config file or nlog.config file.
+    /// Mail demon logger. Will never throw exceptions.
+    /// Currently the Mail Demon logger uses NLog internally, so make sure it is setup in your app.config file or nlog.config file.
     /// </summary>
     public static class MailDemonLog
     {
@@ -108,9 +108,9 @@ namespace MailDemon
         }
 
         /// <summary>
-        /// Map IPBan log level to NLog log level
+        /// Map Mail Demon log level to NLog log level
         /// </summary>
-        /// <param name="logLevel">IPBan log level</param>
+        /// <param name="logLevel">Mail demon log level</param>
         /// <returns>NLog log level</returns>
         public static NLog.LogLevel GetNLogLevel(MailDemon.LogLevel logLevel)
         {

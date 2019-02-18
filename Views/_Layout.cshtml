@@ -1,0 +1,18 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="stylesheet" href="@Url.Content("~/css/site.css?v=1")" />
+</head>
+<body>
+    <div id="siteContainer">
+        <div id="bodyContainer">
+            @await Html.PartialAsync("Header")
+            <div id="content">@RenderBody()</div>
+            @await Html.PartialAsync("Footer")
+        </div>
+    </div>
+</body>
+</html>

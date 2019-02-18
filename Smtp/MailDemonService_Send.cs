@@ -22,7 +22,14 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
-        private static readonly HeaderId[] headersToSign = new HeaderId[] { HeaderId.From, HeaderId.Subject, HeaderId.Date };
+        /// <summary>
+        /// Set to true to turn off actual sending of smtp messages, useful for performance testing
+        /// </summary>
+        public bool DisableSending { get; set; }
+
+        // h=Subject:To:Cc:References:From:Message-ID:Date:MIME-Version:In-Reply-To:Content-Type
+        private static readonly HeaderId[] headersToSign = new HeaderId[] { HeaderId.From, HeaderId.Cc, HeaderId.Subject, HeaderId.Date, HeaderId.MessageId, HeaderId.References,
+            HeaderId.MimeVersion, HeaderId.InReplyTo, HeaderId.ContentType, HeaderId.ContentLanguage, HeaderId.Body };
 
         /// <summary>
         /// Send mail and kicks off the send in a new task
@@ -115,6 +122,10 @@ namespace MailDemon
                                 ip = await Dns.GetHostEntryAsync(record.Exchange);
                                 foreach (IPAddress ipAddress in ip.AddressList)
                                 {
+                                    if (DisableSending)
+                                    {
+                                        return;
+                                    }
                                     string host = ip.HostName;
                                     try
                                     {
