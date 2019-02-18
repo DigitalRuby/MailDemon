@@ -34,6 +34,25 @@ namespace MailDemon
             }
         }
 
+        /// <summary>
+        /// Map Mail Demon log level to NLog log level
+        /// </summary>
+        /// <param name="logLevel">Mail demon log level</param>
+        /// <returns>NLog log level</returns>
+        public static NLog.LogLevel GetNLogLevel(MailDemon.LogLevel logLevel)
+        {
+            switch (logLevel)
+            {
+                case MailDemon.LogLevel.Critical: return NLog.LogLevel.Fatal;
+                case MailDemon.LogLevel.Debug: return NLog.LogLevel.Debug;
+                case MailDemon.LogLevel.Error: return NLog.LogLevel.Error;
+                case MailDemon.LogLevel.Information: return NLog.LogLevel.Info;
+                case MailDemon.LogLevel.Trace: return NLog.LogLevel.Trace;
+                case MailDemon.LogLevel.Warning: return NLog.LogLevel.Warn;
+                default: return NLog.LogLevel.Off;
+            }
+        }
+
         void ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             if (logger != null)
