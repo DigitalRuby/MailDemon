@@ -34,7 +34,7 @@ namespace MailDemon
             }
 
             bool binaryMime = (line.Contains("BODY=BINARYMIME", StringComparison.OrdinalIgnoreCase));
-            if (!MailboxAddress.TryParse(fromAddress, out _))
+            if (!fromAddress.IsValidEmailAddress())
             {
                 await writer.WriteLineAsync($"500 invalid command - bad from address format");
                 await writer.FlushAsync();
@@ -60,7 +60,9 @@ namespace MailDemon
             {
                 string toAddress = line.Substring(9).Trim('>');
 
-                if (!MailboxAddress.TryParse(toAddress, out MailboxAddress toAddressMail))
+                // TODO: Mimekit bug allows no domain in address regardless of parser setting
+                if (!toAddress.IsValidEmailAddress() ||
+                    !MailboxAddress.TryParse(toAddress, out MailboxAddress toAddressMail))
                 {
                     await writer.WriteLineAsync($"500 invalid command - bad to address format for address '{toAddress}'");
                     await writer.FlushAsync();

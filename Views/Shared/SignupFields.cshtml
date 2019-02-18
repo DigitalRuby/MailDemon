@@ -1,0 +1,26 @@
+﻿@model MailDemon.SignUpModel
+
+<h2>@Html.Encode(Model.Title)</h2>
+
+@if (Model.Error)
+{
+    <div class="error-message">@Html.Raw(Model.Message)</div><br />
+}
+else
+{
+    <div>@Html.Raw(Model.Message)</div><br />
+}
+
+<div class="signup-fields">
+    <div>First Name</div>
+    <div><input type="text" name="ff_firstName" id="ff_firstName" value="@Model.FieldValue("firstName")" /></div>
+
+    <div>Last Name</div>
+    <div><input type="text" name="ff_lastName" id="ff_lastName" value="@Model.FieldValue("lastName")" /></div>
+
+    <div>Email Address</div>
+    <div><input type="text" name="ff_emailAddress" id="ff_emailAddress" value="@Model.FieldValue("emailAddress")" /></div>
+
+    <div>Company</div>
+    <div><input type="text" name="ff_company_optional" id="ff_company_optional" value="@Model.FieldValue("company")" /></div>
+</div>

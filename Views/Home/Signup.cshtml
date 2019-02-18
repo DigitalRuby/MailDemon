@@ -1,0 +1,12 @@
+﻿@model MailDemon.SignUpModel
+
+@using (Html.BeginForm(FormMethod.Post, new { action = "/Signup/" + Model.Id, id = "sign_up_form" }))
+{
+    await Html.RenderPartialAsync("SignupFields", Model);
+    <br />
+    <input type="submit" id="signupSubmit" name="signupSubmit" value="Sign Up" onclick="this.disabled = true; captchaSubmitForm(1); return false;" />
+    <input type="hidden" id="captcha" name="captcha" value="" />
+
+    await Html.RenderPartialAsync("Recaptcha", new { Action = "signup", Form = "sign_up_form" });
+}
+

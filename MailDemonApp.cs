@@ -22,10 +22,11 @@ namespace MailDemon
 {
     public class MailDemonApp
     {
-        private static MailDemonService demon;
-        private static CancellationTokenSource cancel = new CancellationTokenSource();
+        private MailDemonService mailService;
+        private MailDemonWebApp webApp;
+        private CancellationTokenSource cancel = new CancellationTokenSource();
 
-        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             cancel.Cancel();
         }
@@ -69,25 +70,37 @@ namespace MailDemon
             Console.WriteLine("Test message sent");
         }
 
-        public static void Main(string[] args)
+        private void Run(string[] args)
         {
-            string path = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-            var builder = new ConfigurationBuilder().SetBasePath(path).AddJsonFile("appsettings.json");
-            IConfigurationRoot configuration = builder.Build();
-            demon = new MailDemonService(args, configuration);
             Console.CancelKeyPress += Console_CancelKeyPress;
-            demon.StartAsync(cancel.Token).ConfigureAwait(false);
+
+            // start web server
+            webApp = new MailDemonWebApp(args);
+            webApp.StartAsync(cancel.Token).ConfigureAwait(false);
+
+            // start mail server
+            mailService = new MailDemonService(args, webApp.Configuration);
+            mailService.StartAsync(cancel.Token).ConfigureAwait(false);
+
             MailDemonLog.Write(LogLevel.Info, "Mail demon running, press Ctrl-C to exit");
 
             // test sending with the server:
             // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]
             if (args.Length > 1 && args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
             {
+                mailService.DisableSending = true;
                 string file = args.Length > 2 ? args[3] : null;
-                TestClientConnectionAsync(demon, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
             }
 
             cancel.Token.WaitHandle.WaitOne();
+        }
+
+        public static void Main(string[] args)
+        {
+            MailDemonApp app = new MailDemonApp();
+            app.Run(args);
         }
     }
 }
