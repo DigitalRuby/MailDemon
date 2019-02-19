@@ -58,7 +58,7 @@ namespace MailDemon
         public bool Authenticate(string authPlain)
         {
             string passwordPlain = PasswordPlain.ToUnsecureString();
-            MailDemonLog.Write(LogLevel.Debug, "Attempting auth {0} against user auth {1}", authPlain, passwordPlain);
+            MailDemonLog.Debug("Attempting auth {0} against user auth {1}", authPlain, passwordPlain);
             return (passwordPlain == authPlain);
         }
 

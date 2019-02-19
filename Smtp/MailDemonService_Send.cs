@@ -71,7 +71,7 @@ namespace MailDemon
                     tasks.Add(SendMailInternal(writer, result.BackingFile, result.From, group.Key, group.Value, endPoint, onPrepare));
                 }
                 await Task.WhenAll(tasks);
-                MailDemonLog.Write(LogLevel.Info, "Sent {0} batches of messages in {1:0.00} seconds", count, (DateTime.UtcNow - start).TotalSeconds);
+                MailDemonLog.Info("Sent {0} batches of messages in {1:0.00} seconds", count, (DateTime.UtcNow - start).TotalSeconds);
             }
             finally
             {
@@ -101,7 +101,7 @@ namespace MailDemon
                         MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
                         IPHostEntry ip = null;
                         LookupClient lookup = new LookupClient();
-                        MailDemonLog.Write(LogLevel.Debug, "QueryAsync mx for domain {0}", toDomain);
+                        MailDemonLog.Debug("QueryAsync mx for domain {0}", toDomain);
                         IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
                         message.From.Clear();
                         message.From.Add(from);
@@ -118,7 +118,7 @@ namespace MailDemon
                             // attempt to send, if fail, try next address
                             try
                             {
-                                MailDemonLog.Write(LogLevel.Debug, "GetHostEntryAsync for exchange {0}", record.Exchange);
+                                MailDemonLog.Debug("GetHostEntryAsync for exchange {0}", record.Exchange);
                                 ip = await Dns.GetHostEntryAsync(record.Exchange);
                                 foreach (IPAddress ipAddress in ip.AddressList)
                                 {
@@ -129,7 +129,7 @@ namespace MailDemon
                                     string host = ip.HostName;
                                     try
                                     {
-                                        MailDemonLog.Write(LogLevel.Debug, "Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
+                                        MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
                                         await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
                                         await client.SendAsync(message, cancelToken).TimeoutAfter(30000);
                                         return;

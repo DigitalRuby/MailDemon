@@ -82,7 +82,7 @@ namespace MailDemon
             mailService = new MailDemonService(args, webApp.Configuration);
             mailService.StartAsync(cancel.Token).ConfigureAwait(false);
 
-            MailDemonLog.Write(LogLevel.Info, "Mail demon running, press Ctrl-C to exit");
+            MailDemonLog.Info("Mail demon running, press Ctrl-C to exit");
 
             // test sending with the server:
             // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]

@@ -49,7 +49,7 @@ namespace MailDemon
                 }
             }
             result = MailDemonExtensionMethods.Utf8EncodingNoByteMarker.GetString(ms.GetBuffer().AsSpan(0, (int)ms.Length));
-            MailDemonLog.Write(LogLevel.Debug, "CLIENT: " + result);
+            MailDemonLog.Debug("CLIENT: " + result);
             return result;
         }
 
@@ -168,13 +168,13 @@ namespace MailDemon
             }
             if (foundUser != null)
             {
-                MailDemonLog.Write(LogLevel.Info, "User {0} authenticated", foundUser.Name);
+                MailDemonLog.Info("User {0} authenticated", foundUser.Name);
                 await writer.WriteLineAsync($"235 2.7.0 Accepted");
                 return foundUser;
             }
 
             // fail
-            MailDemonLog.Write(LogLevel.Warn, "Authentication failed: {0}", sentAuth);
+            MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
             string userName = null;
             for (int i = 0; i < sentAuth.Length; i++)
@@ -201,12 +201,12 @@ namespace MailDemon
                 {
                     tcpClient.ReceiveTimeout = tcpClient.SendTimeout = streamTimeoutMilliseconds;
 
-                    MailDemonLog.Write(LogLevel.Info, "Connection from {0}", ipAddress);
+                    MailDemonLog.Info("Connection from {0}", ipAddress);
 
                     // immediately drop if client is blocked
                     if (CheckBlocked(ipAddress))
                     {
-                        MailDemonLog.Write(LogLevel.Warn, "Blocking {0}", ipAddress);
+                        MailDemonLog.Warn("Blocking {0}", ipAddress);
                         return;
                     }
 
@@ -231,7 +231,7 @@ namespace MailDemon
                             writer = tls.Item3;
                         }
 
-                        MailDemonLog.Write(LogLevel.Info, "Connection accepted from {0}", ipAddress);
+                        MailDemonLog.Info("Connection accepted from {0}", ipAddress);
 
                         // send greeting
                         await writer.WriteLineAsync($"220 {Domain} {greeting}");
@@ -308,7 +308,7 @@ namespace MailDemon
                                 }
                                 else
                                 {
-                                    MailDemonLog.Write(LogLevel.Warn, "Ignoring client command: " + line);
+                                    MailDemonLog.Warn("Ignoring client command: " + line);
                                 }
                             }
                             else
@@ -334,7 +334,7 @@ namespace MailDemon
                 finally
                 {
                     sslCert?.Dispose();
-                    MailDemonLog.Write(LogLevel.Info, "{0} disconnected", ipAddress);
+                    MailDemonLog.Info("{0} disconnected", ipAddress);
                 }
             }
         }

@@ -44,6 +44,7 @@ systemctl status MailDemon
   - Setup MX record: @ or smtp or email, etc.
   - Setup A and/or AAAA record: @ or smtp or email, etc.
   - Setup DMARC record, https://en.wikipedia.org/wiki/DMARC
+  - Setup DKIM, https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail
 - Setup reverse dns for your ip address to your A and/or AAAA record. Your hosting provider should have a way to do this.
 
 Supported smtp extensions:
