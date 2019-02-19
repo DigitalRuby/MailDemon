@@ -15,49 +15,11 @@ namespace MailDemon
         {
         }
 
-        /// <summary>
-        /// Map Microsoft log level to NLog log level
-        /// </summary>
-        /// <param name="logLevel">Microsoft log level</param>
-        /// <returns>NLog log level</returns>
-        public static NLog.LogLevel GetNLogLevel(Microsoft.Extensions.Logging.LogLevel logLevel)
-        {
-            switch (logLevel)
-            {
-                case Microsoft.Extensions.Logging.LogLevel.Critical: return NLog.LogLevel.Fatal;
-                case Microsoft.Extensions.Logging.LogLevel.Debug: return NLog.LogLevel.Debug;
-                case Microsoft.Extensions.Logging.LogLevel.Error: return NLog.LogLevel.Error;
-                case Microsoft.Extensions.Logging.LogLevel.Information: return NLog.LogLevel.Info;
-                case Microsoft.Extensions.Logging.LogLevel.Trace: return NLog.LogLevel.Trace;
-                case Microsoft.Extensions.Logging.LogLevel.Warning: return NLog.LogLevel.Warn;
-                default: return NLog.LogLevel.Off;
-            }
-        }
-
-        /// <summary>
-        /// Map Mail Demon log level to NLog log level
-        /// </summary>
-        /// <param name="logLevel">Mail demon log level</param>
-        /// <returns>NLog log level</returns>
-        public static NLog.LogLevel GetNLogLevel(MailDemon.LogLevel logLevel)
-        {
-            switch (logLevel)
-            {
-                case MailDemon.LogLevel.Critical: return NLog.LogLevel.Fatal;
-                case MailDemon.LogLevel.Debug: return NLog.LogLevel.Debug;
-                case MailDemon.LogLevel.Error: return NLog.LogLevel.Error;
-                case MailDemon.LogLevel.Information: return NLog.LogLevel.Info;
-                case MailDemon.LogLevel.Trace: return NLog.LogLevel.Trace;
-                case MailDemon.LogLevel.Warning: return NLog.LogLevel.Warn;
-                default: return NLog.LogLevel.Off;
-            }
-        }
-
         void ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             if (logger != null)
             {
-                var nlogLevel = GetNLogLevel(logLevel);
+                var nlogLevel = MailDemonLog.GetNLogLevel(logLevel);
                 string logText = formatter(state, exception);
                 logger.Log(nlogLevel, logText + (exception == null ? string.Empty : Environment.NewLine + exception.ToString()));
             }
@@ -69,7 +31,7 @@ namespace MailDemon
             {
                 return false;
             }
-            var nlogLevel = GetNLogLevel(logLevel);
+            var nlogLevel = MailDemonLog.GetNLogLevel(logLevel);
             return logger.IsEnabled(nlogLevel);
         }
 

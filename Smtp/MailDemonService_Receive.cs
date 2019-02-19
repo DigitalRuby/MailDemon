@@ -41,7 +41,7 @@ namespace MailDemon
                 return;
             }
 
-            MailDemonLog.Write(LogLevel.Info, "Validating spf for end point {0}, from address: {1}, from domain: {2}", connectionEndPoint.Address, fromAddress, fromAddressDomain);
+            MailDemonLog.Info("Validating spf for end point {0}, from address: {1}, from domain: {2}", connectionEndPoint.Address, fromAddress, fromAddressDomain);
 
             // example smtp host: mail-it1-f173.google.com
             IPHostEntry entry = await Dns.GetHostEntryAsync(connectionEndPoint.Address);
@@ -178,7 +178,7 @@ namespace MailDemon
                             };
 
                             // forward the message on and clear the forward headers
-                            MailDemonLog.Write(LogLevel.Info, "Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
+                            MailDemonLog.Info("Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
                             result.BackingFile = null; // we took ownership of the file
                             SendMail(writer, newResult, endPoint, true, (msg) =>
                             {

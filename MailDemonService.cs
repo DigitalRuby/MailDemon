@@ -97,7 +97,7 @@ namespace MailDemon
             {
                 MailDemonUser user = new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"], true);
                 users.Add(user);
-                MailDemonLog.Write(LogLevel.Debug, "Loaded user {0}", user);
+                MailDemonLog.Debug("Loaded user {0}", user);
             }
             requireEhloIpHostMatch = rootSection.GetValue<bool>("requireEhloIpHostMatch", requireEhloIpHostMatch);
             requireSpfMatch = rootSection.GetValue<bool>("requireSpfMatch", requireSpfMatch);
@@ -113,7 +113,7 @@ namespace MailDemon
                         object pemObject = pemReader.ReadObject();
                         AsymmetricKeyParameter privateKey = ((AsymmetricCipherKeyPair)pemObject).Private;
                         dkimSigner = new DkimSigner(privateKey, Domain, dkimSelector);
-                        MailDemonLog.Write(LogLevel.Info, "Loaded dkim file at {0}", dkimFile);
+                        MailDemonLog.Info("Loaded dkim file at {0}", dkimFile);
                     }
                 }
                 catch (Exception ex)

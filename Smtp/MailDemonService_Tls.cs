@@ -30,7 +30,7 @@ namespace MailDemon
 
         private void TestSslCertificate()
         {
-            MailDemonLog.Write(LogLevel.Info, "Testing ssl certificate file {0}, private key file {1}", sslCertificateFile, sslCertificatePrivateKeyFile);
+            MailDemonLog.Info("Testing ssl certificate file {0}, private key file {1}", sslCertificateFile, sslCertificatePrivateKeyFile);
             X509Certificate sslCert = LoadSslCertificate();
             if (sslCert == null)
             {
@@ -38,7 +38,7 @@ namespace MailDemon
             }
             else
             {
-                MailDemonLog.Write(LogLevel.Info, "SSL certificate loaded succesfully!");
+                MailDemonLog.Info("SSL certificate loaded succesfully!");
             }
         }
 
@@ -67,7 +67,7 @@ namespace MailDemon
                         {
                             newSslCertificate = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(File.ReadAllText(sslCertificatePrivateKeyFile)));
                         }
-                        MailDemonLog.Write(LogLevel.Info, "Loaded ssl certificate {0}", newSslCertificate);
+                        MailDemonLog.Info("Loaded ssl certificate {0}", newSslCertificate);
                         return newSslCertificate;
                     }
                     catch (Exception ex)
@@ -81,7 +81,7 @@ namespace MailDemon
             }
             if (error != null)
             {
-                MailDemonLog.Write(LogLevel.Error, "Error loading ssl certificate: {0}", error);
+                MailDemonLog.Error("Error loading ssl certificate: {0}", error);
             }
             return null;
         }
@@ -128,7 +128,7 @@ namespace MailDemon
                         }
                     }
                 }).ConfigureAwait(false).GetAwaiter();
-                MailDemonLog.Write(LogLevel.Info, $"Starting ssl connection from client {clientIPAddress}");
+                MailDemonLog.Info($"Starting ssl connection from client {clientIPAddress}");
                 await sslStream.AuthenticateAsServerAsync(sslCertificate, false, System.Security.Authentication.SslProtocols.Tls12, true);
                 sslServerEnabled = true;
             }
