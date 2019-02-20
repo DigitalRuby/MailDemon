@@ -10,12 +10,12 @@ namespace MailDemon
     {
         public string Id { get; set; }
         public string Title { get; set; }
-        public Dictionary<string, string> Fields { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, object> Fields { get; set; } = new Dictionary<string, object>();
 
-        public string FieldValue(string name)
+        public object FieldValue(string name)
         {
-            Fields.TryGetValue(name, out string value);
-            return value ?? string.Empty;
+            Fields.TryGetValue(name, out object value);
+            return value;
         }
     }
 }

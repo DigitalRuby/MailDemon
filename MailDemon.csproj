@@ -13,7 +13,12 @@
     <PackageReference Include="ARSoft.Tools.Net.Core" Version="2.3.0" />
     <PackageReference Include="DnsClient" Version="1.2.0" />
     <PackageReference Include="IPAddressRange" Version="3.2.0" />
+    <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="MailKit" Version="2.1.2" />
+    <PackageReference Include="MimeKit" Version="2.1.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="NLog" Version="4.5.11" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.CookiePolicy" Version="2.2.0" />
@@ -21,30 +26,17 @@
     <PackageReference Include="Microsoft.AspNetCore.ResponseCaching" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.2.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.2" />
-    <PackageReference Include="MimeKit" Version="2.1.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="NLog" Version="4.5.11" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Web">
-      <HintPath>System.Web</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
+    <Content Update="appsettings.debug.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -54,8 +46,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Views\Templates\" />
     <Folder Include="wwwroot\js\" />
     <Folder Include="wwwroot\img\" />
+    <Folder Include="wwwroot\css\" />
   </ItemGroup>
 
 </Project>

@@ -16,6 +16,13 @@ namespace MailDemon.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly MailDemonDatabase db;
+
+        public HomeController(MailDemonDatabase db)
+        {
+            this.db = db;
+        }
+
         [HttpGet]
         public IActionResult Index()
         {
@@ -27,6 +34,10 @@ namespace MailDemon.Controllers
         {
             string result = TempData["result"] as string;
             id = (id ?? string.Empty).Trim();
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
             SignUpModel model = (string.IsNullOrWhiteSpace(result) ? new SignUpModel() : JsonConvert.DeserializeObject<SignUpModel>(result));
             model.Id = id;
             model.Title = string.Format(MailDemonWebApp.SignUpTitle, id.Replace('_', ' ').Replace('-', ' '));
@@ -37,9 +48,14 @@ namespace MailDemon.Controllers
         [ActionName("Signup")]
         public async Task<IActionResult> SignupPost(string id)
         {
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
             string captcha = HttpContext.Request.Form["captcha"];
             string error = await MailDemonWebApp.Recaptcha.Verify(captcha, "signup", HttpContext.GetRemoteIPAddress().ToString());
             SignUpModel model = new SignUpModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
+            string email = null;
             model.Id = (id ?? string.Empty).Trim();
             foreach (KeyValuePair<string, StringValues> field in HttpContext.Request.Form)
             {
@@ -47,10 +63,13 @@ namespace MailDemon.Controllers
                 {
                     string value = field.Value.ToString().Trim();
                     string name = field.Key.Split('_')[1];
-                    model.Fields[name] = value;
                     if (string.IsNullOrWhiteSpace(value))
                     {
-                        if (!field.Key.EndsWith("_optional"))
+                        if (field.Key.EndsWith("_optional", StringComparison.OrdinalIgnoreCase))
+                        {
+                            model.Fields[name] = value;
+                        }
+                        else
                         {
                             model.Message += "<br/>" + field.Key.Split('_')[1] + " is required";
                             model.Error = true;
@@ -58,32 +77,68 @@ namespace MailDemon.Controllers
                     }
                     else if (name.Contains("email", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (!value.IsValidEmailAddress())
+                        if (value.IsValidEmailAddress())
                         {
-                            model.Message += "<br/>email is invalid";
+                            email = (email ?? value);
+                        }
+                        else
+                        {
                             model.Error = true;
                         }
+                    }
+                    else
+                    {
+                        model.Fields[name] = value;
                     }
                 }
             }
             TempData["result"] = JsonConvert.SerializeObject(model);
-            if (model.Error)
+            if (model.Error || email == null)
             {
+                if (email == null)
+                {
+                    model.Message += "<br/>email is invalid";
+                }
                 model.Title = string.Format(MailDemonWebApp.SignUpTitle, model.Id);
                 return View(nameof(Signup), model);
             }
             else
             {
-                // TODO: insert into database
-                return RedirectToAction(nameof(SignupSuccess), new { model.Id });
+                string token = db.PreSubscribeToMailingList(model.Fields, email, model.Id, HttpContext.GetRemoteIPAddress().ToString());
+                return RedirectToAction(nameof(SignupConfirm), new { id = model.Id });
             }
         }
 
-        public IActionResult SignupSuccess(string id)
+        public IActionResult SignupConfirm(string id)
         {
             id = (id ?? string.Empty).Trim();
-            string success = string.Format(MailDemonWebApp.SignUpSuccess.Replace("\n", "<br/>"), id);
-            return View((object)success);
+            string text;
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
+            text = string.Format(MailDemonWebApp.SignUpConfirm.Replace("\n", "<br/>"), id);
+            return View((object)text);
+        }
+
+        public IActionResult SignupSuccess(string id, string token)
+        {
+            id = (id ?? string.Empty).Trim();
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
+            token = (token ?? string.Empty).Trim();
+            if (db.ConfirmSubscribeToMailingList(id, token))
+            {
+                string success = string.Format(MailDemonWebApp.SignUpSuccess.Replace("\n", "<br/>"), id);
+                return View((object)success);
+            }
+            else
+            {
+                string error = string.Format(MailDemonWebApp.SignUpError.Replace("\n", "<br/>"), id);
+                return View((object)error);
+            }
         }
     }
 }
