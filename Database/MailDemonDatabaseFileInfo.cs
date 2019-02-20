@@ -44,7 +44,6 @@ namespace MailDemon
 
         private void GetView(string viewPath)
         {
-            // db files must not start with '_'
             string fileName = Path.GetFileNameWithoutExtension(viewPath);
             using (var db = new MailDemonDatabase())
             {
@@ -63,7 +62,7 @@ namespace MailDemon
                 }
                 else
                 {
-                    string fullPath = Path.Combine(_rootPath, "Templates", viewPath);
+                    string fullPath = Path.Combine(_rootPath, viewPath);
                     if (File.Exists(fullPath))
                     {
                         _viewContent = File.ReadAllBytes(fullPath);
