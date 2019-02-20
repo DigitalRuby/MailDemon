@@ -24,14 +24,14 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.Extensions.FileProviders;
 
 #endregion Imports
 
@@ -64,9 +64,19 @@ namespace MailDemon
         public static string SignUpTitle { get; private set; }
 
         /// <summary>
+        /// Sign up confirm title
+        /// </summary>
+        public static string SignUpConfirm { get; private set; }
+
+        /// <summary>
         /// Sign up success title
         /// </summary>
         public static string SignUpSuccess { get; private set; }
+
+        /// <summary>
+        /// Sign up error title
+        /// </summary>
+        public static string SignUpError { get; private set; }
 
         /// <summary>
         /// Command line args
@@ -123,7 +133,15 @@ namespace MailDemon
             {
                 argsDictionary[Args[i++]] = Args[i++].Trim();
             }
-            IConfigurationBuilder configBuilder = new ConfigurationBuilder().SetBasePath(RootDirectory).AddJsonFile("appsettings.json");
+            IConfigurationBuilder configBuilder = new ConfigurationBuilder().SetBasePath(RootDirectory);
+            if (File.Exists(Path.Combine(RootDirectory, "appsettings.debug.json")))
+            {
+                configBuilder.AddJsonFile("appsettings.debug.json");
+            }
+            else
+            {
+                configBuilder.AddJsonFile("appsettings.json");
+            }
             Configuration = configBuilder.Build();
             builder.UseKestrel(c => c.AddServerHeader = false);
             builder.UseIISIntegration();
@@ -141,7 +159,9 @@ namespace MailDemon
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
             Recaptcha = new RecaptchaSettings(web["recaptchaSiteKey"], web["recaptchaSecretKey"]);
             SignUpTitle = web["signUpTitle"];
+            SignUpConfirm = web["signUpConfirm"];
             SignUpSuccess = web["signUpSuccess"];
+            SignUpError = web["signUpError"];
             Task runTask = host.RunAsync(CancelToken);
 
             // do not return the task until we know we are running, for tests for example, we don't want requests coming
@@ -192,8 +212,8 @@ namespace MailDemon
             {
                 services.Configure<CookiePolicyOptions>(options =>
                 {
-                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                 options.CheckConsentNeeded = context => true;
+                    // This lambda determines whether user consent for non-essential cookies is needed for a given request.
+                    options.CheckConsentNeeded = context => true;
                     options.MinimumSameSitePolicy = SameSiteMode.None;
                 });
                 services.Configure<CookieTempDataProviderOptions>(options =>
@@ -203,12 +223,18 @@ namespace MailDemon
                 services.Configure<GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Optimal);
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
+                services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());
                 services.AddMvc((options) =>
                 {
 
                 }).SetCompatibilityVersion(CompatibilityVersion.Latest).AddJsonOptions(options =>
                 {
                     options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                });
+                services.Configure<RazorViewEngineOptions>(opts =>
+                {
+                    opts.FileProviders.Add(new PhysicalFileProvider(RootDirectory));
+                    opts.FileProviders.Add(new MailDemonDatabaseFileProvider(RootDirectory));
                 });
                 services.AddAntiforgery(options =>
                 {
@@ -254,6 +280,7 @@ namespace MailDemon
                 {
                     routes.MapRoute("home", "/{action=Index}/{id?}", new { controller = "Home" });
                 });
+                // confusingly and strangely, WTF Microsoft, the UseCookiePolicy must come AFTER app.UseMvc for TempData to work.
                 app.UseCookiePolicy();
                 app.Use(async (context, next) =>
                 {
