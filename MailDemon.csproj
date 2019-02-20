@@ -46,7 +46,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Views\Templates\" />
     <Folder Include="wwwroot\js\" />
     <Folder Include="wwwroot\img\" />
     <Folder Include="wwwroot\css\" />
