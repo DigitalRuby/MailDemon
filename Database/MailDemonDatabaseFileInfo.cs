@@ -10,36 +10,36 @@ namespace MailDemon
 {
     public class MailDemonDatabaseFileInfo : IFileInfo
     {
-        private readonly string _rootPath;
-        private readonly string _viewPath;
-        private byte[] _viewContent;
-        private DateTimeOffset _lastModified;
-        private bool _exists;
+        private readonly string rootPath;
+        private readonly string viewPath;
+        private readonly string name;
+        private byte[] contents;
 
         public MailDemonDatabaseFileInfo(string rootPath, string viewPath)
         {
-            _rootPath = rootPath;
-            _viewPath = viewPath;
+            this.rootPath = rootPath;
+            this.viewPath = viewPath;
+            this.name = Path.GetFileName(viewPath);
             GetView(viewPath);
         }
-        public bool Exists => _exists;
+        public bool Exists { get; private set; }
 
         public bool IsDirectory => false;
 
-        public DateTimeOffset LastModified => _lastModified;
+        public DateTimeOffset LastModified { get; private set; }
 
         public long Length
         {
-            get { return _viewContent == null ? 0 : _viewContent.Length; }
+            get { return contents == null ? 0 : contents.Length; }
         }
 
-        public string Name => Path.GetFileName(_viewPath);
+        public string Name => Path.GetFileName(viewPath);
 
         public string PhysicalPath => null;
 
         public Stream CreateReadStream()
         {
-            return new MemoryStream(_viewContent);
+            return new MemoryStream(contents);
         }
 
         private void GetView(string viewPath)
@@ -56,17 +56,17 @@ namespace MailDemon
                 });
                 if (template != null && template.Template != null)
                 {
-                    _exists = true;
-                    _viewContent = template.Template;
-                    _lastModified = template.LastModified;
+                    Exists = true;
+                    contents = template.Template;
+                    LastModified = template.LastModified;
                 }
                 else
                 {
-                    string fullPath = Path.Combine(_rootPath, viewPath);
+                    string fullPath = Path.Combine(rootPath, viewPath);
                     if (File.Exists(fullPath))
                     {
-                        _viewContent = File.ReadAllBytes(fullPath);
-                        _lastModified = File.GetLastWriteTimeUtc(fullPath);
+                        contents = File.ReadAllBytes(fullPath);
+                        LastModified = File.GetLastWriteTimeUtc(fullPath);
                     }
                 }
             }

@@ -86,9 +86,9 @@ namespace MailDemon
 
             // test sending with the server:
             // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]
-            if (args.Length > 1 && args[0].Equals("test", StringComparison.OrdinalIgnoreCase))
+            if (args.Length > 1 && args[0].StartsWith("test", StringComparison.OrdinalIgnoreCase))
             {
-                mailService.DisableSending = true;
+                mailService.DisableSending = args[0].Equals("test");
                 string file = args.Length > 2 ? args[3] : null;
                 TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
                 TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();

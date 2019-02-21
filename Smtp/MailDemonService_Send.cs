@@ -64,14 +64,19 @@ namespace MailDemon
             {
                 // send all emails in one shot for each domain in order to batch
                 DateTime start = DateTime.UtcNow;
-                int count = result.ToAddresses.Count;
+                int count = 0;
                 List<Task> tasks = new List<Task>();
                 foreach (var group in result.ToAddresses)
                 {
                     tasks.Add(SendMailInternal(writer, result.BackingFile, result.From, group.Key, group.Value, endPoint, onPrepare));
+                    count++;
                 }
                 await Task.WhenAll(tasks);
                 MailDemonLog.Info("Sent {0} batches of messages in {1:0.00} seconds", count, (DateTime.UtcNow - start).TotalSeconds);
+            }
+            catch (Exception ex)
+            {
+                MailDemonLog.Error(ex);
             }
             finally
             {
@@ -105,14 +110,7 @@ namespace MailDemon
                         IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
                         message.From.Clear();
                         message.From.Add(from);
-                        message.To.Clear();
-                        message.To.AddRange(toAddresses);
                         onPrepare?.Invoke(message);
-                        if (dkimSigner != null)
-                        {
-                            message.Prepare(EncodingConstraint.SevenBit);
-                            message.Sign(dkimSigner, headersToSign);
-                        }
                         foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                         {
                             // attempt to send, if fail, try next address
@@ -131,7 +129,17 @@ namespace MailDemon
                                     {
                                         MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
                                         await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                        await client.SendAsync(message, cancelToken).TimeoutAfter(30000);
+                                        foreach (MailboxAddress address in toAddresses)
+                                        {
+                                            message.To.Clear();
+                                            message.To.Add(address);
+                                            if (dkimSigner != null)
+                                            {
+                                                message.Prepare(EncodingConstraint.SevenBit);
+                                                message.Sign(dkimSigner, headersToSign);
+                                            }
+                                            await client.SendAsync(message, cancelToken).TimeoutAfter(30000);
+                                        }
                                         return;
                                     }
                                     catch (Exception ex)

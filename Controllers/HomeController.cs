@@ -77,7 +77,7 @@ namespace MailDemon.Controllers
                     }
                     else if (name.Contains("email", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (value.IsValidEmailAddress())
+                        if (value.TryParseEmailAddress(out _))
                         {
                             email = (email ?? value);
                         }

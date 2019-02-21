@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
+using MimeKit;
+
 namespace MailDemon
 {
     public static class MailDemonExtensionMethods
@@ -107,13 +109,19 @@ namespace MailDemon
         }
 
         /// <summary>
-        /// Check if a string is a valid email address
+        /// Attempt to parse an email address. Email must have a @ in it to be valid. MailboxAddress.TryParse does not require the @.
         /// </summary>
-        /// <param name="value">Value</param>
+        /// <param name="emailAddress">Email address</param>
+        /// <param name="address">Receives the parsed email address</param>
         /// <returns>True if email is valid, false if not</returns>
-        public static bool IsValidEmailAddress(this string value)
+        public static bool TryParseEmailAddress(this string emailAddress, out MailboxAddress address)
         {
-            return validEmailRegex.IsMatch(value);
+            if (string.IsNullOrWhiteSpace(emailAddress) || !emailAddress.Contains('@') || !MailboxAddress.TryParse(emailAddress, out address))
+            {
+                address = default;
+                return false;
+            }
+            return true;
         }
     }
 }

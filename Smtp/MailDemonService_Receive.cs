@@ -174,7 +174,7 @@ namespace MailDemon
                             {
                                 BackingFile = result.BackingFile,
                                 From = user.MailAddress,
-                                ToAddresses = new Dictionary<string, List<MailboxAddress>> { { forwardDomain, new List<MailboxAddress> { forwardToAddress } } }
+                                ToAddresses = new Dictionary<string, IEnumerable<MailboxAddress>> { { forwardDomain, new List<MailboxAddress> { forwardToAddress } } }
                             };
 
                             // forward the message on and clear the forward headers
