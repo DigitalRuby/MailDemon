@@ -144,6 +144,19 @@ namespace MailDemon
             IPHostEntry entry = await Dns.GetHostEntryAsync(endPoint.Address);
             using (MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint))
             {
+                string subject;
+                using (Stream stream = File.OpenRead(result.BackingFile))
+                {
+                    MimeMessage msg = await MimeMessage.LoadAsync(stream, true, cancelToken);
+                    subject = msg.Subject;
+                }
+                subject = (subject ?? string.Empty).Trim();
+                if (subject.Equals("unsubscribe", StringComparison.OrdinalIgnoreCase))
+                {
+                    // TODO: Handle unsubscribe request
+                    return;
+                }
+
                 // mail demon doesn't have an inbox yet, only forwarding, so see if any of the to addresses can be forwarded
                 foreach (var kv in result.ToAddresses)
                 {
