@@ -34,7 +34,7 @@ namespace MailDemon
             }
 
             bool binaryMime = (line.Contains("BODY=BINARYMIME", StringComparison.OrdinalIgnoreCase));
-            if (!fromAddress.IsValidEmailAddress())
+            if (!fromAddress.TryParseEmailAddress(out _))
             {
                 await writer.WriteLineAsync($"500 invalid command - bad from address format");
                 await writer.FlushAsync();
@@ -55,14 +55,11 @@ namespace MailDemon
 
             // read to addresses
             line = await ReadLineAsync(reader);
-            Dictionary<string, List<MailboxAddress>> toAddressesByDomain = new Dictionary<string, List<MailboxAddress>>();
+            Dictionary<string, IEnumerable<MailboxAddress>> toAddressesByDomain = new Dictionary<string, IEnumerable<MailboxAddress>>(StringComparer.OrdinalIgnoreCase);
             while (line.StartsWith("RCPT TO:<", StringComparison.OrdinalIgnoreCase))
             {
                 string toAddress = line.Substring(9).Trim('>');
-
-                // TODO: Mimekit bug allows no domain in address regardless of parser setting
-                if (!toAddress.IsValidEmailAddress() ||
-                    !MailboxAddress.TryParse(toAddress, out MailboxAddress toAddressMail))
+                if (!toAddress.TryParseEmailAddress(out MailboxAddress toAddressMail))
                 {
                     await writer.WriteLineAsync($"500 invalid command - bad to address format for address '{toAddress}'");
                     await writer.FlushAsync();
@@ -83,11 +80,11 @@ namespace MailDemon
                 if (pos > 0)
                 {
                     string addressDomain = toAddress.Substring(++pos);
-                    if (!toAddressesByDomain.TryGetValue(addressDomain, out List<MailboxAddress> addressList))
+                    if (!toAddressesByDomain.TryGetValue(addressDomain, out IEnumerable<MailboxAddress> addressList))
                     {
                         toAddressesByDomain[addressDomain] = addressList = new List<MailboxAddress>();
                     }
-                    addressList.Add(toAddressMail);
+                    (addressList as List<MailboxAddress>).Add(toAddressMail);
                 }
 
                 // denote success for recipient

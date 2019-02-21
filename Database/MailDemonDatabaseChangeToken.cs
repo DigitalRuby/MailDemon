@@ -10,11 +10,13 @@ namespace MailDemon
 {
     public class MailDemonDatabaseChangeToken : IChangeToken
     {
-        private string _viewPath;
+        private readonly string viewPath;
+        private readonly string fileNameNoExtension;
 
         public MailDemonDatabaseChangeToken(string viewPath)
         {
-            _viewPath = viewPath;
+            this.viewPath = viewPath.Trim('/', '\\', '~');
+            this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
         }
 
         public bool ActiveChangeCallbacks => false;
@@ -23,10 +25,10 @@ namespace MailDemon
         {
             get
             {
-                string fileName = Path.GetFileNameWithoutExtension(_viewPath);
+                string fileName = Path.GetFileNameWithoutExtension(viewPath);
                 using (var db = new MailDemonDatabase())
                 {
-                    MailTemplate template = db.Select<MailTemplate>(l => l.Name == fileName).FirstOrDefault();
+                    MailTemplate template = db.Select<MailTemplate>(l => l.Name == fileNameNoExtension).FirstOrDefault();
                     if (template == null)
                     {
                         return false;

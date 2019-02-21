@@ -20,7 +20,7 @@ namespace MailDemon
         /// <summary>
         /// Group domain and to addresses for domain
         /// </summary>
-        public Dictionary<string, List<MailboxAddress>> ToAddresses { get; set; }
+        public IEnumerable<KeyValuePair<string, IEnumerable<MailboxAddress>>> ToAddresses { get; set; }
 
         /// <summary>
         /// Backing file of the message
