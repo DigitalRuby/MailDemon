@@ -140,5 +140,25 @@ namespace MailDemon.Controllers
                 return View((object)error);
             }
         }
+
+        public IActionResult DebugTemplate(string id)
+        {
+            id = (id ?? string.Empty).Trim();
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
+            MailListRegistration tempReg = new MailListRegistration
+            {
+                EmailAddress = "test@domain.com",
+                IPAddress = HttpContext.GetRemoteIPAddress().ToString(),
+                Fields = new Dictionary<string, object> { { "firstName", "Bob" }, { "lastName", "Smith" }, { "company", "Fake Company" } },
+                ListName = "Default",
+                SubscribedDate = DateTime.UtcNow,
+                SubscribeToken = Guid.NewGuid().ToString("N"),
+                Expires = DateTime.MinValue
+            };
+            return View(id, tempReg);
+        }
     }
 }

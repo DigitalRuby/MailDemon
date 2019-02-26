@@ -15,7 +15,10 @@ namespace MailDemon
     /// </summary>
     public class MailDemonDatabase : IDisposable
     {
-        private static readonly string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
+        /// <summary>
+        /// Path to the database
+        /// </summary>
+        public static readonly string DatabasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
 
         /// <summary>
         /// Initialize db
@@ -40,7 +43,7 @@ namespace MailDemon
         /// <returns>Database</returns>
         public static LiteDatabase GetDB()
         {
-            return new LiteDatabase(dbPath);
+            return new LiteDatabase(DatabasePath);// File.Open(DatabasePath, System.IO.FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite), null, null, true);
         }
 
         /// <summary>
@@ -48,6 +51,7 @@ namespace MailDemon
         /// </summary>
         public void Dispose()
         {
+
         }
 
         /// <summary>

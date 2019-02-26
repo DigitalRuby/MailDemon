@@ -123,5 +123,44 @@ namespace MailDemon
             }
             return true;
         }
+
+        /// <summary>
+        /// Get utf8 bytes from string
+        /// </summary>
+        /// <param name="text">String</param>
+        /// <returns>Utf8 bytes</returns>
+        public static byte[] ToUtf8Bytes(this string text)
+        {
+            return System.Text.Encoding.UTF8.GetBytes(text);
+        }
+
+        /// <summary>
+        /// Get string from utf8 bytes
+        /// </summary>
+        /// <param name="bytes">Utf8 bytes</param>
+        /// <returns>String</returns>
+        public static string ToUtf8String(this byte[] bytes)
+        {
+            return System.Text.Encoding.UTF8.GetString(bytes);
+        }
+
+        /// <summary>
+        /// Make a task execute synchronously
+        /// </summary>
+        /// <param name="task">Task</param>
+        public static void Sync(this Task task)
+        {
+            task.ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Make a task execute synchronously
+        /// </summary>
+        /// <param name="task">Task</param>
+        /// <returns>Result</returns>
+        public static T Sync<T>(this Task<T> task)
+        {
+            return task.ConfigureAwait(false).GetAwaiter().GetResult();
+        }
     }
 }

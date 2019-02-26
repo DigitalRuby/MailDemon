@@ -33,6 +33,10 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.FileProviders;
 
+using RazorLight;
+using RazorLight.Caching;
+using RazorLight.Razor;
+
 #endregion Imports
 
 namespace MailDemon
@@ -224,6 +228,20 @@ namespace MailDemon
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
                 services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());
+                services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+                RazorLightOptions razorOptions = new RazorLightOptions
+                {
+                    Namespaces = new HashSet<string> { "System", "System.IO", "System.Text", "MailDemon", "RazorLight", "RazorLight.Razor" }
+                };
+                services.AddSingleton<IRazorLightEngine>((provider) =>
+                {
+                    RazorLightEngineBuilder builder = new RazorLightEngineBuilder();
+                    builder.AddDefaultNamespaces("System", "System.IO", "System.Text", "MailDemon");
+                    builder.UseCachingProvider(new MemoryCachingProvider());
+                    builder.UseProject(new MailDemonRazorLightDatabaseProject(RootDirectory));
+                    return builder.Build();
+                });
+                // TODO: https://github.com/aspnet/Razor/blob/a06c2b243f5e446a04d9439a87d62f6794c6c1ff/src/RazorPageGenerator/Program.cs
                 services.AddMvc((options) =>
                 {
 

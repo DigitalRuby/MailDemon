@@ -25,15 +25,20 @@ namespace MailDemon
         {
             get
             {
-                string fileName = Path.GetFileNameWithoutExtension(viewPath);
                 using (var db = new MailDemonDatabase())
                 {
-                    MailTemplate template = db.Select<MailTemplate>(l => l.Name == fileNameNoExtension).FirstOrDefault();
-                    if (template == null)
+                    bool changed = false;
+                    db.Select<MailTemplate>(l => l.Name == fileNameNoExtension, (t) =>
                     {
+                        changed = t.Dirty;
+                        if (t.Dirty)
+                        {
+                            t.Dirty = false;
+                            return true;
+                        }
                         return false;
-                    }
-                    return (template.LastModified > template.LastRequested);
+                    });
+                    return changed;
                 }
             }
         }
