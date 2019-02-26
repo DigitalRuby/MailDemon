@@ -49,6 +49,8 @@ namespace MailDemonTests
                 Assert.IsEmpty(reg.Fields["company"] as string);
                 Assert.IsNotNull(reg.SubscribeToken);
                 Assert.IsNull(reg.UnsubscribeToken);
+                Assert.AreEqual(default(DateTime), reg.SubscribedDate);
+                Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
             }
 
             // verify the signup confirm has no errors
@@ -61,7 +63,10 @@ namespace MailDemonTests
             using (var db = new MailDemonDatabase())
             {
                 reg = db.Select<MailListRegistration>().FirstOrDefault();
+                Assert.AreEqual("TestList", reg.ListName);
+                Assert.AreEqual("127.0.0.1", reg.IPAddress);
                 Assert.IsNotNull(reg.UnsubscribeToken);
+                Assert.AreNotEqual(default(DateTime), reg.SubscribedDate);
                 Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
             }
 
