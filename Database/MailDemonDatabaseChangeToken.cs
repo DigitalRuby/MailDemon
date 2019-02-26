@@ -30,9 +30,9 @@ namespace MailDemon
                     bool changed = false;
                     db.Select<MailTemplate>(l => l.Name == fileNameNoExtension, (t) =>
                     {
-                        changed = t.Dirty;
                         if (t.Dirty)
                         {
+                            changed = t.Dirty;
                             t.Dirty = false;
                             return true;
                         }
