@@ -18,11 +18,6 @@ namespace MailDemon
             fileInfo = new FileInfo(viewPath);
         }
 
-        public void SyncLastWriteTime()
-        {
-            lastWriteTime = fileInfo.LastWriteTimeUtc;
-        }
-
         public bool ActiveChangeCallbacks => false;
 
         public bool HasChanged
@@ -30,7 +25,9 @@ namespace MailDemon
             get
             {
                 fileInfo.Refresh();
-                return (fileInfo.LastWriteTimeUtc != lastWriteTime);
+                bool changed = (fileInfo.LastWriteTimeUtc != lastWriteTime);
+                lastWriteTime = fileInfo.LastWriteTimeUtc;
+                return changed;
             }
         }
 
@@ -63,11 +60,6 @@ namespace MailDemon
 
         public override string Key => templateKey;
         public override bool Exists => content != null;
-        public override Stream Read()
-        {
-            MailDemonFileChangeToken token = ExpirationToken as MailDemonFileChangeToken;
-            token.SyncLastWriteTime();
-            return new MemoryStream(content);
-        }
+        public override Stream Read() => new MemoryStream(content);
     }
 }
