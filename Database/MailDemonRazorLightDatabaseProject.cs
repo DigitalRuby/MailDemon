@@ -15,18 +15,25 @@ namespace MailDemon
 
         private class MailDemonRazorProjectItem : RazorLightProjectItem
         {
-            private readonly byte[] _content;
+            private readonly byte[] content;
 
-            public MailDemonRazorProjectItem(string key, byte[] content)
+            public MailDemonRazorProjectItem(string key)
             {
                 Key = key;
-                _content = content;
+                using (MailDemonDatabase db = new MailDemonDatabase())
+                {
+                    MailTemplate template = db.Select<MailTemplate>(t => t.Name == key).FirstOrDefault();
+                    if (template != null)
+                    {
+                        content = template.Template;
+                    }
+                }
                 ExpirationToken = new MailDemonDatabaseChangeToken(key);
             }
 
             public override string Key { get; }
-            public override bool Exists => _content != null;
-            public override System.IO.Stream Read() => new MemoryStream(_content);
+            public override bool Exists => content != null;
+            public override System.IO.Stream Read() => new MemoryStream(content);
         }
 
         public MailDemonRazorLightDatabaseProject(string rootPath)
@@ -45,11 +52,7 @@ namespace MailDemon
             {
                 return Task.FromResult<RazorLightProjectItem>(new MailDemonFileProjectItem(rootPath, templateKey));
             }
-            using (MailDemonDatabase db = new MailDemonDatabase())
-            {
-                MailTemplate template = db.Select<MailTemplate>(t => t.Name == templateKey).FirstOrDefault();
-                return Task.FromResult<RazorLightProjectItem>(new MailDemonRazorProjectItem(templateKey, template?.Template));
-            }
+            return Task.FromResult<RazorLightProjectItem>(new MailDemonRazorProjectItem(templateKey));
         }
     }
 }
