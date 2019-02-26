@@ -13,7 +13,7 @@ using RazorLight.Caching;
 
 #endregion Imports
 
-namespace Tests
+namespace MailDemonTests
 {
     public class MailTemplateTests
     {
@@ -24,6 +24,7 @@ namespace Tests
         public void Setup()
         {
             TearDown();
+            MailDemonDatabase.DatabaseOptions = "Journal=false; Flush=true;";
             RazorLightEngineBuilder builder = new RazorLightEngineBuilder();
             builder.AddDefaultNamespaces("System", "System.IO", "System.Text", "MailDemon");
             builder.UseCachingProvider(new MemoryCachingProvider());
@@ -34,21 +35,7 @@ namespace Tests
         [TearDown]
         public void TearDown()
         {
-            if (File.Exists(MailDemonDatabase.DatabasePath))
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    try
-                    {
-                        File.Delete(MailDemonDatabase.DatabasePath);
-                        break;
-                    }
-                    catch
-                    {
-                        System.Threading.Thread.Sleep(100);
-                    }
-                }
-            }
+            MailDemonDatabase.DeleteDatabase();
         }
 
         [Test]
