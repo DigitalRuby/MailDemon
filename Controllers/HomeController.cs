@@ -12,11 +12,19 @@ using Microsoft.Extensions.Primitives;
 
 using Newtonsoft.Json;
 
-namespace MailDemon.Controllers
+namespace MailDemon
 {
     public class HomeController : Controller
     {
         private readonly MailDemonDatabase db;
+
+        public bool RequireCaptcha { get; set;  } = true;
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            db.Dispose();
+        }
 
         public HomeController(MailDemonDatabase db)
         {
@@ -30,7 +38,7 @@ namespace MailDemon.Controllers
         }
 
         [HttpGet]
-        public IActionResult Signup(string id)
+        public IActionResult Subscribe(string id)
         {
             string result = TempData["result"] as string;
             id = (id ?? string.Empty).Trim();
@@ -40,34 +48,37 @@ namespace MailDemon.Controllers
             }
             SignUpModel model = (string.IsNullOrWhiteSpace(result) ? new SignUpModel() : JsonConvert.DeserializeObject<SignUpModel>(result));
             model.Id = id;
-            model.Title = string.Format(MailDemonWebApp.SignUpTitle, id.Replace('_', ' ').Replace('-', ' '));
+            model.Title = string.Empty;// string.Format(MailDemonWebApp.SubscribeTitle, id.Replace('_', ' ').Replace('-', ' '));
             return View(model);
         }
 
         [HttpPost]
         [ActionName("Signup")]
-        public async Task<IActionResult> SignupPost(string id)
+        public async Task<IActionResult> SubscribePost(string id, Dictionary<string, object> formFields)
         {
             if (id.Length == 0)
             {
                 return NotFound();
             }
-            string captcha = HttpContext.Request.Form["captcha"];
-            string error = await MailDemonWebApp.Recaptcha.Verify(captcha, "signup", HttpContext.GetRemoteIPAddress().ToString());
+            string error = null;
+            if (RequireCaptcha && formFields.TryGetValue("captcha", out object captchaValue))
+            {
+                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue as string, "signup", HttpContext.GetRemoteIPAddress().ToString());
+            }
             SignUpModel model = new SignUpModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
             model.Id = (id ?? string.Empty).Trim();
-            foreach (KeyValuePair<string, StringValues> field in HttpContext.Request.Form)
+            foreach (KeyValuePair<string, object> field in formFields)
             {
                 if (field.Key.StartsWith("ff_"))
                 {
-                    string value = field.Value.ToString().Trim();
+                    string value = field.Value?.ToString()?.Trim();
                     string name = field.Key.Split('_')[1];
                     if (string.IsNullOrWhiteSpace(value))
                     {
                         if (field.Key.EndsWith("_optional", StringComparison.OrdinalIgnoreCase))
                         {
-                            model.Fields[name] = value;
+                            model.Fields[name] = string.Empty;
                         }
                         else
                         {
@@ -97,19 +108,19 @@ namespace MailDemon.Controllers
             {
                 if (email == null)
                 {
-                    model.Message += "<br/>email is invalid";
+                    model.Message += "<br/>" + Resources.EmailIsInvalid;
                 }
-                model.Title = string.Format(MailDemonWebApp.SignUpTitle, model.Id);
-                return View(nameof(Signup), model);
+                model.Title = Resources.SubscribeTitle.FormatHtml(model.Id);
+                return View(nameof(Subscribe), model);
             }
             else
             {
                 string token = db.PreSubscribeToMailingList(model.Fields, email, model.Id, HttpContext.GetRemoteIPAddress().ToString());
-                return RedirectToAction(nameof(SignupConfirm), new { id = model.Id });
+                return RedirectToAction(nameof(SubscribeConfirm), new { id = model.Id });
             }
         }
 
-        public IActionResult SignupConfirm(string id)
+        public IActionResult SubscribeConfirm(string id)
         {
             id = (id ?? string.Empty).Trim();
             string text;
@@ -117,11 +128,11 @@ namespace MailDemon.Controllers
             {
                 return NotFound();
             }
-            text = string.Format(MailDemonWebApp.SignUpConfirm.Replace("\n", "<br/>"), id);
+            text = Resources.SubscribeConfirm.FormatHtml(id);
             return View((object)text);
         }
 
-        public IActionResult SignupSuccess(string id, string token)
+        public IActionResult SubscribeSuccess(string id, string token)
         {
             id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
@@ -131,14 +142,28 @@ namespace MailDemon.Controllers
             token = (token ?? string.Empty).Trim();
             if (db.ConfirmSubscribeToMailingList(id, token))
             {
-                string success = string.Format(MailDemonWebApp.SignUpSuccess.Replace("\n", "<br/>"), id);
+                string success = Resources.SubscribeSuccess.FormatHtml(id);
                 return View((object)success);
             }
-            else
+            string error = Resources.SubscribeError.FormatHtml(id);
+            return View((object)error);
+        }
+
+        public IActionResult Unsubscribe(string id, string token)
+        {
+            id = (id ?? string.Empty).Trim();
+            if (id.Length == 0)
             {
-                string error = string.Format(MailDemonWebApp.SignUpError.Replace("\n", "<br/>"), id);
-                return View((object)error);
+                return NotFound();
             }
+            token = (token ?? string.Empty).Trim();
+            if (db.UnsubscribeFromMailingList(id, token))
+            {
+                string success = Resources.UnsubscribeSuccess.FormatHtml(id);
+                return View((object)success);
+            }
+            string error = Resources.UnsubscribeError.FormatHtml(id);
+            return View((object)error);
         }
 
         public IActionResult DebugTemplate(string id)

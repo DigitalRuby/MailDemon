@@ -63,26 +63,6 @@ namespace MailDemon
         public static RecaptchaSettings Recaptcha { get; private set; }
 
         /// <summary>
-        /// Sign up title
-        /// </summary>
-        public static string SignUpTitle { get; private set; }
-
-        /// <summary>
-        /// Sign up confirm title
-        /// </summary>
-        public static string SignUpConfirm { get; private set; }
-
-        /// <summary>
-        /// Sign up success title
-        /// </summary>
-        public static string SignUpSuccess { get; private set; }
-
-        /// <summary>
-        /// Sign up error title
-        /// </summary>
-        public static string SignUpError { get; private set; }
-
-        /// <summary>
         /// Command line args
         /// </summary>
         public string[] Args { get; set; }
@@ -162,10 +142,6 @@ namespace MailDemon
             }).Build();
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
             Recaptcha = new RecaptchaSettings(web["recaptchaSiteKey"], web["recaptchaSecretKey"]);
-            SignUpTitle = web["signUpTitle"];
-            SignUpConfirm = web["signUpConfirm"];
-            SignUpSuccess = web["signUpSuccess"];
-            SignUpError = web["signUpError"];
             Task runTask = host.RunAsync(CancelToken);
 
             // do not return the task until we know we are running, for tests for example, we don't want requests coming

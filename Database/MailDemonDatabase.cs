@@ -18,7 +18,14 @@ namespace MailDemon
         /// <summary>
         /// Path to the database
         /// </summary>
-        public static readonly string DatabasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
+        public static string DatabasePath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
+
+        /// <summary>
+        /// Database options
+        /// </summary>
+        public static string DatabaseOptions { get; set; } = string.Empty;
+
+        private static readonly BsonMapper mapper = new BsonMapper { EmptyStringToNull = false };
 
         /// <summary>
         /// Initialize db
@@ -38,12 +45,35 @@ namespace MailDemon
         }
 
         /// <summary>
+        /// Delete database file - use with caution!
+        /// </summary>
+        public static void DeleteDatabase()
+        {
+            if (File.Exists(MailDemonDatabase.DatabasePath))
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    try
+                    {
+                        File.Delete(MailDemonDatabase.DatabasePath);
+                        break;
+                    }
+                    catch
+                    {
+                        System.Threading.Thread.Sleep(100);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Access the underlying db structure - be careful here, if the underlying structure changes, code will break
         /// </summary>
         /// <returns>Database</returns>
         public static LiteDatabase GetDB()
         {
-            return new LiteDatabase(DatabasePath);// File.Open(DatabasePath, System.IO.FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite), null, null, true);
+            return new LiteDatabase($"Filename={DatabasePath}; {DatabaseOptions}", mapper);
+            //return new LiteDatabase(File.Open(DatabasePath, System.IO.FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite), mapper, null, true);
         }
 
         /// <summary>

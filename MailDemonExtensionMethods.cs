@@ -145,6 +145,17 @@ namespace MailDemon
         }
 
         /// <summary>
+        /// Format text for html
+        /// </summary>
+        /// <param name="text">Text</param>
+        /// <param name="format">Format args</param>
+        /// <returns>Formatted text</returns>
+        public static string FormatHtml(this string text, params object[] format)
+        {
+            return string.Format((text ?? string.Empty).Replace("\n", "<br/>"), format);
+        }
+
+        /// <summary>
         /// Make a task execute synchronously
         /// </summary>
         /// <param name="task">Task</param>
