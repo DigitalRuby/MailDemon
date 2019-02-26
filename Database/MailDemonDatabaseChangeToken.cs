@@ -32,7 +32,7 @@ namespace MailDemon
                     {
                         if (t.Dirty)
                         {
-                            changed = t.Dirty;
+                            changed = true;
                             t.Dirty = false;
                             return true;
                         }

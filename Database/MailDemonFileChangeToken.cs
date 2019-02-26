@@ -16,6 +16,10 @@ namespace MailDemon
         public MailDemonFileChangeToken(string viewPath)
         {
             fileInfo = new FileInfo(viewPath);
+        }
+
+        public void SyncLastWriteTime()
+        {
             lastWriteTime = fileInfo.LastWriteTimeUtc;
         }
 
@@ -26,23 +30,18 @@ namespace MailDemon
             get
             {
                 fileInfo.Refresh();
-                if (fileInfo.LastWriteTimeUtc != lastWriteTime)
-                {
-                    hasChanged = true;
-                    lastWriteTime = fileInfo.LastWriteTimeUtc;
-                }
-                return hasChanged;
+                return (fileInfo.LastWriteTimeUtc != lastWriteTime);
             }
         }
 
         public IDisposable RegisterChangeCallback(Action<object> callback, object state) => MailDemonDatabaseChangeToken.EmptyDisposable.Instance;
-        internal bool hasChanged;
     }
 
     public class MailDemonFileProjectItem : RazorLight.Razor.RazorLightProjectItem
     {
         private readonly string templateKey;
         private readonly string fullPath;
+        private readonly byte[] content;
 
         public MailDemonFileProjectItem(string rootDirectory, string templateKey)
         {
@@ -55,16 +54,20 @@ namespace MailDemon
             {
                 fullPath = Path.Combine(rootDirectory, templateKey);
             }
+            if (File.Exists(fullPath))
+            {
+                content = File.ReadAllBytes(fullPath);
+            }
             ExpirationToken = new MailDemonFileChangeToken(fullPath);
         }
 
         public override string Key => templateKey;
-        public override bool Exists => File.Exists(fullPath);
+        public override bool Exists => content != null;
         public override Stream Read()
         {
-            byte[] bytes = File.ReadAllBytes(fullPath);
-            (ExpirationToken as MailDemonFileChangeToken).hasChanged = false;
-            return new MemoryStream(bytes);
+            MailDemonFileChangeToken token = ExpirationToken as MailDemonFileChangeToken;
+            token.SyncLastWriteTime();
+            return new MemoryStream(content);
         }
     }
 }
