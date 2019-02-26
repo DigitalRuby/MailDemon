@@ -3,19 +3,24 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PreserveCompilationContext>true</PreserveCompilationContext>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="MailDemonTests\**" />
+    <Content Remove="MailDemonTests\**" />
+    <EmbeddedResource Remove="MailDemonTests\**" />
+    <None Remove="MailDemonTests\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ARSoft.Tools.Net.Core" Version="2.3.0" />
     <PackageReference Include="DnsClient" Version="1.2.0" />
     <PackageReference Include="IPAddressRange" Version="3.2.0" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
-    <PackageReference Include="MailKit" Version="2.1.2" />
-    <PackageReference Include="MimeKit" Version="2.1.2" />
+    <PackageReference Include="MailKit" Version="2.1.3" />
+    <PackageReference Include="MimeKit" Version="2.1.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="NLog" Version="4.5.11" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
@@ -30,6 +35,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.2" />
+    <PackageReference Include="RazorLight" Version="2.0.0-beta1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
   </ItemGroup>
 

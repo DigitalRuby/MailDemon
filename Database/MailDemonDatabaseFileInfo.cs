@@ -51,7 +51,6 @@ namespace MailDemon
                 db.Select<MailTemplate>(t => t.Name == fileName, (foundTemplate) =>
                 {
                     template = foundTemplate;
-                    foundTemplate.LastRequested = DateTime.UtcNow;
                     return true;
                 });
                 if (template != null && template.Template != null)

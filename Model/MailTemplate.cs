@@ -29,10 +29,10 @@ namespace MailDemon
         /// Last modified
         /// </summary>
         public DateTime LastModified { get; set; }
-        
+
         /// <summary>
-        /// Last requested
+        /// Whether the template is dirty (modified)
         /// </summary>
-        public DateTime LastRequested { get; set; }
+        public bool Dirty { get; set; } = true;
     }
 }
