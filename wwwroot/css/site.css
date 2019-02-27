@@ -134,12 +134,11 @@ textarea
 
 label
 {
-    width: 200px;
-    padding-right: 10px;
+    width: 150px;
     height: 30px;
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    align-items: flex-end;
+    justify-content: flex-start;
     font-size: 14px;
 }
 
