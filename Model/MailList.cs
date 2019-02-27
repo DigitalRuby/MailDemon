@@ -20,4 +20,6 @@ namespace MailDemon
         /// </summary>
         public string Name { get; set; }
     }
+
+    public class MailListModel : BaseModel<MailList> { }
 }

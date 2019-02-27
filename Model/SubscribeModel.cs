@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace MailDemon
 {
     [Serializable]
-    public class SignUpModel : BaseModel
+    public class SubscribeModel : BaseModel
     {
         public string Id { get; set; }
         public string Title { get; set; }

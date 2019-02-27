@@ -1,0 +1,23 @@
+﻿@model MailDemon.LoginModel
+
+@using (Html.BeginForm())
+{
+    if (User.Identity.IsAuthenticated)
+    {
+        <input type="submit" value="@MailDemon.Resources.Logout" />
+    }
+    else
+    {
+        if (Model.Error)
+        {
+            <div class="error-message">@Model.Message</div><br />
+        }
+        @MailDemon.Resources.Login<br/>
+        @Html.LabelFor(m => m.UserName) @Html.EditorFor(m => m.UserName)<br />
+        @Html.LabelFor(m => m.Password) @Html.PasswordFor(m => m.Password, new { @class = "text-box single-line" })<br />
+        @Html.HiddenFor(m => m.ReturnUrl)
+        <br />
+        <input type="submit" value="@MailDemon.Resources.Login" />
+    }
+}
+

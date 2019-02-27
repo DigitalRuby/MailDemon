@@ -40,7 +40,7 @@ namespace MailDemon
                 coll.EnsureIndex(x => x.SubscribeToken);
                 coll.EnsureIndex(x => x.UnsubscribeToken);
                 var coll2 = db.GetCollection<MailTemplate>();
-                coll2.EnsureIndex(x => x.Name);
+                coll2.EnsureIndex(x => x.Name, true);
             }
         }
 

@@ -41,7 +41,7 @@ namespace MailDemonTests
         [Test]
         public void TestTemplateCacheDatabase()
         {
-            MailTemplate template = new MailTemplate { Name = "test", Template = "<b>Hello World</b> @Model.Fields[\"firstName\"].ToString()".ToUtf8Bytes() };
+            MailTemplate template = new MailTemplate { Name = "test", Text = "<b>Hello World</b> @Model.Fields[\"firstName\"].ToString()" };
 
             using (var db = new MailDemonDatabase())
             {
@@ -69,7 +69,8 @@ namespace MailDemonTests
             html = engine.RenderTemplateAsync(found.Template.TemplatePageFactory(), model).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob", html);
 
-            template.Template = ((template.Template.ToUtf8String()) + " <br/>New Line<br/>").ToUtf8Bytes();
+            template.Text += " <br/>New Line<br/>";
+            template.LastModified = DateTime.UtcNow;
             template.Dirty = true;
 
             using (var db = new MailDemonDatabase())

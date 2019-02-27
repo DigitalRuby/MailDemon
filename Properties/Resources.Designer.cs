@@ -61,6 +61,33 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Edit.
+        /// </summary>
+        public static string Edit {
+            get {
+                return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Edit List.
+        /// </summary>
+        public static string EditList {
+            get {
+                return ResourceManager.GetString("EditList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Edit Template.
+        /// </summary>
+        public static string EditTemplate {
+            get {
+                return ResourceManager.GetString("EditTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Email is invalid..
         /// </summary>
         public static string EmailIsInvalid {
@@ -70,7 +97,115 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Please check your email for a confirmation link. Please click this link to confirm your subscription to the {0} mailing list..
+        ///   Looks up a localized string similar to Last Modified.
+        /// </summary>
+        public static string LastModified {
+            get {
+                return ResourceManager.GetString("LastModified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List Name.
+        /// </summary>
+        public static string ListName {
+            get {
+                return ResourceManager.GetString("ListName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List not found.
+        /// </summary>
+        public static string ListNotFound {
+            get {
+                return ResourceManager.GetString("ListNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lists.
+        /// </summary>
+        public static string Lists {
+            get {
+                return ResourceManager.GetString("Lists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logged in as {0}.
+        /// </summary>
+        public static string LoggedInAs {
+            get {
+                return ResourceManager.GetString("LoggedInAs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login.
+        /// </summary>
+        public static string Login {
+            get {
+                return ResourceManager.GetString("Login", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login failed.
+        /// </summary>
+        public static string LoginFailed {
+            get {
+                return ResourceManager.GetString("LoginFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logout.
+        /// </summary>
+        public static string Logout {
+            get {
+                return ResourceManager.GetString("Logout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Name.
+        /// </summary>
+        public static string Name {
+            get {
+                return ResourceManager.GetString("Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New List.
+        /// </summary>
+        public static string NewList {
+            get {
+                return ResourceManager.GetString("NewList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New Template.
+        /// </summary>
+        public static string NewTemplate {
+            get {
+                return ResourceManager.GetString("NewTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save.
+        /// </summary>
+        public static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please check your email for a confirmation link, you should open this link to confirm your subscription to the {0} mailing list..
         /// </summary>
         public static string SubscribeConfirm {
             get {
@@ -79,7 +214,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to There was an error signing up for the {0} mailing list, please contact support..
+        ///   Looks up a localized string similar to There was an error subscribing to the {0} mailing list, please contact support..
         /// </summary>
         public static string SubscribeError {
             get {
@@ -88,7 +223,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Thank you for signing up for the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc..
+        ///   Looks up a localized string similar to Thank you for subscribing to the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc..
         /// </summary>
         public static string SubscribeSuccess {
             get {
@@ -97,11 +232,47 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Sign up for the {0} mailing list.
+        ///   Looks up a localized string similar to Subscribe to the {0} mailing list.
         /// </summary>
         public static string SubscribeTitle {
             get {
                 return ResourceManager.GetString("SubscribeTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Success.
+        /// </summary>
+        public static string Success {
+            get {
+                return ResourceManager.GetString("Success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Templates.
+        /// </summary>
+        public static string Templates {
+            get {
+                return ResourceManager.GetString("Templates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Test.
+        /// </summary>
+        public static string Test {
+            get {
+                return ResourceManager.GetString("Test", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An unknown error has happened, please contact support..
+        /// </summary>
+        public static string UnknownError {
+            get {
+                return ResourceManager.GetString("UnknownError", resourceCulture);
             }
         }
         
@@ -120,6 +291,15 @@ namespace MailDemon {
         public static string UnsubscribeSuccess {
             get {
                 return ResourceManager.GetString("UnsubscribeSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Username or password is blank.
+        /// </summary>
+        public static string UsernameOrPasswordIsBlank {
+            get {
+                return ResourceManager.GetString("UsernameOrPasswordIsBlank", resourceCulture);
             }
         }
     }
