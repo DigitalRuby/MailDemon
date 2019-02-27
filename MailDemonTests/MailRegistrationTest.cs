@@ -29,7 +29,7 @@ namespace MailDemonTests
 
         private string Subscribe()
         {
-            homeController.SubscribePost("TestList", new Dictionary<string, object>
+            homeController.SubscribePost("TestList", new Dictionary<string, string>
             {
                 { "ff_firstName", "Bob" },
                 { "ff_lastName", "Smith" },
@@ -114,7 +114,7 @@ namespace MailDemonTests
         [Test]
         public void TestRegisterFails()
         {
-            homeController.SubscribePost("TestList", new Dictionary<string, object>
+            homeController.SubscribePost("TestList", new Dictionary<string, string>
             {
                 { "ff_firstName", "Bob" },
                 { "ff_lastName", "Smith" },

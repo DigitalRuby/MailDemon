@@ -61,25 +61,25 @@ namespace MailDemon
 
         [HttpPost]
         [ActionName("Subscribe")]
-        public async Task<IActionResult> SubscribePost(string id, Dictionary<string, object> formFields)
+        public async Task<IActionResult> SubscribePost(string id, Dictionary<string, string> formFields)
         {
             if (id.Length == 0)
             {
                 return NotFound();
             }
             string error = null;
-            if (RequireCaptcha && formFields.TryGetValue("captcha", out object captchaValue))
+            if (RequireCaptcha && formFields.TryGetValue("captcha", out string captchaValue))
             {
-                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue as string, "Subscribe", HttpContext.GetRemoteIPAddress().ToString());
+                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue, "Subscribe", HttpContext.GetRemoteIPAddress().ToString());
             }
             SubscribeModel model = new SubscribeModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
             model.Id = (id ?? string.Empty).Trim();
-            foreach (KeyValuePair<string, object> field in formFields)
+            foreach (KeyValuePair<string, string> field in formFields)
             {
                 if (field.Key.StartsWith("ff_"))
                 {
-                    string value = field.Value?.ToString()?.Trim();
+                    string value = field.Value?.Trim();
                     string name = field.Key.Split('_')[1];
                     if (string.IsNullOrWhiteSpace(value))
                     {
@@ -131,7 +131,7 @@ namespace MailDemon
                 {
                     MailDemonLog.Error(ex);
                     model.Error = true;
-                    model.Message += "<br/>" + Resources.UnknownError;
+                    model.Message += "<br/>" + ex.Message;
                     return View(nameof(Subscribe), model);
                 }
             }
