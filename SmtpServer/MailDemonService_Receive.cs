@@ -22,6 +22,11 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
+        /// <summary>
+        /// Handle unsubscribe (from, subject, body, task)
+        /// </summary>
+        public Func<string, string, string, Task> UnsubscribeHandler { get; set; }
+
         //private static readonly Regex ipRegex = new Regex(@"ip[46]\:(?<ip>[^ ]+) ?", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
         //private static readonly Regex domainRegex = new Regex(@"include\:(?<domain>[^ ]+) ?", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
@@ -145,15 +150,16 @@ namespace MailDemon
             using (MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint))
             {
                 string subject;
+                MimeMessage msg;
                 using (Stream stream = File.OpenRead(result.BackingFile))
                 {
-                    MimeMessage msg = await MimeMessage.LoadAsync(stream, true, cancelToken);
+                    msg = await MimeMessage.LoadAsync(stream, true, cancelToken);
                     subject = msg.Subject;
                 }
                 subject = (subject ?? string.Empty).Trim();
                 if (subject.Equals("unsubscribe", StringComparison.OrdinalIgnoreCase))
                 {
-                    // TODO: Handle unsubscribe request
+                    UnsubscribeHandler?.Invoke(result.From.Address, subject, msg.HtmlBody);
                     return;
                 }
 
@@ -193,11 +199,11 @@ namespace MailDemon
                             // forward the message on and clear the forward headers
                             MailDemonLog.Info("Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
                             result.BackingFile = null; // we took ownership of the file
-                            SendMail(writer, newResult, endPoint, true, (msg) =>
+                            SendMail(writer, newResult, endPoint, true, (prepMsg) =>
                             {
-                                msg.Subject = $"FW from {result.From}: {msg.Subject}";
-                                msg.Cc.Clear();
-                                msg.Bcc.Clear();
+                                prepMsg.Subject = $"FW from {result.From}: {prepMsg.Subject}";
+                                prepMsg.Cc.Clear();
+                                prepMsg.Bcc.Clear();
                             }).GetAwaiter();
                             return; // only forward to the first valid address
                         }

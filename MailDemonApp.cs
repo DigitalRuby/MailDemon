@@ -74,13 +74,26 @@ namespace MailDemon
         {
             Console.CancelKeyPress += Console_CancelKeyPress;
 
-            // start web server
-            webApp = new MailDemonWebApp(args);
-            webApp.StartAsync(cancel.Token).ConfigureAwait(false);
+            // read config
+            string rootDir = Directory.GetCurrentDirectory();
+            IConfigurationBuilder configBuilder = new ConfigurationBuilder().SetBasePath(rootDir);
+            if (File.Exists(Path.Combine(rootDir, "appsettings.debug.json")))
+            {
+                configBuilder.AddJsonFile("appsettings.debug.json");
+            }
+            else
+            {
+                configBuilder.AddJsonFile("appsettings.json");
+            }
+            IConfigurationRoot config = configBuilder.Build();
 
             // start mail server
-            mailService = new MailDemonService(args, webApp.Configuration);
+            mailService = new MailDemonService(args, config);
             mailService.StartAsync(cancel.Token).ConfigureAwait(false);
+
+            // start web server
+            webApp = new MailDemonWebApp(args, rootDir, config, mailService);
+            webApp.StartAsync(cancel.Token).ConfigureAwait(false);
 
             MailDemonLog.Info("Mail demon running, press Ctrl-C to exit");
 

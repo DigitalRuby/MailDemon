@@ -61,6 +61,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Company.
+        /// </summary>
+        public static string Company {
+            get {
+                return ResourceManager.GetString("Company", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Edit.
         /// </summary>
         public static string Edit {
@@ -174,6 +183,15 @@ namespace MailDemon {
         public static string Name {
             get {
                 return ResourceManager.GetString("Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Name is invalid.
+        /// </summary>
+        public static string NameInvalid {
+            get {
+                return ResourceManager.GetString("NameInvalid", resourceCulture);
             }
         }
         
@@ -300,6 +318,15 @@ namespace MailDemon {
         public static string UsernameOrPasswordIsBlank {
             get {
                 return ResourceManager.GetString("UsernameOrPasswordIsBlank", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Website.
+        /// </summary>
+        public static string Website {
+            get {
+                return ResourceManager.GetString("Website", resourceCulture);
             }
         }
     }

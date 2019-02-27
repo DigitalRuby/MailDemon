@@ -1,6 +1,6 @@
 ﻿@model MailDemon.SubscribeModel
 
-@using (Html.BeginForm(FormMethod.Post, new { action = "/Subscribe/" + Model.Id, id = "subscribeForm" }))
+@using (Html.BeginForm(FormMethod.Post, new { action = "/Subscribe/" + Model.ListName, id = "subscribeForm" }))
 {
     await Html.RenderPartialAsync("SubscribeFields", Model);
     <br />
