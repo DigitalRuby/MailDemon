@@ -25,7 +25,7 @@ namespace MailDemon
                     MailTemplate template = db.Select<MailTemplate>(t => t.Name == key).FirstOrDefault();
                     if (template != null)
                     {
-                        content = template.Template;
+                        content = System.Text.Encoding.UTF8.GetBytes(template.Text);
                     }
                 }
                 ExpirationToken = new MailDemonDatabaseChangeToken(key);

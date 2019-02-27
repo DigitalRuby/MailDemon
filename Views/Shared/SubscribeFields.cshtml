@@ -1,4 +1,4 @@
-﻿@model MailDemon.SignUpModel
+﻿@model MailDemon.SubscribeModel
 
 <h2>@Html.Encode(Model.Title)</h2>
 
@@ -11,7 +11,7 @@ else
     <div>@Html.Raw(Model.Message)</div><br />
 }
 
-<div class="signup-fields">
+<div class="subscribe-fields">
     <div>First Name</div>
     <div><input type="text" name="ff_firstName" id="ff_firstName" value="@Model.FieldValue("firstName")" /></div>
 

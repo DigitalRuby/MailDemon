@@ -1,0 +1,19 @@
+﻿@model MailDemon.MailTemplateModel
+@{ string errorClass = (Model.Error ? "error-message" : string.Empty); }
+
+<h2>@MailDemon.Resources.EditTemplate</h2>
+
+@using (Html.BeginForm())
+{
+    <div class="@errorClass">@Model.Message</div><br />
+    @Html.LabelFor(m => m.Value.ListName) @Html.EditorFor(m => m.Value.ListName)<br />
+    @Html.LabelFor(m => m.Value.Name) @Html.EditorFor(m => m.Value.Name)<br />
+    @Html.LabelFor(m => m.Value.Text) @Html.TextAreaFor(m => m.Value.Text)<br />
+    @Html.HiddenFor(m => m.Value.Id)
+    <br />
+    <input type="submit" value="@MailDemon.Resources.Save" />
+    if (Model.Value.Id != 0)
+    {
+        <br/><br/>@Html.ActionLink(MailDemon.Resources.Test, nameof(MailDemon.HomeController.DebugTemplate), new { id = Model.Value.Name }, htmlAttributes: new { target = "_blank" })
+    }
+}

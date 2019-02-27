@@ -200,7 +200,6 @@ namespace MailDemon
             {
                 services.Configure<CookiePolicyOptions>(options =>
                 {
-                    // This lambda determines whether user consent for non-essential cookies is needed for a given request.
                     options.CheckConsentNeeded = context => true;
                     options.MinimumSameSitePolicy = SameSiteMode.None;
                 });
@@ -213,8 +212,8 @@ namespace MailDemon
                 {
                     o.AccessDeniedPath = "/";
                     o.LoginPath = "/Login";
-                    o.Cookie.HttpOnly = true;
                     o.LogoutPath = "/Login";
+                    o.Cookie.HttpOnly = true;
                 });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
@@ -242,7 +241,7 @@ namespace MailDemon
                 });
                 services.Configure<RazorViewEngineOptions>(opts =>
                 {
-                    opts.FileProviders.Add(new PhysicalFileProvider(RootDirectory));
+                    opts.AllowRecompilingViewsOnFileChange = true;
                     opts.FileProviders.Add(new MailDemonDatabaseFileProvider(RootDirectory));
                 });
                 services.AddAntiforgery(options =>
@@ -274,6 +273,7 @@ namespace MailDemon
                 {
                     app.UseExceptionHandler("/Error");
                 }
+                app.UseStatusCodePagesWithReExecute("/Error", "?code={0}");
                 var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("en-US") };
                 app.UseRequestLocalization(new RequestLocalizationOptions
                 {
