@@ -19,6 +19,16 @@ namespace MailDemon
         /// List name
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Mail list company
+        /// </summary>
+        public string Company { get; set; }
+
+        /// <summary>
+        /// Mail list website
+        /// </summary>
+        public string Website { get; set; }
     }
 
     public class MailListModel : BaseModel<MailList> { }

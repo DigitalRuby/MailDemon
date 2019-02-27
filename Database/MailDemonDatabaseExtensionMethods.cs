@@ -15,8 +15,8 @@ namespace MailDemon
         /// <param name="emailAddress">Email address</param>
         /// <param name="listName">List name</param>
         /// <param name="ipAddress">IP address</param>
-        /// <returns>Subscribe token or null if already subscribed</returns>
-        public static string PreSubscribeToMailingList(this MailDemonDatabase db, IDictionary<string, object> fields, string emailAddress, string listName, string ipAddress)
+        /// <returns>Registration</returns>
+        public static MailListRegistration PreSubscribeToMailingList(this MailDemonDatabase db, IDictionary<string, object> fields, string emailAddress, string listName, string ipAddress)
         {
             // make sure we have a list
             MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
@@ -25,23 +25,16 @@ namespace MailDemon
                 throw new ArgumentException("No list with name " + listName);
             }
             string token = string.Empty;
+            MailListRegistration reg = null;
             db.Select<MailListRegistration>(r => r.EmailAddress == emailAddress && r.ListName == listName, (foundReg) =>
             {
-                if (foundReg.SubscribedDate == default)
-                {
-                    token = foundReg.SubscribeToken;
-                }
-                else
-                {
-                    // already subscribed
-                    token = null;
-                }
+                reg = foundReg;
                 return false;
             });
-            if (token != null && token.Length == 0)
+            if (reg == null)
             {
                 // new subscribe confirm
-                MailListRegistration reg = new MailListRegistration
+                reg = new MailListRegistration
                 {
                     EmailAddress = emailAddress,
                     ListName = listName,
@@ -52,7 +45,7 @@ namespace MailDemon
                 };
                 db.Insert(reg);
             }
-            return token;
+            return reg;
         }
 
         /// <summary>
@@ -61,22 +54,22 @@ namespace MailDemon
         /// <param name="db">DB</param>
         /// <param name="listName">List name</param>
         /// <param name="token">Subscribe token</param>
-        /// <returns>True if subscribed, false if not</returns>
-        public static bool ConfirmSubscribeToMailingList(this MailDemonDatabase db, string listName, string token)
+        /// <returns>Registration or null if not found</returns>
+        public static MailListRegistration ConfirmSubscribeToMailingList(this MailDemonDatabase db, string listName, string token)
         {
-            bool foundOne = false;
+            MailListRegistration reg = null;
             db.Select<MailListRegistration>(r => r.SubscribeToken == token, (foundReg) =>
             {
                 if (foundReg.ListName == listName && foundReg.SubscribedDate == default && foundReg.SubscribeToken == token)
                 {
-                    foundOne = true;
+                    reg = foundReg;
                     foundReg.SubscribedDate = DateTime.UtcNow;
                     foundReg.UnsubscribeToken = Guid.NewGuid().ToString("N");
                     return true;
                 }
                 return false;
             });
-            return foundOne;
+            return reg;
         }
 
         /// <summary>

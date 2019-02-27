@@ -3,8 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Dynamic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using MimeKit;
@@ -23,9 +25,15 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
+    public interface IMailSendService
+    {
+        Task SendMail(string to, string listName, string templateName, object model, ExpandoObject extraInfo);
+    }
+
     public class HomeController : Controller
     {
         private readonly MailDemonDatabase db;
+        private readonly IMailSendService mailSender;
 
         public bool RequireCaptcha { get; set;  } = true;
 
@@ -35,9 +43,10 @@ namespace MailDemon
             db.Dispose();
         }
 
-        public HomeController(MailDemonDatabase db)
+        public HomeController(MailDemonDatabase db, IMailSendService mailSender)
         {
             this.db = db;
+            this.mailSender = mailSender;
         }
 
         public IActionResult Index()
@@ -54,7 +63,7 @@ namespace MailDemon
                 return NotFound();
             }
             SubscribeModel model = (string.IsNullOrWhiteSpace(result) ? new SubscribeModel() : JsonConvert.DeserializeObject<SubscribeModel>(result));
-            model.Id = id;
+            model.ListName = id;
             model.Title = Resources.SubscribeTitle.FormatHtml(id);
             return View(model);
         }
@@ -74,7 +83,7 @@ namespace MailDemon
             }
             SubscribeModel model = new SubscribeModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
-            model.Id = (id ?? string.Empty).Trim();
+            model.ListName = (id ?? string.Empty).Trim();
             foreach (KeyValuePair<string, string> field in formFields)
             {
                 if (field.Key.StartsWith("ff_"))
@@ -117,15 +126,19 @@ namespace MailDemon
                 {
                     model.Message += "<br/>" + Resources.EmailIsInvalid;
                 }
-                model.Title = Resources.SubscribeTitle.FormatHtml(model.Id);
+                model.Title = Resources.SubscribeTitle.FormatHtml(model.ListName);
                 return View(nameof(Subscribe), model);
             }
             else
             {
                 try
                 {
-                    string token = db.PreSubscribeToMailingList(model.Fields, email, model.Id, HttpContext.GetRemoteIPAddress().ToString());
-                    return RedirectToAction(nameof(SubscribeConfirm), new { id = model.Id });
+                    MailListRegistration reg = db.PreSubscribeToMailingList(model.Fields, email, model.ListName, HttpContext.GetRemoteIPAddress().ToString());
+                    string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeSuccess)}?token={reg.SubscribeToken}";
+                    ExpandoObject obj = new ExpandoObject();
+                    ((IDictionary<string, object>)obj)[MailTemplate.VarConfirmUrl] = url;
+                    await mailSender.SendMail(email, model.ListName, MailTemplate.NameConfirmation, reg, obj);
+                    return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
                 }
                 catch (Exception ex)
                 {
@@ -149,7 +162,7 @@ namespace MailDemon
             return View((object)text);
         }
 
-        public IActionResult SubscribeSuccess(string id, string token)
+        public async Task<IActionResult> SubscribeSuccess(string id, string token)
         {
             id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
@@ -157,8 +170,13 @@ namespace MailDemon
                 return NotFound();
             }
             token = (token ?? string.Empty).Trim();
-            if (db.ConfirmSubscribeToMailingList(id, token))
+            MailListRegistration reg = db.ConfirmSubscribeToMailingList(id, token);
+            if (reg != null)
             {
+                string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
+                ExpandoObject obj = new ExpandoObject();
+                ((IDictionary<string, object>)obj)[MailTemplate.VarUnsubscribeUrl] = url;
+                await mailSender.SendMail(reg.EmailAddress, id, MailTemplate.NameWelcome, reg, obj);
                 string success = Resources.SubscribeSuccess.FormatHtml(id);
                 return View((object)success);
             }
@@ -234,8 +252,7 @@ namespace MailDemon
         [Authorize]
         public IActionResult EditList(string id)
         {
-            long.TryParse(id, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long longId);
-            MailList list = db.Select<MailList>(longId) ?? new MailList();
+            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault() ?? new MailList();
             return View(new MailListModel { Value = list, Message = TempData["Message"] as string});
         }
 
@@ -246,6 +263,17 @@ namespace MailDemon
         {
             try
             {
+                model.Value.Name = model.Value.Name?.Trim();
+                model.Value.Company = model.Value.Company?.Trim();
+                model.Value.Website = model.Value.Website?.Trim();
+                if (string.IsNullOrWhiteSpace(model.Value.Name))
+                {
+                    throw new ArgumentException(Resources.NameInvalid);
+                }
+                if (!Regex.IsMatch(model.Value.Name, "^[A-Za-z0-9_\\- ]+$"))
+                {
+                    throw new ArgumentException("Invalid list name, use only letters, numbers, spaces, hyphen or underscore.");
+                }
                 db.Upsert(model.Value);
                 TempData["Message"] = Resources.Success;
                 return RedirectToAction(nameof(EditList), new { id = model.Value.Id });
@@ -253,7 +281,7 @@ namespace MailDemon
             catch (Exception ex)
             {
                 model.Error = true;
-                model.Message = ex.ToString();
+                model.Message = ex.Message;
                 return View(model);
             }
         }
@@ -262,9 +290,9 @@ namespace MailDemon
         public IActionResult Templates(string id)
         {
             List<MailTemplateBase> templates = new List<MailTemplateBase>();
-            foreach (MailTemplate template in db.Select<MailTemplate>(t => string.IsNullOrWhiteSpace(id) || t.ListName == id))
+            foreach (MailTemplate template in db.Select<MailTemplate>(t => string.IsNullOrWhiteSpace(id) || t.Name.StartsWith(id + "_")))
             {
-                templates.Add(new MailTemplateBase { Id = template.Id, ListName = template.ListName, LastModified = template.LastModified, Name = template.Name });
+                templates.Add(new MailTemplateBase { Id = template.Id, LastModified = template.LastModified, Name = MailTemplate.GetFullName(id, template.Name) });
             }
             return View(templates.OrderBy(t => t.Name));
         }
@@ -284,7 +312,17 @@ namespace MailDemon
         {
             try
             {
-                if (db.Select<MailList>().FirstOrDefault(l => l.Name == model.Value.ListName) == null)
+                model.Value.Name = model.Value.Name?.Trim();
+                if (string.IsNullOrWhiteSpace(model.Value.Name))
+                {
+                    throw new ArgumentException(Resources.NameInvalid);
+                }
+                string[] parts = model.Value.Name.Split('|');
+                if (parts.Length != 2 || !Regex.IsMatch(parts[0], "^[A-Za-z0-9_\\- ]+$") || !Regex.IsMatch(parts[1], "^[A-Za-z0-9_\\- ]+$"))
+                {
+                    throw new ArgumentException("Invalid template name, use only letters, numbers, spaces, hyphen or underscore. Name format is [listname]|[templatename].");
+                }
+                if (db.Select<MailList>().FirstOrDefault(l => l.Name == parts[0]) == null)
                 {
                     throw new ArgumentException(Resources.ListNotFound);
                 }
@@ -297,7 +335,7 @@ namespace MailDemon
             catch (Exception ex)
             {
                 model.Error = true;
-                model.Message = ex.ToString();
+                model.Message = ex.Message;
                 return View(model);
             }
         }
@@ -306,7 +344,7 @@ namespace MailDemon
         [ResponseCache(NoStore = true)]
         public IActionResult DebugTemplate(string id)
         {
-            id = (id ?? string.Empty).Trim().Replace('-', ' ');
+            id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
             {
                 return NotFound();

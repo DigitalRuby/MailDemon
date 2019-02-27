@@ -51,10 +51,12 @@ namespace MailDemon
         {
             if (File.Exists(MailDemonDatabase.DatabasePath))
             {
-                for (int i = 0; i < 10; i++)
+                while (true)
                 {
                     try
                     {
+                        // WTF litedb releases files in the finalizer...???
+                        System.GC.Collect();
                         File.Delete(MailDemonDatabase.DatabasePath);
                         break;
                     }

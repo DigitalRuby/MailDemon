@@ -48,6 +48,7 @@ namespace MailDemon
         private IWebHost host;
         private IServiceProvider serviceProvider;
         private readonly ManualResetEvent runningEvent = new ManualResetEvent(false);
+        private readonly MailDemonService mailService;
 
         /// <summary>
         /// Configuration
@@ -57,7 +58,7 @@ namespace MailDemon
         /// <summary>
         /// Root directory
         /// </summary>
-        public string RootDirectory { get; } = Directory.GetCurrentDirectory();
+        public string RootDirectory { get; private set; }
 
         /// <summary>
         /// Recaptcha settings
@@ -92,9 +93,15 @@ namespace MailDemon
         /// Constructor
         /// </summary>
         /// <param name="args">Args</param>
-        public MailDemonWebApp(string[] args)
+        /// <param name="rootDirectory">Root directory</param>
+        /// <param name="config">Configuration</param>
+        /// <param name="mailService">Mail service</param>
+        public MailDemonWebApp(string[] args, string rootDirectory, IConfigurationRoot config, MailDemonService mailService)
         {
             Args = args;
+            RootDirectory = rootDirectory;
+            Configuration = config;
+            this.mailService = mailService;
         }
 
         /// <summary>
@@ -124,16 +131,6 @@ namespace MailDemon
             {
                 argsDictionary[Args[i++]] = Args[i++].Trim();
             }
-            IConfigurationBuilder configBuilder = new ConfigurationBuilder().SetBasePath(RootDirectory);
-            if (File.Exists(Path.Combine(RootDirectory, "appsettings.debug.json")))
-            {
-                configBuilder.AddJsonFile("appsettings.debug.json");
-            }
-            else
-            {
-                configBuilder.AddJsonFile("appsettings.json");
-            }
-            Configuration = configBuilder.Build();
             builder.UseKestrel(c => c.AddServerHeader = false);
             builder.UseIISIntegration();
             builder.UseContentRoot(RootDirectory);
@@ -217,6 +214,7 @@ namespace MailDemon
                 });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
+                services.AddSingleton<IMailSendService>((provider) => new MailDemonMailSender(mailService, provider));
                 services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());
                 services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
                 RazorLightOptions razorOptions = new RazorLightOptions

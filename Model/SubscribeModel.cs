@@ -8,7 +8,7 @@ namespace MailDemon
     [Serializable]
     public class SubscribeModel : BaseModel
     {
-        public string Id { get; set; }
+        public string ListName { get; set; }
         public string Title { get; set; }
         public Dictionary<string, object> Fields { get; set; } = new Dictionary<string, object>();
 

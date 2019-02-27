@@ -10,19 +10,50 @@ namespace MailDemon
     public class MailTemplateBase
     {
         /// <summary>
+        /// Confirmation template name
+        /// </summary>
+        public const string NameConfirmation = "Confirmation";
+
+        /// <summary>
+        /// Welcome subscription template name
+        /// </summary>
+        public const string NameWelcome = "Welcome";
+
+        /// <summary>
+        /// Confirm subscription var name
+        /// </summary>
+        public const string VarConfirmUrl = "confirm-url";
+
+        /// <summary>
+        /// Unsubscribe var name
+        /// </summary>
+        public const string VarUnsubscribeUrl = "unsubscribe-url";
+
+        /// <summary>
+        /// Get a full template name from a list name and template name
+        /// </summary>
+        /// <param name="listName">List name</param>
+        /// <param name="templateName">Template name</param>
+        /// <returns>Full name</returns>
+        public static string GetFullName(string listName, string templateName)
+        {
+            return listName + "|" + templateName;
+        }
+
+        /// <summary>
         /// Id
         /// </summary>
         public long Id { get; set; }
 
         /// <summary>
-        /// Template list name
-        /// </summary>
-        public string ListName { get; set; }
-
-        /// <summary>
-        /// Template name
+        /// Name, format is [listname]|[templatename]
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Subject
+        /// </summary>
+        public string Subject { get; set; }
 
         /// <summary>
         /// Last modified

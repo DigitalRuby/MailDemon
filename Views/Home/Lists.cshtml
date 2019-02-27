@@ -1,6 +1,31 @@
 ﻿@model IEnumerable<MailDemon.MailList>
 
-@foreach (var list in Model)
-{
-    <span>@list.Name</span><text>&nbsp;&nbsp;&nbsp;</text>@Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditList), new { id = list.Id })<br />
-}
+<table class="defaultTable">
+    <thead>
+        <tr>
+            <th>@MailDemon.Resources.Name</th>
+            <th>@MailDemon.Resources.Company</th>
+            <th>@MailDemon.Resources.Website</th>
+            <td></td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+        <tr>
+            <td>
+                @item.Name
+            </td>
+            <td>
+                @item.Company
+            </td>
+            <td>
+                @item.Website
+            </td>
+            <td>
+                @Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditList), new { id = item.Name })
+            </td>
+        </tr>
+        }
+    </tbody>
+</table>
