@@ -120,6 +120,15 @@
   <data name="EmailIsInvalid" xml:space="preserve">
     <value>Email is invalid.</value>
   </data>
+  <data name="Login" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="LoginFailed" xml:space="preserve">
+    <value>Login failed</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Logout</value>
+  </data>
   <data name="SubscribeConfirm" xml:space="preserve">
     <value>Please check your email for a confirmation link. Please click this link to confirm your subscription to the {0} mailing list.</value>
   </data>
@@ -137,5 +146,8 @@
   </data>
   <data name="UnsubscribeSuccess" xml:space="preserve">
     <value>You are now unsubscribed from the {0} mailing list.</value>
+  </data>
+  <data name="UsernameOrPasswordIsBlank" xml:space="preserve">
+    <value>Username or password is blank</value>
   </data>
 </root>

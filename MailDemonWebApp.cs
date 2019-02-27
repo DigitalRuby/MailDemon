@@ -13,7 +13,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -61,6 +63,11 @@ namespace MailDemon
         /// Recaptcha settings
         /// </summary>
         public static RecaptchaSettings Recaptcha { get; private set; }
+
+        /// <summary>
+        /// Admin login
+        /// </summary>
+        public static KeyValuePair<string, string> AdminLogin;
 
         /// <summary>
         /// Command line args
@@ -142,6 +149,7 @@ namespace MailDemon
             }).Build();
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
             Recaptcha = new RecaptchaSettings(web["recaptchaSiteKey"], web["recaptchaSecretKey"]);
+            AdminLogin = new KeyValuePair<string, string>(web["adminUser"], web["adminPassword"]);
             Task runTask = host.RunAsync(CancelToken);
 
             // do not return the task until we know we are running, for tests for example, we don't want requests coming
@@ -201,6 +209,13 @@ namespace MailDemon
                     options.Cookie.IsEssential = true;
                 });
                 services.Configure<GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Optimal);
+                services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
+                {
+                    o.AccessDeniedPath = "/";
+                    o.LoginPath = "/Login";
+                    o.Cookie.HttpOnly = true;
+                    o.LogoutPath = "/Login";
+                });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
                 services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());

@@ -1,16 +1,24 @@
-﻿using System;
+﻿#region Imports
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 using MimeKit;
 
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 
 using Newtonsoft.Json;
+
+#endregion Imports
 
 namespace MailDemon
 {
@@ -166,6 +174,50 @@ namespace MailDemon
             return View((object)error);
         }
 
+        [HttpGet]
+        public IActionResult Login(string returnUrl)
+        {
+            return View(new LoginModel { ReturnUrl = returnUrl });
+        }
+
+        [HttpPost]
+        [ActionName(nameof(Login))]
+        public async Task<IActionResult> LoginPost(LoginModel login)
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return Redirect("/");
+            }
+            else if (string.IsNullOrWhiteSpace(login.UserName) || string.IsNullOrWhiteSpace(login.Password))
+            {
+                login.Error = true;
+                login.Message = Resources.UsernameOrPasswordIsBlank;
+            }
+            else if (login.UserName != MailDemonWebApp.AdminLogin.Key && login.Password != MailDemonWebApp.AdminLogin.Value)
+            {
+                login.Error = true;
+                login.Message = Resources.LoginFailed;
+            }
+            else
+            {
+                var claims = new[] { new Claim(ClaimTypes.Name, login.UserName), new Claim(ClaimTypes.Role, "Administrator") };
+                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+                if (string.IsNullOrWhiteSpace(login.ReturnUrl))
+                {
+                    return Redirect("/");
+                }
+                else
+                {
+                    return Redirect(login.ReturnUrl);
+                }
+            }
+
+            return View(login);
+        }
+
+        [Authorize]
         public IActionResult DebugTemplate(string id)
         {
             id = (id ?? string.Empty).Trim();

@@ -1,3 +1,7 @@
 ﻿
 <h1>Hello There</h1>
 
+@if (User.Identity.IsAuthenticated)
+{
+    <div>You are logged in as @User.Identity.Name</div>
+}

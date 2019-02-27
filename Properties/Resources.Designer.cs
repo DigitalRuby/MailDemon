@@ -70,6 +70,33 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Login.
+        /// </summary>
+        public static string Login {
+            get {
+                return ResourceManager.GetString("Login", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login failed.
+        /// </summary>
+        public static string LoginFailed {
+            get {
+                return ResourceManager.GetString("LoginFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logout.
+        /// </summary>
+        public static string Logout {
+            get {
+                return ResourceManager.GetString("Logout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please check your email for a confirmation link. Please click this link to confirm your subscription to the {0} mailing list..
         /// </summary>
         public static string SubscribeConfirm {
@@ -120,6 +147,15 @@ namespace MailDemon {
         public static string UnsubscribeSuccess {
             get {
                 return ResourceManager.GetString("UnsubscribeSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Username or password is blank.
+        /// </summary>
+        public static string UsernameOrPasswordIsBlank {
+            get {
+                return ResourceManager.GetString("UsernameOrPasswordIsBlank", resourceCulture);
             }
         }
     }
