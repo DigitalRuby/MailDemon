@@ -12,6 +12,7 @@ namespace MailDemon
     {
         private readonly string viewPath;
         private readonly string fileNameNoExtension;
+        private bool firstChange = true;
 
         public MailDemonDatabaseChangeToken(string viewPath)
         {
@@ -25,6 +26,12 @@ namespace MailDemon
         {
             get
             {
+                if (firstChange)
+                {
+                    firstChange = false;
+                    return true;
+                }
+
                 using (var db = new MailDemonDatabase())
                 {
                     bool changed = false;

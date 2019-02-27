@@ -11,62 +11,81 @@ namespace MailDemon
     public class MailDemonDatabaseFileInfo : IFileInfo
     {
         private readonly string rootPath;
-        private readonly string viewPath;
+        private readonly string fileName;
+        private readonly string fileNameNoExtension;
+        private readonly string fullPath;
         private readonly string name;
         private byte[] contents;
 
         public MailDemonDatabaseFileInfo(string rootPath, string viewPath)
         {
             this.rootPath = rootPath;
-            this.viewPath = viewPath;
+            this.fileName = viewPath;
+            this.fullPath = Path.Combine(rootPath, viewPath);
+            this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
             this.name = Path.GetFileName(viewPath);
-            GetView(viewPath);
+            GetContent();
         }
         public bool Exists { get; private set; }
 
         public bool IsDirectory => false;
 
-        public DateTimeOffset LastModified { get; private set; }
+        public DateTimeOffset LastModified
+        {
+            get
+            {
+                if (File.Exists(fullPath))
+                {
+                    return new FileInfo(fullPath).LastWriteTimeUtc;
+                }
+                else
+                {
+                    using (var db = new MailDemonDatabase())
+                    {
+                        MailTemplate template = db.Select<MailTemplate>(t => t.Name == fileNameNoExtension).FirstOrDefault();
+                        if (template == null)
+                        {
+                            return default;
+                        }
+                        return template.LastModified;
+                    }
+                }
+            }
+        }
 
         public long Length
         {
             get { return contents == null ? 0 : contents.Length; }
         }
 
-        public string Name => Path.GetFileName(viewPath);
+        public string Name => fileName;
 
-        public string PhysicalPath => null;
+        public string PhysicalPath => fullPath;
 
         public Stream CreateReadStream()
         {
             return new MemoryStream(contents);
         }
 
-        private void GetView(string viewPath)
+        private void GetContent()
         {
-            string fileName = Path.GetFileNameWithoutExtension(viewPath);
             using (var db = new MailDemonDatabase())
             {
                 MailTemplate template = null;
-                db.Select<MailTemplate>(t => t.Name == fileName, (foundTemplate) =>
+                db.Select<MailTemplate>(t => t.Name == fileNameNoExtension, (foundTemplate) =>
                 {
                     template = foundTemplate;
                     return true;
                 });
-                if (template != null && template.Template != null)
+                if (template != null && template.Text != null)
                 {
                     Exists = true;
-                    contents = template.Template;
-                    LastModified = template.LastModified;
+                    contents = System.Text.Encoding.UTF8.GetBytes(template.Text);
                 }
-                else
+                else if (File.Exists(fullPath))
                 {
-                    string fullPath = Path.Combine(rootPath, viewPath);
-                    if (File.Exists(fullPath))
-                    {
-                        contents = File.ReadAllBytes(fullPath);
-                        LastModified = File.GetLastWriteTimeUtc(fullPath);
-                    }
+                    Exists = true;
+                    contents = File.ReadAllBytes(fullPath);
                 }
             }
         }

@@ -1,0 +1,12 @@
+﻿@model MailDemon.SubscribeModel
+
+@using (Html.BeginForm(FormMethod.Post, new { action = "/Subscribe/" + Model.Id, id = "subscribeForm" }))
+{
+    await Html.RenderPartialAsync("SubscribeFields", Model);
+    <br />
+    <input type="submit" id="subscriptionSubmit" name="subscriptionSubmit" value="Subscribe" onclick="this.disabled = true; captchaSubmitForm(1); return false;" />
+    <input type="hidden" id="captcha" name="captcha" value="" />
+
+    await Html.RenderPartialAsync("Recaptcha", new { Action = "Subscribe", Form = "subscribeForm" });
+}
+

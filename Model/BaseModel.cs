@@ -11,4 +11,10 @@ namespace MailDemon
         public string Message { get; set; }
         public bool Error { get; set; }
     }
+
+    [Serializable]
+    public class BaseModel<T> : BaseModel
+    {
+        public T Value { get; set; }
+    }
 }

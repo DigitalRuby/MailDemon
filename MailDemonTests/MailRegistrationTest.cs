@@ -53,7 +53,7 @@ namespace MailDemonTests
                 Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
             }
 
-            // verify the signup confirm has no errors
+            // verify the subscribe confirm has no errors
             homeController.SubscribeConfirm("TestList");
 
             // perform the final subscribe action

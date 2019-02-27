@@ -1,1 +1,11 @@
-﻿
+﻿<div id="header">
+    @if (User.Identity.IsAuthenticated)
+    {
+        @Html.ActionLink(MailDemon.Resources.NewList, nameof(MailDemon.HomeController.EditList))<text>&nbsp;&nbsp;</text>
+        @Html.ActionLink(MailDemon.Resources.NewTemplate, nameof(MailDemon.HomeController.EditTemplate))<text>&nbsp;&nbsp;</text>
+        @Html.ActionLink(MailDemon.Resources.Lists, nameof(MailDemon.HomeController.Lists))<text>&nbsp;&nbsp;</text>
+        @Html.ActionLink(MailDemon.Resources.Templates, nameof(MailDemon.HomeController.Templates))<text>&nbsp;&nbsp;</text>
+        @Html.ActionLink(MailDemon.Resources.Logout, nameof(MailDemon.HomeController.Login))<text>&nbsp;&nbsp;</text>
+        @System.String.Format(MailDemon.Resources.LoggedInAs, User.Identity.Name)
+    }
+</div>

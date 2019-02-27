@@ -122,24 +122,25 @@ hr
 a
 {
     color: #DDDDDD;
-    text-decoration: underline;
+    text-decoration: none;
+    background: #121212;
+    padding: 2px 6px;
     cursor: pointer;
 }
 
 textarea
 {
-    min-width: 500px;
-    min-height: 200px;
+    width: 95%;
+    min-height: 400px;
 }
 
 label
 {
-    width: 200px;
-    padding-right: 10px;
+    width: 150px;
     height: 30px;
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    align-items: flex-end;
+    justify-content: flex-start;
     font-size: 14px;
 }
 
@@ -205,7 +206,7 @@ pre
 
 #header
 {
-    height: 60px;
+    height: 34px;
     position: relative;
     left: -10px;
     width: 100%;
@@ -457,17 +458,17 @@ table.defaultTable thead th
     border-radius: 0;
 }
 
-.signup-fields input
+.subscribe-fields input
 {
     width: 300px;
 }
 
-.signup-fields div:nth-of-type(even)
+.subscribe-fields div:nth-of-type(even)
 {
     padding-bottom: 10px;
 }
 
-.signup-fields div:nth-of-type(odd)
+.subscribe-fields div:nth-of-type(odd)
 {
     padding-bottom: 4px;
 }
