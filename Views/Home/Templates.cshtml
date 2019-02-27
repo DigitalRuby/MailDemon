@@ -1,0 +1,31 @@
+﻿@model IEnumerable<MailDemon.MailTemplateBase>
+
+<table class="defaultTable">
+<thead>
+    <tr>
+        <th>@MailDemon.Resources.ListName</th>
+        <th>@MailDemon.Resources.Name</th>
+        <th>@MailDemon.Resources.LastModified</th>
+        <td></td>
+    </tr>
+</thead>
+<tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @item.ListName
+            </td>
+            <td>
+                @item.Name
+            </td>
+            <td>
+                @item.LastModified
+            </td>
+            <td>
+                @Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditTemplate), new { id = item.Id })
+            </td>
+        </tr>
+    }
+</tbody>
+</table>

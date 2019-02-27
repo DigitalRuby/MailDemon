@@ -117,8 +117,32 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="EditList" xml:space="preserve">
+    <value>Edit List</value>
+  </data>
+  <data name="EditTemplate" xml:space="preserve">
+    <value>Edit Template</value>
+  </data>
   <data name="EmailIsInvalid" xml:space="preserve">
     <value>Email is invalid.</value>
+  </data>
+  <data name="LastModified" xml:space="preserve">
+    <value>Last Modified</value>
+  </data>
+  <data name="ListName" xml:space="preserve">
+    <value>List Name</value>
+  </data>
+  <data name="ListNotFound" xml:space="preserve">
+    <value>List not found</value>
+  </data>
+  <data name="Lists" xml:space="preserve">
+    <value>Lists</value>
+  </data>
+  <data name="LoggedInAs" xml:space="preserve">
+    <value>Logged in as {0}</value>
   </data>
   <data name="Login" xml:space="preserve">
     <value>Login</value>
@@ -129,17 +153,41 @@
   <data name="Logout" xml:space="preserve">
     <value>Logout</value>
   </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="NewList" xml:space="preserve">
+    <value>New List</value>
+  </data>
+  <data name="NewTemplate" xml:space="preserve">
+    <value>New Template</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
   <data name="SubscribeConfirm" xml:space="preserve">
-    <value>Please check your email for a confirmation link. Please click this link to confirm your subscription to the {0} mailing list.</value>
+    <value>Please check your email for a confirmation link, you should open this link to confirm your subscription to the {0} mailing list.</value>
   </data>
   <data name="SubscribeError" xml:space="preserve">
-    <value>There was an error signing up for the {0} mailing list, please contact support.</value>
+    <value>There was an error subscribing to the {0} mailing list, please contact support.</value>
   </data>
   <data name="SubscribeSuccess" xml:space="preserve">
-    <value>Thank you for signing up for the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc.</value>
+    <value>Thank you for subscribing to the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc.</value>
   </data>
   <data name="SubscribeTitle" xml:space="preserve">
-    <value>Sign up for the {0} mailing list</value>
+    <value>Subscribe to the {0} mailing list</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="Templates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="Test" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="UnknownError" xml:space="preserve">
+    <value>An unknown error has happened, please contact support.</value>
   </data>
   <data name="UnsubscribeError" xml:space="preserve">
     <value>There was an error unsubscribing from the {0} mailing list, please contact support.</value>

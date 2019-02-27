@@ -12,6 +12,7 @@ using MimeKit;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
@@ -39,13 +40,11 @@ namespace MailDemon
             this.db = db;
         }
 
-        [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
-        [HttpGet]
         public IActionResult Subscribe(string id)
         {
             string result = TempData["result"] as string;
@@ -54,14 +53,14 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            SignUpModel model = (string.IsNullOrWhiteSpace(result) ? new SignUpModel() : JsonConvert.DeserializeObject<SignUpModel>(result));
+            SubscribeModel model = (string.IsNullOrWhiteSpace(result) ? new SubscribeModel() : JsonConvert.DeserializeObject<SubscribeModel>(result));
             model.Id = id;
-            model.Title = string.Empty;// string.Format(MailDemonWebApp.SubscribeTitle, id.Replace('_', ' ').Replace('-', ' '));
+            model.Title = Resources.SubscribeTitle.FormatHtml(id);
             return View(model);
         }
 
         [HttpPost]
-        [ActionName("Signup")]
+        [ActionName("Subscribe")]
         public async Task<IActionResult> SubscribePost(string id, Dictionary<string, object> formFields)
         {
             if (id.Length == 0)
@@ -71,9 +70,9 @@ namespace MailDemon
             string error = null;
             if (RequireCaptcha && formFields.TryGetValue("captcha", out object captchaValue))
             {
-                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue as string, "signup", HttpContext.GetRemoteIPAddress().ToString());
+                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue as string, "Subscribe", HttpContext.GetRemoteIPAddress().ToString());
             }
-            SignUpModel model = new SignUpModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
+            SubscribeModel model = new SubscribeModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
             model.Id = (id ?? string.Empty).Trim();
             foreach (KeyValuePair<string, object> field in formFields)
@@ -123,8 +122,18 @@ namespace MailDemon
             }
             else
             {
-                string token = db.PreSubscribeToMailingList(model.Fields, email, model.Id, HttpContext.GetRemoteIPAddress().ToString());
-                return RedirectToAction(nameof(SubscribeConfirm), new { id = model.Id });
+                try
+                {
+                    string token = db.PreSubscribeToMailingList(model.Fields, email, model.Id, HttpContext.GetRemoteIPAddress().ToString());
+                    return RedirectToAction(nameof(SubscribeConfirm), new { id = model.Id });
+                }
+                catch (Exception ex)
+                {
+                    MailDemonLog.Error(ex);
+                    model.Error = true;
+                    model.Message += "<br/>" + Resources.UnknownError;
+                    return View(nameof(Subscribe), model);
+                }
             }
         }
 
@@ -174,7 +183,6 @@ namespace MailDemon
             return View((object)error);
         }
 
-        [HttpGet]
         public IActionResult Login(string returnUrl)
         {
             return View(new LoginModel { ReturnUrl = returnUrl });
@@ -218,9 +226,87 @@ namespace MailDemon
         }
 
         [Authorize]
+        public IActionResult Lists()
+        {
+            return View(db.Select<MailList>().OrderBy(l => l.Name));
+        }
+
+        [Authorize]
+        public IActionResult EditList(string id)
+        {
+            long.TryParse(id, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long longId);
+            MailList list = db.Select<MailList>(longId) ?? new MailList();
+            return View(new MailListModel { Value = list, Message = TempData["Message"] as string});
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ActionName(nameof(EditList))]
+        public IActionResult EditListPost(string id, MailListModel model)
+        {
+            try
+            {
+                db.Upsert(model.Value);
+                TempData["Message"] = Resources.Success;
+                return RedirectToAction(nameof(EditList), new { id = model.Value.Id });
+            }
+            catch (Exception ex)
+            {
+                model.Error = true;
+                model.Message = ex.ToString();
+                return View(model);
+            }
+        }
+
+        [Authorize]
+        public IActionResult Templates(string id)
+        {
+            List<MailTemplateBase> templates = new List<MailTemplateBase>();
+            foreach (MailTemplate template in db.Select<MailTemplate>(t => string.IsNullOrWhiteSpace(id) || t.ListName == id))
+            {
+                templates.Add(new MailTemplateBase { Id = template.Id, ListName = template.ListName, LastModified = template.LastModified, Name = template.Name });
+            }
+            return View(templates.OrderBy(t => t.Name));
+        }
+
+        [Authorize]
+        public IActionResult EditTemplate(string id)
+        {
+            long.TryParse(id, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long longId);
+            MailTemplate template = db.Select<MailTemplate>(longId) ?? new MailTemplate();
+            return View(new MailTemplateModel { Value = template, Message = TempData["Message"] as string });
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ActionName(nameof(EditTemplate))]
+        public IActionResult EditTemplatePost(string id, MailTemplateModel model)
+        {
+            try
+            {
+                if (db.Select<MailList>().FirstOrDefault(l => l.Name == model.Value.ListName) == null)
+                {
+                    throw new ArgumentException(Resources.ListNotFound);
+                }
+                model.Value.LastModified = DateTime.UtcNow;
+                model.Value.Dirty = true;
+                db.Upsert(model.Value);
+                TempData["Message"] = Resources.Success;
+                return RedirectToAction(nameof(EditTemplate), new { id = model.Value.Id });
+            }
+            catch (Exception ex)
+            {
+                model.Error = true;
+                model.Message = ex.ToString();
+                return View(model);
+            }
+        }
+
+        [Authorize]
+        [ResponseCache(NoStore = true)]
         public IActionResult DebugTemplate(string id)
         {
-            id = (id ?? string.Empty).Trim();
+            id = (id ?? string.Empty).Trim().Replace('-', ' ');
             if (id.Length == 0)
             {
                 return NotFound();
@@ -236,6 +322,14 @@ namespace MailDemon
                 Expires = DateTime.MinValue
             };
             return View(id, tempReg);
+        }
+
+        [Authorize]
+        [ResponseCache(NoStore = true)]
+        public IActionResult Error(string code)
+        {
+            var feature = this.HttpContext.Features.Get<IExceptionHandlerFeature>();
+            return View((object)(feature?.Error?.ToString() ?? "Code: " + (code ?? "Unknown")));
         }
     }
 }

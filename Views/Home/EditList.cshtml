@@ -1,0 +1,13 @@
+﻿@model MailDemon.MailListModel
+@{ string errorClass = (Model.Error ? "error-message" : string.Empty); }
+
+<h2>@MailDemon.Resources.EditList</h2>
+
+@using (Html.BeginForm())
+{
+    <div class="@errorClass">@Model.Message</div><br />
+    @Html.LabelFor(m => m.Value.Name) @Html.EditorFor(m => m.Value.Name)<br />
+    @Html.HiddenFor(m => m.Value.Id)
+    <br />
+    <input type="submit" value="@MailDemon.Resources.Save" />
+}

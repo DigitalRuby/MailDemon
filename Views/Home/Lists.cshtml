@@ -1,0 +1,6 @@
+﻿@model IEnumerable<MailDemon.MailList>
+
+@foreach (var list in Model)
+{
+    <span>@list.Name</span><text>&nbsp;&nbsp;&nbsp;</text>@Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditList), new { id = list.Id })<br />
+}
