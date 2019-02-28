@@ -214,7 +214,8 @@ namespace MailDemon
                 });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
-                services.AddSingleton<IMailSendService>((provider) => new MailDemonMailSender(mailService, provider));
+                services.AddSingleton<IMailCreator>((provider) => new MailCreator(provider.GetService<IRazorLightEngine>()));
+                services.AddSingleton<IMailSender>((provider) => mailService);
                 services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());
                 services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
                 RazorLightOptions razorOptions = new RazorLightOptions

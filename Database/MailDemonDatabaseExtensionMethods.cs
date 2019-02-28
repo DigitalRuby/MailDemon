@@ -20,10 +20,6 @@ namespace MailDemon
         {
             // make sure we have a list
             MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
-            if (list == null)
-            {
-                throw new ArgumentException("No list with name " + listName);
-            }
             string token = string.Empty;
             MailListRegistration reg = null;
             db.Select<MailListRegistration>(r => r.EmailAddress == emailAddress && r.ListName == listName, (foundReg) =>
@@ -38,13 +34,17 @@ namespace MailDemon
                 {
                     EmailAddress = emailAddress,
                     ListName = listName,
-                    Fields = fields,
                     Expires = DateTime.UtcNow.AddHours(1.0),
                     IPAddress = ipAddress,
                     SubscribeToken = token = Guid.NewGuid().ToString("N")
                 };
+                foreach (KeyValuePair<string, object> kv in fields)
+                {
+                    reg.Fields[kv.Key] = kv.Value;
+                }
                 db.Insert(reg);
             }
+            reg.MailList = list ?? throw new ArgumentException("No list with name " + listName);
             return reg;
         }
 
@@ -65,6 +65,7 @@ namespace MailDemon
                     reg = foundReg;
                     foundReg.SubscribedDate = DateTime.UtcNow;
                     foundReg.UnsubscribeToken = Guid.NewGuid().ToString("N");
+                    foundReg.MailList = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
                     return true;
                 }
                 return false;

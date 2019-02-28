@@ -17,7 +17,7 @@ namespace MailDemonTests
 {
     public class MailTemplateTests
     {
-        private static readonly MailListRegistration model = new MailListRegistration { Fields = new Dictionary<string, object> { { "firstName", "Bob" } } };
+        private static readonly MailListRegistration model = new MailListRegistration { FirstName = "Bob", LastName = "Smith", EmailAddress = "bobsmith@anotherdomain.com", Company = "Fake Company" };
         private RazorLightEngine engine;
 
         [SetUp]

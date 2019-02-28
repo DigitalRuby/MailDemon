@@ -132,6 +132,9 @@
   <data name="EmailIsInvalid" xml:space="preserve">
     <value>Email is invalid.</value>
   </data>
+  <data name="FooterText" xml:space="preserve">
+    <value>Powered by &lt;a target='_blank' href='https://github.com/DigitalRuby/MailDemon'&gt;MailDemon&lt;/a&gt;, (c) 2018 &lt;a target='_blank' href='https://www.digitalruby.com'&gt;Digital Ruby, LLC&lt;/a&gt;</value>
+  </data>
   <data name="LastModified" xml:space="preserve">
     <value>Last Modified</value>
   </data>
@@ -158,9 +161,6 @@
   </data>
   <data name="Name" xml:space="preserve">
     <value>Name</value>
-  </data>
-  <data name="NameInvalid" xml:space="preserve">
-    <value>Name is invalid</value>
   </data>
   <data name="NewList" xml:space="preserve">
     <value>New List</value>

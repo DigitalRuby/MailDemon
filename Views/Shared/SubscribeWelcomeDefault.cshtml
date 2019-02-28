@@ -1,0 +1,9 @@
+﻿@model MailDemon.MailListRegistration
+
+<!-- Subject: Welcome to your subscription to the @Model.ListName mailing list. -->
+
+<div>
+    <p>Welcome to your subscription to the @Model.ListName mailing list.</p>
+    <p>To unsubscribe from this mailing list, please use the following link:</p>
+    <p><a href="@Html.Raw(Model.UnsubscribeUrl)" target="_blank">@Model.UnsubscribeUrl</a></p>
+</div>

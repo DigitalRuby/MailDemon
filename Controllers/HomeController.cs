@@ -25,17 +25,23 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
-    public interface IMailSendService
-    {
-        Task SendMail(string to, string listName, string templateName, object model, ExpandoObject extraInfo);
-    }
-
     public class HomeController : Controller
     {
         private readonly MailDemonDatabase db;
-        private readonly IMailSendService mailSender;
+        private readonly IMailCreator mailCreator;
+        private readonly IMailSender mailSender;
 
         public bool RequireCaptcha { get; set;  } = true;
+
+        private async Task SendMailAsync(MailListRegistration reg, string templateName)
+        {
+            string fullTemplateName = MailTemplate.GetFullTemplateName(reg.MailList.Name, templateName);
+            MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
+            string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
+            MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
+            MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, reg.ViewBagObject as ExpandoObject);
+            await mailSender.SendMailAsync(message, fromAddress, toDomain, toAddresses);
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -43,9 +49,10 @@ namespace MailDemon
             db.Dispose();
         }
 
-        public HomeController(MailDemonDatabase db, IMailSendService mailSender)
+        public HomeController(MailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender)
         {
             this.db = db;
+            this.mailCreator = mailCreator;
             this.mailSender = mailSender;
         }
 
@@ -65,6 +72,7 @@ namespace MailDemon
             SubscribeModel model = (string.IsNullOrWhiteSpace(result) ? new SubscribeModel() : JsonConvert.DeserializeObject<SubscribeModel>(result));
             model.ListName = id;
             model.Title = Resources.SubscribeTitle.FormatHtml(id);
+            model.TemplateName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeInitial);
             return View(model);
         }
 
@@ -84,6 +92,10 @@ namespace MailDemon
             SubscribeModel model = new SubscribeModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
             model.ListName = (id ?? string.Empty).Trim();
+            if (formFields.ContainsKey("TemplateName"))
+            {
+                model.TemplateName = formFields["TemplateName"];
+            }
             foreach (KeyValuePair<string, string> field in formFields)
             {
                 if (field.Key.StartsWith("ff_"))
@@ -134,10 +146,9 @@ namespace MailDemon
                 try
                 {
                     MailListRegistration reg = db.PreSubscribeToMailingList(model.Fields, email, model.ListName, HttpContext.GetRemoteIPAddress().ToString());
-                    string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeSuccess)}?token={reg.SubscribeToken}";
-                    ExpandoObject obj = new ExpandoObject();
-                    ((IDictionary<string, object>)obj)[MailTemplate.VarConfirmUrl] = url;
-                    await mailSender.SendMail(email, model.ListName, MailTemplate.NameConfirmation, reg, obj);
+                    string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeConfirm)}?token={reg.SubscribeToken}";
+                    reg.SubscribeUrl = url;
+                    await SendMailAsync(reg, MailTemplate.NameSubscribeConfirmation);
                     return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
                 }
                 catch (Exception ex)
@@ -162,7 +173,7 @@ namespace MailDemon
             return View((object)text);
         }
 
-        public async Task<IActionResult> SubscribeSuccess(string id, string token)
+        public async Task<IActionResult> SubscribeWelcome(string id, string token)
         {
             id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
@@ -174,9 +185,8 @@ namespace MailDemon
             if (reg != null)
             {
                 string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
-                ExpandoObject obj = new ExpandoObject();
-                ((IDictionary<string, object>)obj)[MailTemplate.VarUnsubscribeUrl] = url;
-                await mailSender.SendMail(reg.EmailAddress, id, MailTemplate.NameWelcome, reg, obj);
+                reg.UnsubscribeUrl = url;
+                await SendMailAsync(reg, MailTemplate.NameSubscribeWelcome);
                 string success = Resources.SubscribeSuccess.FormatHtml(id);
                 return View((object)success);
             }
@@ -266,13 +276,9 @@ namespace MailDemon
                 model.Value.Name = model.Value.Name?.Trim();
                 model.Value.Company = model.Value.Company?.Trim();
                 model.Value.Website = model.Value.Website?.Trim();
-                if (string.IsNullOrWhiteSpace(model.Value.Name))
+                if (!MailTemplate.ValidateName(model.Value.Name))
                 {
-                    throw new ArgumentException(Resources.NameInvalid);
-                }
-                if (!Regex.IsMatch(model.Value.Name, "^[A-Za-z0-9_\\- ]+$"))
-                {
-                    throw new ArgumentException("Invalid list name, use only letters, numbers, spaces, hyphen or underscore.");
+                    throw new ArgumentException("Invalid list name, use only letters, numbers, spaces, period, hyphen or underscore.");
                 }
                 db.Upsert(model.Value);
                 TempData["Message"] = Resources.Success;
@@ -290,9 +296,9 @@ namespace MailDemon
         public IActionResult Templates(string id)
         {
             List<MailTemplateBase> templates = new List<MailTemplateBase>();
-            foreach (MailTemplate template in db.Select<MailTemplate>(t => string.IsNullOrWhiteSpace(id) || t.Name.StartsWith(id + "_")))
+            foreach (MailTemplate template in db.Select<MailTemplate>(t => string.IsNullOrWhiteSpace(id) || t.Name.StartsWith(id + MailTemplate.FullNameSeparator)))
             {
-                templates.Add(new MailTemplateBase { Id = template.Id, LastModified = template.LastModified, Name = MailTemplate.GetFullName(id, template.Name) });
+                templates.Add(new MailTemplateBase { Id = template.Id, LastModified = template.LastModified, Name = template.Name });
             }
             return View(templates.OrderBy(t => t.Name));
         }
@@ -313,16 +319,13 @@ namespace MailDemon
             try
             {
                 model.Value.Name = model.Value.Name?.Trim();
-                if (string.IsNullOrWhiteSpace(model.Value.Name))
+                if (!MailTemplate.GetListNameAndTemplateName(model.Value.Name, out string listName, out string templateName) ||
+                    !MailTemplate.ValidateName(listName) ||
+                    !MailTemplate.ValidateName(templateName))
                 {
-                    throw new ArgumentException(Resources.NameInvalid);
+                    throw new ArgumentException("Invalid template name, use only letters, numbers, spaces, period, hyphen or underscore. Name format is [listname],[templatename].");
                 }
-                string[] parts = model.Value.Name.Split('|');
-                if (parts.Length != 2 || !Regex.IsMatch(parts[0], "^[A-Za-z0-9_\\- ]+$") || !Regex.IsMatch(parts[1], "^[A-Za-z0-9_\\- ]+$"))
-                {
-                    throw new ArgumentException("Invalid template name, use only letters, numbers, spaces, hyphen or underscore. Name format is [listname]|[templatename].");
-                }
-                if (db.Select<MailList>().FirstOrDefault(l => l.Name == parts[0]) == null)
+                if (db.Select<MailList>().FirstOrDefault(l => l.Name == listName) == null)
                 {
                     throw new ArgumentException(Resources.ListNotFound);
                 }
@@ -353,7 +356,9 @@ namespace MailDemon
             {
                 EmailAddress = "test@domain.com",
                 IPAddress = HttpContext.GetRemoteIPAddress().ToString(),
-                Fields = new Dictionary<string, object> { { "firstName", "Bob" }, { "lastName", "Smith" }, { "company", "Fake Company" } },
+                FirstName = "Bob",
+                LastName = "Smith",
+                Company = "Fake Company",
                 ListName = "Default",
                 SubscribedDate = DateTime.UtcNow,
                 SubscribeToken = Guid.NewGuid().ToString("N"),

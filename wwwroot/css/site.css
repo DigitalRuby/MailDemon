@@ -254,7 +254,14 @@ pre
     text-align: center;
     padding-top: 10px;
     height: 50px;
+    font-size: 0.8em;
     display: block;
+}
+
+#footer a
+{
+    background: none;
+    padding: 0;
 }
 
 #outerFooter
