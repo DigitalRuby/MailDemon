@@ -6,16 +6,9 @@ using System.Threading.Tasks;
 namespace MailDemon
 {
     [Serializable]
-    public class SubscribeModel : BaseModel
+    public class SubscribeModel : MailListRegistration
     {
-        public string ListName { get; set; }
         public string Title { get; set; }
-        public Dictionary<string, object> Fields { get; set; } = new Dictionary<string, object>();
-
-        public object FieldValue(string name)
-        {
-            Fields.TryGetValue(name, out object value);
-            return value;
-        }
+        public string TemplateName { get; set; }
     }
 }

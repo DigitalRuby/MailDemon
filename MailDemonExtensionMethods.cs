@@ -125,6 +125,17 @@ namespace MailDemon
         }
 
         /// <summary>
+        /// Get domain from an email address
+        /// </summary>
+        /// <param name="text">Text</param>
+        /// <returns>Domain</returns>
+        public static string GetDomainFromEmailAddress(this string emailAddress)
+        {
+            int pos = emailAddress.IndexOf('@');
+            return emailAddress.Substring(++pos);
+        }
+
+        /// <summary>
         /// Get utf8 bytes from string
         /// </summary>
         /// <param name="text">String</param>

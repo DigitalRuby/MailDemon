@@ -106,6 +106,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Powered by &lt;a target=&apos;_blank&apos; href=&apos;https://github.com/DigitalRuby/MailDemon&apos;&gt;MailDemon&lt;/a&gt;, (c) 2018 &lt;a target=&apos;_blank&apos; href=&apos;https://www.digitalruby.com&apos;&gt;Digital Ruby, LLC&lt;/a&gt;.
+        /// </summary>
+        public static string FooterText {
+            get {
+                return ResourceManager.GetString("FooterText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Last Modified.
         /// </summary>
         public static string LastModified {
@@ -183,15 +192,6 @@ namespace MailDemon {
         public static string Name {
             get {
                 return ResourceManager.GetString("Name", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Name is invalid.
-        /// </summary>
-        public static string NameInvalid {
-            get {
-                return ResourceManager.GetString("NameInvalid", resourceCulture);
             }
         }
         

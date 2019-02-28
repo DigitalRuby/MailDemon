@@ -4,30 +4,31 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.RegularExpressions;
 
 namespace MailDemon
 {
     public class MailTemplateBase
     {
         /// <summary>
-        /// Confirmation template name
+        /// Separator in full template names for the list name and template name
         /// </summary>
-        public const string NameConfirmation = "Confirmation";
+        public const string FullNameSeparator = ",";
 
         /// <summary>
-        /// Welcome subscription template name
+        /// Initial subscribe page. The template with the form fields to start a subscription request.
         /// </summary>
-        public const string NameWelcome = "Welcome";
+        public const string NameSubscribeInitial = "SubscribeInitial";
 
         /// <summary>
-        /// Confirm subscription var name
+        /// Subscribe confirmation template name. The template that requests the user to confirm their subscription.
         /// </summary>
-        public const string VarConfirmUrl = "confirm-url";
+        public const string NameSubscribeConfirmation = "SubscribeConfirmation";
 
         /// <summary>
-        /// Unsubscribe var name
+        /// Welcome subscription template name. The template that informs the user of their active subscription.
         /// </summary>
-        public const string VarUnsubscribeUrl = "unsubscribe-url";
+        public const string NameSubscribeWelcome = "SubscribeWelcome";
 
         /// <summary>
         /// Get a full template name from a list name and template name
@@ -35,9 +36,39 @@ namespace MailDemon
         /// <param name="listName">List name</param>
         /// <param name="templateName">Template name</param>
         /// <returns>Full name</returns>
-        public static string GetFullName(string listName, string templateName)
+        public static string GetFullTemplateName(string listName, string templateName)
         {
-            return listName + "|" + templateName;
+            return listName + "," + templateName;
+        }
+
+        /// <summary>
+        /// Get a list and template name from a full template name
+        /// </summary>
+        /// <param name="fullTemplateName">Full template name</param>
+        /// <param name="listName">List name</param>
+        /// <param name="templateName">Template name</param>
+        /// <returns>True if success, false if invalid full template name</returns>
+        public static bool GetListNameAndTemplateName(string fullTemplateName, out string listName, out string templateName)
+        {
+            int pos = fullTemplateName.IndexOf(',');
+            if (pos < 0)
+            {
+                listName = templateName = null;
+                return false;
+            }
+            listName = fullTemplateName.Substring(0, pos);
+            templateName = fullTemplateName.Substring(++pos);
+            return true;
+        }
+
+        /// <summary>
+        /// Validate that a name has no bad chars in it
+        /// </summary>
+        /// <param name="name">Name</param>
+        /// <returns>True if valid, false otherwise</returns>
+        public static bool ValidateName(string name)
+        {
+            return (!string.IsNullOrWhiteSpace(name) && Regex.IsMatch(name, "^[A-Za-z0-9_\\-\\. ]+$"));
         }
 
         /// <summary>
@@ -46,14 +77,9 @@ namespace MailDemon
         public long Id { get; set; }
 
         /// <summary>
-        /// Name, format is [listname]|[templatename]
+        /// Name, format is [listname],[templatename]
         /// </summary>
         public string Name { get; set; }
-
-        /// <summary>
-        /// Subject
-        /// </summary>
-        public string Subject { get; set; }
 
         /// <summary>
         /// Last modified

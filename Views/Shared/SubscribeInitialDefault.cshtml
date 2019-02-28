@@ -1,0 +1,17 @@
+﻿@model MailDemon.SubscribeModel
+
+<!-- Subject: No subject, this is just a form to fill out -->
+
+<div class="subscribe-fields">
+    <div>First Name</div>
+    <div><input type="text" name="ff_FirstName" id="ff_FirstName" value="@Model.FirstName" /></div>
+
+    <div>Last Name</div>
+    <div><input type="text" name="ff_LastName" id="ff_LastName" value="@Model.LastName" /></div>
+
+    <div>Email Address</div>
+    <div><input type="text" name="ff_EmailAddress" id="ff_EmailAddress" value="@Model.EmailAddress" /></div>
+
+    <div>Company</div>
+    <div><input type="text" name="ff_Company_Optional" id="ff_Company_Optional" value="@Model.Company" /></div>
+</div>

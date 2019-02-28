@@ -14,53 +14,67 @@ using MailDemon;
 
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Http;
+using MimeKit;
+using MailKit.Net.Smtp;
 
 #endregion Imports
 
 namespace MailDemonTests
 {
-    public class MailRegistrationTest : ITempDataProvider, IMailSendService
+    public class MailRegistrationTest : ITempDataProvider, IMailCreator, IMailSender
     {
         private const string listName = "TestList";
         private const string scheme = "https";
         private const string domainName = "testdomain.com";
         private const string mailAddress = "testemail@testemaildomain.com";
+        private const string fromAddress = "sender@mydomain.com";
+        private const string fromName = "Test Sender";
+        private const string subject = "Mail Subject";
+        private const string company = "Test Company";
+        private const string fullAddress = "123 test st, state, country 99999";
+        private const string website = "https://testwebsite.com";
 
         private readonly HomeController homeController;
         private readonly HttpContext httpContext = new DefaultHttpContext();
         private readonly Dictionary<string, object> tempData = new Dictionary<string, object>();
-        private readonly Dictionary<string, int> sentMail = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> createdMail = new Dictionary<string, int>();
+        private int sentMail;
+        private string templateName;
 
-        private void VerifySentMail(string templateName, object model, string key, string value)
+        private void VerifyCreatedMail(string templateName, object model, string key, string value)
         {
-            Assert.AreEqual(1, sentMail.Count);
-            KeyValuePair<string, int> mail = sentMail.First();
+            Assert.AreEqual(1, sentMail);
+            Assert.AreEqual(1, createdMail.Count);
+            KeyValuePair<string, int> mail = createdMail.First();
             Assert.AreEqual(1, mail.Value);
             ExpandoObject obj = new ExpandoObject();
             ((IDictionary<string, object>)obj)[key] = value;
-            string fullText = GetFullText(mailAddress, listName, templateName, model, obj);
+            string fullText = GetMailCreationFullText(subject, templateName, model, obj);
             Assert.IsTrue(Regex.IsMatch(mail.Key, $@"^{fullText}$", RegexOptions.IgnoreCase));
-            sentMail.Clear();
+            createdMail.Clear();
+            sentMail = 0;
         }
 
-        private string GetFullText(string to, string listName, string templateName, object model, ExpandoObject extraInfo)
+        private string GetMailCreationFullText(string subject, string templateName, object model, ExpandoObject extraInfo)
         {
+            (extraInfo as IDictionary<string, object>).Remove(MailListRegistration.VarMailList);
             string extraInfoText = string.Join(";", extraInfo.Select(x => x.Key + "=" + x.Value));
-            string fullText = (to + ";" + listName + ";" + templateName + ";" + (model?.ToString()) + ";" + extraInfoText);
+            string fullText = (subject + ";" + templateName + ";" + (model?.ToString()) + ";" + extraInfoText);
             return fullText;
         }
 
         private void Cleanup()
         {
             MailDemonDatabase.DeleteDatabase();
-            sentMail.Clear();
+            createdMail.Clear();
         }
 
         private string Subscribe()
         {
             using (var db = new MailDemonDatabase())
             {
-                db.Insert<MailList>(new MailList { Name = listName });
+                db.Insert<MailList>(new MailList { Name = listName, FromEmailAddress = fromAddress, FromEmailName = fromName,
+                    Company = company, PhysicalAddress = fullAddress, Website = website });
             }
 
             homeController.SubscribePost(listName, new Dictionary<string, string>
@@ -87,17 +101,19 @@ namespace MailDemonTests
                 Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
             }
 
+            // verify we sent the right confirmation email
+            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirmation), reg, MailListRegistration.VarSubscribeUrl,
+                $@"{scheme}://{domainName}/SubscribeConfirm\?token=.{{16,}}");
+
             // verify the subscribe confirm has no errors
             homeController.SubscribeConfirm(listName);
 
-            // verify we sent the right confirmation email
-            VerifySentMail(MailTemplate.NameConfirmation, reg, MailTemplate.VarConfirmUrl, $@"{scheme}://{domainName}/SubscribeSuccess\?token=.{{16,}}");
-
             // perform the final subscribe action
-            homeController.SubscribeSuccess(listName, reg.SubscribeToken).Sync();
+            homeController.SubscribeWelcome(listName, reg.SubscribeToken).Sync();
 
             // verify we sent the right welcome mail
-            VerifySentMail(MailTemplate.NameWelcome, reg, MailTemplate.VarUnsubscribeUrl, $@"{scheme}://{domainName}/Unsubscribe/TestList\?token=.{{16,}}");
+            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeWelcome), reg, MailListRegistration.VarUnsubscribeUrl,
+                $@"{scheme}://{domainName}/Unsubscribe/TestList\?token=.{{16,}}");
 
             // validate there is an unsubscribe in the db
             using (var db = new MailDemonDatabase())
@@ -128,7 +144,7 @@ namespace MailDemonTests
 
         public MailRegistrationTest()
         {
-             homeController = new HomeController(new MailDemonDatabase(), this);
+             homeController = new HomeController(new MailDemonDatabase(), this, this);
         }
 
         [SetUp]
@@ -185,14 +201,31 @@ namespace MailDemonTests
             
         }
 
-        Task IMailSendService.SendMail(string to, string listName, string templateName, object model, ExpandoObject extraInfo)
+        Task<MimeMessage> IMailCreator.CreateMailAsync(string templateName, object model, ExpandoObject extraInfo)
         {
-            string fullText = GetFullText(to, listName, templateName, model, extraInfo);
-            if (!sentMail.TryGetValue(fullText, out int count))
+            string fullText = GetMailCreationFullText(subject, templateName, model, extraInfo);
+            this.templateName = templateName;
+            if (!createdMail.TryGetValue(fullText, out int count))
             {
                 count = 0;
             }
-            sentMail[fullText] = ++count;
+            createdMail[fullText] = ++count;
+            MimeMessage msg = new MimeMessage
+            {
+                Body = (new BodyBuilder
+                {
+                    HtmlBody = "<html><body>Mail Body: " + templateName + "</body></html>"
+                }).ToMessageBody(),
+                Subject = subject
+            };
+            return Task.FromResult(msg);
+        }
+
+        Task IMailSender.SendMailAsync(MimeMessage message, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> onPrepare)
+        {
+            Assert.AreEqual(subject, message.Subject);
+            Assert.AreEqual("<html><body>Mail Body: " + templateName + "</body></html>", message.HtmlBody);
+            sentMail++;
             return Task.CompletedTask;
         }
     }
