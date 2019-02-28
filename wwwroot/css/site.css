@@ -153,6 +153,11 @@ pre
     font-family: 'Lucida Console', monospace;
 }
 
+form
+{
+    display: inline-block;
+}
+
 ::-webkit-scrollbar
 {
     width: 22px;
@@ -305,9 +310,9 @@ pre
     color: #EDEDED;
     text-align: center;
     text-decoration: none;
-    display: inline-block;
-    padding: 10px;
+    padding: 4px;
     min-width: 100px;
+    float: left;
 }
 
 .delete-button
@@ -317,8 +322,9 @@ pre
     color: #EDEDED;
     text-align: center;
     text-decoration: none;
-    display: inline-block;
-    padding: 10px;
+    padding: 4px;
+    min-width: 100px;
+    float: right;
 }
 
 .button:hover,

@@ -120,6 +120,9 @@
   <data name="Company" xml:space="preserve">
     <value>Company</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
   <data name="Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
@@ -167,6 +170,9 @@
   </data>
   <data name="NewTemplate" xml:space="preserve">
     <value>New Template</value>
+  </data>
+  <data name="PleaseContactSupport" xml:space="preserve">
+    <value>Please contact support</value>
   </data>
   <data name="Save" xml:space="preserve">
     <value>Save</value>

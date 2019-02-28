@@ -25,6 +25,8 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
+    [Authorize]
+    [ResponseCache(NoStore = true)]
     public class HomeController : Controller
     {
         private readonly MailDemonDatabase db;
@@ -56,11 +58,13 @@ namespace MailDemon
             this.mailSender = mailSender;
         }
 
+        [AllowAnonymous]
         public IActionResult Index()
         {
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult Subscribe(string id)
         {
             string result = TempData["result"] as string;
@@ -78,6 +82,7 @@ namespace MailDemon
 
         [HttpPost]
         [ActionName("Subscribe")]
+        [AllowAnonymous]
         public async Task<IActionResult> SubscribePost(string id, Dictionary<string, string> formFields)
         {
             if (id.Length == 0)
@@ -161,6 +166,7 @@ namespace MailDemon
             }
         }
 
+        [AllowAnonymous]
         public IActionResult SubscribeConfirm(string id)
         {
             id = (id ?? string.Empty).Trim();
@@ -173,6 +179,7 @@ namespace MailDemon
             return View((object)text);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> SubscribeWelcome(string id, string token)
         {
             id = (id ?? string.Empty).Trim();
@@ -194,6 +201,7 @@ namespace MailDemon
             return View((object)error);
         }
 
+        [AllowAnonymous]
         public IActionResult Unsubscribe(string id, string token)
         {
             id = (id ?? string.Empty).Trim();
@@ -218,6 +226,7 @@ namespace MailDemon
 
         [HttpPost]
         [ActionName(nameof(Login))]
+        [AllowAnonymous]
         public async Task<IActionResult> LoginPost(LoginModel login)
         {
             if (User.Identity.IsAuthenticated)
@@ -253,13 +262,11 @@ namespace MailDemon
             return View(login);
         }
 
-        [Authorize]
         public IActionResult Lists()
         {
             return View(db.Select<MailList>().OrderBy(l => l.Name));
         }
 
-        [Authorize]
         public IActionResult EditList(string id)
         {
             MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault() ?? new MailList();
@@ -267,10 +274,14 @@ namespace MailDemon
         }
 
         [HttpPost]
-        [Authorize]
         [ActionName(nameof(EditList))]
-        public IActionResult EditListPost(string id, MailListModel model)
+        public IActionResult EditListPost(string id, MailListModel model, string action)
         {
+            if (action == "delete")
+            {
+                return EditListDelete(id);
+            }
+
             try
             {
                 model.Value.Name = model.Value.Name?.Trim();
@@ -280,19 +291,42 @@ namespace MailDemon
                 {
                     throw new ArgumentException("Invalid list name, use only letters, numbers, spaces, period, hyphen or underscore.");
                 }
+                MailList existingList = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+                if (existingList != null && existingList.Name != model.Value.Name)
+                {
+                    throw new ArgumentException("Cannot rename list once it is created");
+                }
                 db.Upsert(model.Value);
                 TempData["Message"] = Resources.Success;
-                return RedirectToAction(nameof(EditList), new { id = model.Value.Id });
+                return RedirectToAction(nameof(EditList), new { id = model.Value.Name });
             }
             catch (Exception ex)
             {
+                MailDemonLog.Error(ex);
                 model.Error = true;
                 model.Message = ex.Message;
                 return View(model);
             }
         }
 
-        [Authorize]
+        private IActionResult EditListDelete(string id)
+        {
+            try
+            {
+                MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+                if (list != null)
+                {
+                    db.Delete<MailList>(list.Id);
+                    db.Delete<MailTemplate>(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator));
+                }
+            }
+            catch (Exception ex)
+            {
+                MailDemonLog.Error(ex);
+            }
+            return RedirectToAction(nameof(EditList));
+        }
+
         public IActionResult Templates(string id)
         {
             List<MailTemplateBase> templates = new List<MailTemplateBase>();
@@ -303,19 +337,21 @@ namespace MailDemon
             return View(templates.OrderBy(t => t.Name));
         }
 
-        [Authorize]
         public IActionResult EditTemplate(string id)
         {
-            long.TryParse(id, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long longId);
-            MailTemplate template = db.Select<MailTemplate>(longId) ?? new MailTemplate();
+            MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault() ?? new MailTemplate();
             return View(new MailTemplateModel { Value = template, Message = TempData["Message"] as string });
         }
 
         [HttpPost]
-        [Authorize]
         [ActionName(nameof(EditTemplate))]
-        public IActionResult EditTemplatePost(string id, MailTemplateModel model)
+        public IActionResult EditTemplatePost(string id, MailTemplateModel model, string action)
         {
+            if (action == "delete")
+            {
+                return EditTemplateDelete(id);
+            }
+
             try
             {
                 model.Value.Name = model.Value.Name?.Trim();
@@ -333,18 +369,34 @@ namespace MailDemon
                 model.Value.Dirty = true;
                 db.Upsert(model.Value);
                 TempData["Message"] = Resources.Success;
-                return RedirectToAction(nameof(EditTemplate), new { id = model.Value.Id });
+                return RedirectToAction(nameof(EditTemplate), new { id = model.Value.Name });
             }
             catch (Exception ex)
             {
+                MailDemonLog.Error(ex);
                 model.Error = true;
                 model.Message = ex.Message;
                 return View(model);
             }
         }
 
-        [Authorize]
-        [ResponseCache(NoStore = true)]
+        private IActionResult EditTemplateDelete(string id)
+        {
+            try
+            {
+                MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault();
+                if (template != null)
+                {
+                    db.Delete<MailTemplate>(template.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                MailDemonLog.Error(ex);
+            }
+            return RedirectToAction(nameof(EditTemplate));
+        }
+
         public IActionResult DebugTemplate(string id)
         {
             id = (id ?? string.Empty).Trim();
@@ -367,8 +419,6 @@ namespace MailDemon
             return View(id, tempReg);
         }
 
-        [Authorize]
-        [ResponseCache(NoStore = true)]
         public IActionResult Error(string code)
         {
             var feature = this.HttpContext.Features.Get<IExceptionHandlerFeature>();
