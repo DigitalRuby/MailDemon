@@ -1,12 +1,15 @@
 ﻿@model MailDemon.MailListModel
-@{ string errorClass = (Model.Error ? "error-message" : string.Empty); }
+@{
+    string errorClass = (Model.Error ? "error-message" : string.Empty);
+    object nameAttributes = (Model.Value == null || Model.Value.Id == 0 ? null : new { htmlAttributes = new { @readonly = "readonly" } });
+}
 
 <h2>@MailDemon.Resources.EditList</h2>
 
 @using (Html.BeginForm())
 {
     <div class="@errorClass">@Model.Message</div><br />
-    @Html.LabelFor(m => m.Value.Name) @Html.EditorFor(m => m.Value.Name)<br />
+    @Html.LabelFor(m => m.Value.Name) @Html.EditorFor(m => m.Value.Name, nameAttributes)<br />
     @Html.LabelFor(m => m.Value.FromEmailAddress) @Html.EditorFor(m => m.Value.FromEmailAddress)<br />
     @Html.LabelFor(m => m.Value.FromEmailName) @Html.EditorFor(m => m.Value.FromEmailName)<br />
     @Html.LabelFor(m => m.Value.Company) @Html.EditorFor(m => m.Value.Company)<br />
@@ -14,5 +17,9 @@
     @Html.LabelFor(m => m.Value.Website) @Html.EditorFor(m => m.Value.Website)<br />
     @Html.HiddenFor(m => m.Value.Id)
     <br />
-    <input type="submit" value="@MailDemon.Resources.Save" />
+    <button class="submit-button" name="action" value="save">@MailDemon.Resources.Save</button>
+    @if (Model.Value != null && Model.Value.Id != 0)
+    {
+        <button class="delete-button" name="action" value="delete" onclick="return confirm('! Confirm Deletion !');">@MailDemon.Resources.Delete</button>
+    }
 }

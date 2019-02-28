@@ -13,7 +13,7 @@ namespace MailDemon
         /// <summary>
         /// Separator in full template names for the list name and template name
         /// </summary>
-        public const string FullNameSeparator = ",";
+        public const string FullNameSeparator = "/";
 
         /// <summary>
         /// Initial subscribe page. The template with the form fields to start a subscription request.
@@ -38,7 +38,7 @@ namespace MailDemon
         /// <returns>Full name</returns>
         public static string GetFullTemplateName(string listName, string templateName)
         {
-            return listName + "," + templateName;
+            return listName + "/" + templateName;
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace MailDemon
         /// <returns>True if success, false if invalid full template name</returns>
         public static bool GetListNameAndTemplateName(string fullTemplateName, out string listName, out string templateName)
         {
-            int pos = fullTemplateName.IndexOf(',');
+            int pos = fullTemplateName.IndexOf(FullNameSeparator);
             if (pos < 0)
             {
                 listName = templateName = null;
@@ -77,9 +77,14 @@ namespace MailDemon
         public long Id { get; set; }
 
         /// <summary>
-        /// Name, format is [listname],[templatename]
+        /// Name, format is [listname]/[templatename]
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Title
+        /// </summary>
+        public string Title { get; set; }
 
         /// <summary>
         /// Last modified

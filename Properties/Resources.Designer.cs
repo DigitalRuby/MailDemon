@@ -70,6 +70,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Delete.
+        /// </summary>
+        public static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Edit.
         /// </summary>
         public static string Edit {
@@ -210,6 +219,15 @@ namespace MailDemon {
         public static string NewTemplate {
             get {
                 return ResourceManager.GetString("NewTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please contact support.
+        /// </summary>
+        public static string PleaseContactSupport {
+            get {
+                return ResourceManager.GetString("PleaseContactSupport", resourceCulture);
             }
         }
         
