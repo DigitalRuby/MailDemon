@@ -284,6 +284,10 @@ namespace MailDemon
 
             try
             {
+                if (!model.Value.FromEmailAddress.TryParseEmailAddress(out _))
+                {
+                    throw new ArgumentException(Resources.EmailIsInvalid);
+                }
                 model.Value.Name = model.Value.Name?.Trim();
                 model.Value.Company = model.Value.Company?.Trim();
                 model.Value.Website = model.Value.Website?.Trim();
@@ -359,11 +363,11 @@ namespace MailDemon
                     !MailTemplate.ValidateName(listName) ||
                     !MailTemplate.ValidateName(templateName))
                 {
-                    throw new ArgumentException("Invalid template name, use only letters, numbers, spaces, period, hyphen or underscore. Name format is [listname],[templatename].");
+                    throw new ArgumentException($"Invalid template name, use only letters, numbers, spaces, period, hyphen or underscore. Name format is [listname]{MailTemplate.FullNameSeparator}[templatename].");
                 }
                 if (db.Select<MailList>().FirstOrDefault(l => l.Name == listName) == null)
                 {
-                    throw new ArgumentException(Resources.ListNotFound);
+                    throw new ArgumentException(string.Format(Resources.ListNotFound, listName));
                 }
                 model.Value.LastModified = DateTime.UtcNow;
                 model.Value.Dirty = true;

@@ -13,7 +13,7 @@ namespace MailDemon
         /// <summary>
         /// Separator in full template names for the list name and template name
         /// </summary>
-        public const string FullNameSeparator = "/";
+        public const string FullNameSeparator = "@";
 
         /// <summary>
         /// Initial subscribe page. The template with the form fields to start a subscription request.
@@ -77,7 +77,7 @@ namespace MailDemon
         public long Id { get; set; }
 
         /// <summary>
-        /// Name, format is [listname]/[templatename]
+        /// Name, format is [listname]@[templatename]
         /// </summary>
         public string Name { get; set; }
 

@@ -142,7 +142,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to List not found.
+        ///   Looks up a localized string similar to List &apos;{0}&apos; not found.
         /// </summary>
         public static string ListNotFound {
             get {

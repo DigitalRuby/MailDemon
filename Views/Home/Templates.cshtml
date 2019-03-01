@@ -19,7 +19,7 @@
                 @item.LastModified
             </td>
             <td>
-                @Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditTemplate), new { id = item.Id })
+                @Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditTemplate), new { id = item.Name })
             </td>
         </tr>
     }

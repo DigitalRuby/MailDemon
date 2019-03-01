@@ -145,7 +145,7 @@
     <value>List Name</value>
   </data>
   <data name="ListNotFound" xml:space="preserve">
-    <value>List not found</value>
+    <value>List '{0}' not found</value>
   </data>
   <data name="Lists" xml:space="preserve">
     <value>Lists</value>
