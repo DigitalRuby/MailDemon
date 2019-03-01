@@ -158,6 +158,22 @@ form
     width: 100%;
 }
 
+.inline-form
+{
+    width: auto;
+    display: inline-block;
+}
+
+.inline-form button,
+.inline-button
+{
+    color: #DDDDDD;
+    background: #121212;
+    padding: 4px 6px;
+    border: none;
+    cursor: pointer;
+}
+
 ::-webkit-scrollbar
 {
     width: 22px;

@@ -10,6 +10,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.Extensions.Configuration;
 
 using MimeKit;
@@ -164,6 +167,23 @@ namespace MailDemon
         public static string FormatHtml(this string text, params object[] format)
         {
             return string.Format((text ?? string.Empty).Replace("\n", "<br/>"), format);
+        }
+
+        /// <summary>
+        /// Check if a view exists
+        /// </summary>
+        /// <param name="helper">Html helper</param>
+        /// <param name="viewName">View name</param>
+        /// <returns>True if exists, false otherwise</returns>
+        public static bool ViewExists(this IHtmlHelper helper, string viewName)
+        {
+            if (string.IsNullOrWhiteSpace(viewName))
+            {
+                return false;
+            }
+            var viewEngine = helper.ViewContext.HttpContext.RequestServices.GetService(typeof(ICompositeViewEngine)) as ICompositeViewEngine;
+            var view = viewEngine.FindView(helper.ViewContext, viewName, false);
+            return view.View != null;
         }
 
         /// <summary>

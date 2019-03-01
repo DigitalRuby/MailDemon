@@ -77,7 +77,7 @@ namespace MailDemonTests
                     Company = company, PhysicalAddress = fullAddress, Website = website });
             }
 
-            homeController.SubscribePost(listName, new Dictionary<string, string>
+            homeController.SubscribeInitialPost(listName, new Dictionary<string, string>
             {
                 { "ff_firstName", "Bob" },
                 { "ff_lastName", "Smith" },
@@ -177,7 +177,7 @@ namespace MailDemonTests
         [Test]
         public void TestRegisterFails()
         {
-            homeController.SubscribePost(listName, new Dictionary<string, string>
+            homeController.SubscribeInitialPost(listName, new Dictionary<string, string>
             {
                 { "ff_firstName", "Bob" },
                 { "ff_lastName", "Smith" },

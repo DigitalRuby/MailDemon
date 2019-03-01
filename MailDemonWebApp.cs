@@ -35,10 +35,6 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.FileProviders;
 
-using RazorLight;
-using RazorLight.Caching;
-using RazorLight.Razor;
-
 #endregion Imports
 
 namespace MailDemon
@@ -208,17 +204,18 @@ namespace MailDemon
                 services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
                 {
                     o.AccessDeniedPath = "/";
-                    o.LoginPath = "/Login";
-                    o.LogoutPath = "/Login";
+                    o.LoginPath = "/MailDemonLogin";
+                    o.LogoutPath = "/MailDemonLogin";
                     o.Cookie.HttpOnly = true;
                 });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
-                services.AddSingleton<IMailCreator>((provider) => new MailCreator(provider.GetService<IRazorLightEngine>()));
+                services.AddSingleton<IMailCreator>((provider) => new MailCreator(provider.GetService<IViewRenderService>()));
                 services.AddSingleton<IMailSender>((provider) => mailService);
                 services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());
                 services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-                RazorLightOptions razorOptions = new RazorLightOptions
+                services.AddTransient<IViewRenderService, ViewRenderService>();
+                /*RazorLightOptions razorOptions = new RazorLightOptions
                 {
                     Namespaces = new HashSet<string> { "System", "System.IO", "System.Text", "MailDemon", "RazorLight", "RazorLight.Razor" }
                 };
@@ -229,7 +226,7 @@ namespace MailDemon
                     builder.UseCachingProvider(new MemoryCachingProvider());
                     builder.UseProject(new MailDemonRazorLightDatabaseProject(RootDirectory));
                     return builder.Build();
-                });
+                });*/
                 // TODO: https://github.com/aspnet/Razor/blob/a06c2b243f5e446a04d9439a87d62f6794c6c1ff/src/RazorPageGenerator/Program.cs
                 services.AddMvc((options) =>
                 {

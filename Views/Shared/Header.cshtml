@@ -1,10 +1,16 @@
 ﻿<div id="header">
     @if (User.Identity.IsAuthenticated)
     {
+    <div style="float: left;">
         @Html.ActionLink(MailDemon.Resources.NewList, nameof(MailDemon.HomeController.EditList))<text>&nbsp;&nbsp;</text>
         @Html.ActionLink(MailDemon.Resources.Lists, nameof(MailDemon.HomeController.Lists))<text>&nbsp;&nbsp;</text>
         @Html.ActionLink(MailDemon.Resources.Templates, nameof(MailDemon.HomeController.Templates))<text>&nbsp;&nbsp;</text>
-        @Html.ActionLink(MailDemon.Resources.Logout, nameof(MailDemon.HomeController.Login))<text>&nbsp;&nbsp;</text>
+    </div>
+    <div style="float: right">
         @System.String.Format(MailDemon.Resources.LoggedInAs, User.Identity.Name)
+        <form action="@nameof(MailDemon.HomeController.MailDemonLogin)" class="inline-form" method="post">
+            <button name="action" value="logout">@MailDemon.Resources.Logout</button>
+        </form>
+    </div>
     }
 </div>

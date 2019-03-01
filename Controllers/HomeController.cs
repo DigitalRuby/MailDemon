@@ -64,6 +64,13 @@ namespace MailDemon
         }
 
         [AllowAnonymous]
+        public IActionResult Error(string code)
+        {
+            var feature = this.HttpContext.Features.Get<IExceptionHandlerFeature>();
+            return View((object)(feature?.Error?.ToString() ?? "Code: " + (code ?? "Unknown")));
+        }
+
+        [AllowAnonymous]
         public IActionResult SubscribeInitial(string id)
         {
             string result = TempData["result"] as string;
@@ -73,16 +80,22 @@ namespace MailDemon
                 return NotFound();
             }
             MailListRegistration model = (string.IsNullOrWhiteSpace(result) ? new MailListRegistration() : JsonConvert.DeserializeObject<MailListRegistration>(result));
+            model.MailList = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            if (model.MailList == null)
+            {
+                return NotFound();
+            }
             model.ListName = id;
             model.TemplateName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeInitial);
             return View(model);
         }
 
         [HttpPost]
-        [ActionName("Subscribe")]
+        [ActionName(nameof(SubscribeInitial))]
         [AllowAnonymous]
-        public async Task<IActionResult> SubscribePost(string id, Dictionary<string, string> formFields)
+        public async Task<IActionResult> SubscribeInitialPost(string id, Dictionary<string, string> formFields)
         {
+            id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
             {
                 return NotFound();
@@ -90,11 +103,17 @@ namespace MailDemon
             string error = null;
             if (RequireCaptcha && formFields.TryGetValue("captcha", out string captchaValue))
             {
-                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue, "Subscribe", HttpContext.GetRemoteIPAddress().ToString());
+                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
             }
             MailListRegistration model = new MailListRegistration { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
-            model.ListName = (id ?? string.Empty).Trim();
+            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            if (list == null)
+            {
+                return NotFound();
+            }
+            model.MailList = list;
+            model.ListName = model.MailList.Name;
             if (formFields.ContainsKey("TemplateName"))
             {
                 model.TemplateName = formFields["TemplateName"];
@@ -122,6 +141,7 @@ namespace MailDemon
                         if (value.TryParseEmailAddress(out _))
                         {
                             email = (email ?? value);
+                            model.Fields[name] = value;
                         }
                         else
                         {
@@ -148,11 +168,12 @@ namespace MailDemon
             {
                 try
                 {
-                    MailListRegistration reg = db.PreSubscribeToMailingList(model.Fields, email, model.ListName, HttpContext.GetRemoteIPAddress().ToString());
-                    string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeConfirm)}?token={reg.SubscribeToken}";
-                    reg.SubscribeUrl = url;
+                    model.IPAddress = HttpContext.GetRemoteIPAddress().ToString();
+                    model = db.PreSubscribeToMailingList(model);
+                    string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeConfirm)}?token={model.SubscribeToken}";
+                    model.SubscribeUrl = url;
                     string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeConfirm);
-                    await SendMailAsync(reg, templateFullName);
+                    await SendMailAsync(model, templateFullName);
                     return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
                 }
                 catch (Exception ex)
@@ -173,9 +194,14 @@ namespace MailDemon
             {
                 return NotFound();
             }
+            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            if (list == null)
+            {
+                return NotFound();
+            }
 
             // the link will be sent via email
-            return View("SubscribeConfirmNoLink");
+            return View("SubscribeConfirmNoLink", list);
         }
 
         [AllowAnonymous]
@@ -192,7 +218,6 @@ namespace MailDemon
             {
                 return NotFound();
             }
-
             string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
             reg.UnsubscribeUrl = url;
             string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeWelcome);
@@ -219,15 +244,15 @@ namespace MailDemon
         }
 
         [AllowAnonymous]
-        public IActionResult Login(string returnUrl)
+        public IActionResult MailDemonLogin(string returnUrl)
         {
-            return View(new LoginModel { ReturnUrl = returnUrl });
+            return View("Login", new LoginModel { ReturnUrl = returnUrl });
         }
 
         [HttpPost]
-        [ActionName(nameof(Login))]
+        [ActionName(nameof(MailDemonLogin))]
         [AllowAnonymous]
-        public async Task<IActionResult> LoginPost(LoginModel login)
+        public async Task<IActionResult> MailDemonLoginPost(LoginModel login)
         {
             if (User.Identity.IsAuthenticated)
             {
@@ -259,7 +284,7 @@ namespace MailDemon
                 }
             }
 
-            return View(login);
+            return View("Login", login);
         }
 
         public IActionResult Lists()
@@ -434,12 +459,6 @@ namespace MailDemon
                 Expires = DateTime.MinValue
             };
             return View(id, tempReg);
-        }
-
-        public IActionResult Error(string code)
-        {
-            var feature = this.HttpContext.Features.Get<IExceptionHandlerFeature>();
-            return View((object)(feature?.Error?.ToString() ?? "Code: " + (code ?? "Unknown")));
         }
     }
 }

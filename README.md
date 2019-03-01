@@ -12,6 +12,7 @@ Mail Demon is great for sending notifications, announcements and even text messa
 
 Setup Instructions:
 - Download code, open in Visual Studio, set release configuration.
+- Clone or download this project and add it to the solution, add as a reference for MailDemon project: https://github.com/DigitalRuby/RazorLight
 - Update appsettings.json with your settings. I recommend an SSL certificate. Lets encrypt is a great option. Make sure to set the users to something other than the default.
 - Right click on project, select 'publish' option.
 - Find the publish folder (right click on project and open in explorer), then browse to bin/release/publish/netcoreapp and make sure it looks good.

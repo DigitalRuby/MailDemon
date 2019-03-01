@@ -11,40 +11,32 @@ namespace MailDemon
         /// Pre subscribe to a mailing list
         /// </summary>
         /// <param name="db">DB</param>
-        /// <param name="fields">Fields</param>
-        /// <param name="emailAddress">Email address</param>
-        /// <param name="listName">List name</param>
-        /// <param name="ipAddress">IP address</param>
+        /// <param name="reg">Registration</param>
         /// <returns>Registration</returns>
-        public static MailListRegistration PreSubscribeToMailingList(this MailDemonDatabase db, IDictionary<string, object> fields, string emailAddress, string listName, string ipAddress)
+        public static MailListRegistration PreSubscribeToMailingList(this MailDemonDatabase db, MailListRegistration reg)
         {
-            // make sure we have a list
-            MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
             string token = string.Empty;
-            MailListRegistration reg = null;
-            db.Select<MailListRegistration>(r => r.EmailAddress == emailAddress && r.ListName == listName, (foundReg) =>
+            db.Select<MailListRegistration>(r => r.EmailAddress == reg.EmailAddress && r.ListName == reg.ListName, (foundReg) =>
             {
+                foundReg.Fields.Clear();
+                foreach (var kv in reg.Fields)
+                {
+                    foundReg.SetField(kv.Key, kv.Value);
+                }
+                foundReg.Error = reg.Error;
+                foundReg.Message = reg.Message;
+                foundReg.IPAddress = reg.IPAddress;
+                foundReg.MailList = reg.MailList;
+                foundReg.TemplateName = reg.TemplateName;
                 reg = foundReg;
                 return false;
             });
-            if (reg == null)
+            if (reg.SubscribeToken == null)
             {
-                // new subscribe confirm
-                reg = new MailListRegistration
-                {
-                    EmailAddress = emailAddress,
-                    ListName = listName,
-                    Expires = DateTime.UtcNow.AddHours(1.0),
-                    IPAddress = ipAddress,
-                    SubscribeToken = token = Guid.NewGuid().ToString("N")
-                };
-                foreach (KeyValuePair<string, object> kv in fields)
-                {
-                    reg.Fields[kv.Key] = kv.Value;
-                }
-                db.Insert(reg);
+                reg.SubscribeToken = Guid.NewGuid().ToString("N");
+                reg.Expires = DateTime.UtcNow.AddHours(1.0);
             }
-            reg.MailList = list ?? throw new ArgumentException("No list with name " + listName);
+            db.Upsert(reg);
             return reg;
         }
 

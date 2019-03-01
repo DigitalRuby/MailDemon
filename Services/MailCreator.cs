@@ -10,8 +10,6 @@ using MailKit.Net.Smtp;
 
 using MimeKit;
 
-using RazorLight;
-
 namespace MailDemon
 {
     /// <summary>
@@ -35,61 +33,42 @@ namespace MailDemon
     /// </summary>
     public class MailCreator : IMailCreator
     {
-        private readonly IRazorLightEngine templateEngine;
+        private readonly IViewRenderService templateEngine;
 
-        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Exception ex)
+        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault)
         {
-            string html = null;
-            var found = templateEngine.TemplateCache.RetrieveTemplate(templateName);
-            if (found.Success)
-            {
-                html = await templateEngine.RenderTemplateAsync(found.Template.TemplatePageFactory(), model, extraInfo);
-            }
-            else
-            {
-                try
-                {
-                    html = await templateEngine.CompileRenderAsync(templateName, model, extraInfo);
-                }
-                catch (Exception _ex)
-                {
-                    if (allowDefault)
-                    {
-                        // try a default render...
-                        await CreateMailInternalAsync(templateName + "Default", model, extraInfo, false, _ex);
-                    }
-                    else
-                    {
-                        MailDemonLog.Error(ex ?? _ex);
-                    }
-                }
-            }
+            string html = await templateEngine.RenderToStringAsync(templateName, model, extraInfo);
 
             if (html != null)
             {
-                Match subject = Regex.Match(html, @"\<-- ?Subject: (?<subject>.*?) ?--\>", RegexOptions.IgnoreCase);
+                Match subject = Regex.Match(html, @"\<!-- ?Subject: (?<subject>.*?) ?--\>", RegexOptions.IgnoreCase);
                 if (subject.Success)
                 {
-                    string subjectText = subject.Groups["subject"].Value;
+                    string subjectText = subject.Groups["subject"].Value.Trim();
                     return new MimeMessage
                     {
                         Body = (new BodyBuilder
                         {
-                            HtmlBody = "<html><body><b>Test Email Html Body Which is Bold 12345</b></body></html>"
+                            HtmlBody = html
                         }).ToMessageBody(),
                         Subject = subjectText
                     };
                 }
             }
+            else if (allowDefault)
+            {
+                templateName = MailTemplate.GetTemplateName(templateName);
+                return await CreateMailInternalAsync(templateName + "Default", model, extraInfo, false);
+            }
 
-            throw new ArgumentException("Unable to find template '" + templateName + "'");
+            throw new ArgumentException("No view found for name " + templateName);
         }
 
         /// <summary>
         /// Consructor
         /// </summary>
-        /// <param name="templateEngine">Razor light engine</param>
-        public MailCreator(IRazorLightEngine templateEngine)
+        /// <param name="templateEngine">View render service</param>
+        public MailCreator(IViewRenderService templateEngine)
         {
             this.templateEngine = templateEngine ?? throw new ArgumentNullException(nameof(templateEngine));
         }
@@ -97,7 +76,7 @@ namespace MailDemon
         /// <inheritdoc />
         public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo)
         {
-            return CreateMailInternalAsync(templateName, model, extraInfo, true, null);
+            return CreateMailInternalAsync(templateName, model, extraInfo, true);
         }
     }
 }
