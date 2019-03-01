@@ -2,7 +2,7 @@
 
 <h2>@string.Format(MailDemon.Resources.SubscribeText, Model.MailList.Title)</h2>
 
-@using (Html.BeginForm(FormMethod.Post, new { action = "/Subscribe/" + Model.ListName, id = "subscribeForm" }))
+@using (Html.BeginForm(FormMethod.Post, new { id = "subscribeForm" }))
 {
     @if (Model.Error)
     {
@@ -13,13 +13,21 @@
         <div>@Html.Raw(Model.Message)</div><br />
     }
 
-    await Html.RenderPartialAsync(Model.TemplateName);
+    @if (MailDemon.MailDemonExtensionMethods.ViewExists(Html, Model.TemplateName))
+    {
+        await Html.RenderPartialAsync(Model.TemplateName, Model);
+    }
+    else
+    {
+        // fallback
+        await Html.RenderPartialAsync(MailDemon.MailTemplate.GetTemplateName(Model.TemplateName) + "Default", Model);
+    }
 
     @Html.HiddenFor(m => m.TemplateName)
     <br />
     <input type="submit" id="subscriptionSubmit" name="subscriptionSubmit" value="Subscribe" onclick="this.disabled = true; captchaSubmitForm(1); return false;" />
     <input type="hidden" id="captcha" name="captcha" value="" />
 
-    await Html.RenderPartialAsync("Recaptcha", new { Action = "Subscribe", Form = "subscribeForm" });
+    await Html.RenderPartialAsync("Recaptcha", new { Action = nameof(MailDemon.HomeController.SubscribeInitial), Form = "subscribeForm" });
 }
 

@@ -8,9 +8,6 @@ using NUnit.Framework;
 
 using MailDemon;
 
-using RazorLight;
-using RazorLight.Caching;
-
 #endregion Imports
 
 namespace MailDemonTests
@@ -18,18 +15,13 @@ namespace MailDemonTests
     public class MailTemplateTests
     {
         private static readonly MailListRegistration model = new MailListRegistration { FirstName = "Bob", LastName = "Smith", EmailAddress = "bobsmith@anotherdomain.com", Company = "Fake Company" };
-        private RazorLightEngine engine;
+        private RazorRenderer viewRenderer;
 
         [SetUp]
         public void Setup()
         {
             TearDown();
-            MailDemonDatabase.DatabaseOptions = "Journal=false; Flush=true;";
-            RazorLightEngineBuilder builder = new RazorLightEngineBuilder();
-            builder.AddDefaultNamespaces("System", "System.IO", "System.Text", "MailDemon");
-            builder.UseCachingProvider(new MemoryCachingProvider());
-            builder.UseProject(new MailDemonRazorLightDatabaseProject(Directory.GetCurrentDirectory()));
-            engine = builder.Build();
+            viewRenderer = new RazorRenderer();
         }
 
         [TearDown]
@@ -49,24 +41,9 @@ namespace MailDemonTests
                 db.Insert<MailTemplate>(template);
             }
 
-            var found = engine.TemplateCache.RetrieveTemplate("test");
-            string html;
-            if (found.Success)
-            {
-                Assert.Fail("Template should not be cached initially");
-            }
-            else
-            {
-                html = engine.CompileRenderAsync("test", model).Sync();
-                Assert.AreEqual("<b>Hello World</b> Bob", html);
-            }
-
-            found = engine.TemplateCache.RetrieveTemplate("test");
-            if (!found.Success)
-            {
-                Assert.Fail("Template should be cached after compile");
-            }
-            html = engine.RenderTemplateAsync(found.Template.TemplatePageFactory(), model).Sync();
+            string html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            Assert.AreEqual("<b>Hello World</b> Bob", html);
+            html = viewRenderer.RenderToStringAsync("test", model).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob", html);
 
             template.Text += " <br/>New Line<br/>";
@@ -78,58 +55,37 @@ namespace MailDemonTests
                 db.Update(template);
             }
 
-            var found2 = engine.TemplateCache.RetrieveTemplate("test");
-
-            // template should not be cached
-            if (found2.Success)
-            {
-                Assert.Fail("Template should not be cached after modification");
-            }
-            else
-            {
-                html = engine.CompileRenderAsync("test", model).Sync();
-                Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
-            }
+            html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
+            html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
         }
 
         [Test]
         public void TestTemplateCacheFile()
         {
             string path = Path.Combine(Directory.GetCurrentDirectory(), "test.cshtml");
-            File.WriteAllText(path, "<b>Hello World</b> @Model.Fields[\"firstName\"].ToString()");
-            var found = engine.TemplateCache.RetrieveTemplate(path);
-            string html;
-            if (found.Success)
+            try
             {
-                Assert.Fail("Template should not be cached initially");
-            }
-            else
-            {
-                html = engine.CompileRenderAsync(path, model).Sync();
+                File.WriteAllText(path, "<b>Hello World</b> @Model.Fields[\"firstName\"].ToString()");
+                string html = viewRenderer.RenderToStringAsync(path, model).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob", html);
-            }
+                html = viewRenderer.RenderToStringAsync(path, model).Sync();
+                Assert.AreEqual("<b>Hello World</b> Bob", html);
 
-            found = engine.TemplateCache.RetrieveTemplate(path);
-            if (!found.Success)
-            {
-                Assert.Fail("Template should be cached after compile");
-            }
-            html = engine.RenderTemplateAsync(found.Template.TemplatePageFactory(), model).Sync();
-            Assert.AreEqual("<b>Hello World</b> Bob", html);
+                File.AppendAllText(path, " <br/>New Line<br/>");
 
-            File.AppendAllText(path, " <br/>New Line<br/>");
-
-            var found2 = engine.TemplateCache.RetrieveTemplate(path);
-
-            // template should not be cached
-            if (found2.Success)
-            {
-                Assert.Fail("Template should not be cached after modification");
-            }
-            else
-            {
-                html = engine.CompileRenderAsync(path, model).Sync();
+                html = viewRenderer.RenderToStringAsync(path, model).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
+                html = viewRenderer.RenderToStringAsync(path, model).Sync();
+                Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
+            }
+            finally
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
             }
         }
     }

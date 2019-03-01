@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27703.2035
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailDemon", "MailDemon.csproj", "{3FFCC37B-9D23-4C6B-83E0-5C764797B9EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailDemonTests", "MailDemonTests\MailDemonTests.csproj", "{C923547B-30AD-4D8F-90A6-62C0FB48A316}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailDemonTests", "MailDemonTests\MailDemonTests.csproj", "{C923547B-30AD-4D8F-90A6-62C0FB48A316}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

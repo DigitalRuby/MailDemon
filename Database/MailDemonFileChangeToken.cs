@@ -34,6 +34,7 @@ namespace MailDemon
         public IDisposable RegisterChangeCallback(Action<object> callback, object state) => MailDemonDatabaseChangeToken.EmptyDisposable.Instance;
     }
 
+    /*
     public class MailDemonFileProjectItem : RazorLight.Razor.RazorLightProjectItem
     {
         private readonly string templateKey;
@@ -62,4 +63,5 @@ namespace MailDemon
         public override bool Exists => content != null;
         public override Stream Read() => new MemoryStream(content);
     }
+    */
 }

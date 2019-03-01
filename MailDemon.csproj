@@ -9,9 +9,12 @@
 
   <ItemGroup>
     <Compile Remove="MailDemonTests\**" />
-    <Content Remove="MailDemonTests\**" />
+    <Compile Remove="RazorLight\**" />
+    <Content Remove="RazorLight\**" />
     <EmbeddedResource Remove="MailDemonTests\**" />
+    <EmbeddedResource Remove="RazorLight\**" />
     <None Remove="MailDemonTests\**" />
+    <None Remove="RazorLight\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +26,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.2.0" />
     <PackageReference Include="MimeKit" Version="2.1.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="NLog" Version="4.5.11" />
@@ -38,7 +42,6 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.2" />
-    <PackageReference Include="RazorLight" Version="2.0.0-beta1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
   </ItemGroup>
 

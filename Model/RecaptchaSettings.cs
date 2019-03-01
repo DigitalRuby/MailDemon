@@ -63,9 +63,13 @@ namespace MailDemon
             }
 
             StringBuilder errorCodes = new StringBuilder("Action mismatch,");
-            foreach (JToken errorToken in token["error-codes"])
+            JToken errors = token["error-codes"];
+            if (errors != null)
             {
-                errorCodes.AppendFormat("{0},", errorToken.Value<string>());
+                foreach (JToken errorToken in token["error-codes"])
+                {
+                    errorCodes.AppendFormat("{0},", errorToken.Value<string>());
+                }
             }
             errorCodes.Length--;
             return errorCodes.ToString();
