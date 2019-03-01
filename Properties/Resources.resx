@@ -178,16 +178,16 @@
     <value>Save</value>
   </data>
   <data name="SubscribeConfirm" xml:space="preserve">
-    <value>Please check your email for a confirmation link, you should open this link to confirm your subscription to the {0} mailing list.</value>
+    <value>Please check your email for a confirmation link, you should open this link to confirm your subscription to the '{0}' mailing list.</value>
   </data>
   <data name="SubscribeError" xml:space="preserve">
-    <value>There was an error subscribing to the {0} mailing list, please contact support.</value>
-  </data>
-  <data name="SubscribeSuccess" xml:space="preserve">
-    <value>Thank you for subscribing to the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc.</value>
+    <value>There was an error subscribing to the '{0}' mailing list, please contact support.</value>
   </data>
   <data name="SubscribeText" xml:space="preserve">
     <value>Subscribe to the '{0}' mailing list</value>
+  </data>
+  <data name="SubscribeWelcome" xml:space="preserve">
+    <value>Welcome to the '{0}' mailing list. Your subscription is now active. To unsubscribe from this mailing list, please use the following link: </value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>Success</value>

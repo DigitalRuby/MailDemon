@@ -387,6 +387,11 @@ form
     height: 40em;
 }
 
+.message
+{
+    color: green;
+}
+
 .error-message
 {
     color: red;

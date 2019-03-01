@@ -35,9 +35,8 @@ namespace MailDemon
 
         public bool RequireCaptcha { get; set;  } = true;
 
-        private async Task SendMailAsync(MailListRegistration reg, string templateName)
+        private async Task SendMailAsync(MailListRegistration reg, string fullTemplateName)
         {
-            string fullTemplateName = MailTemplate.GetFullTemplateName(reg.MailList.Name, templateName);
             MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
             MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
@@ -65,7 +64,7 @@ namespace MailDemon
         }
 
         [AllowAnonymous]
-        public IActionResult Subscribe(string id)
+        public IActionResult SubscribeInitial(string id)
         {
             string result = TempData["result"] as string;
             id = (id ?? string.Empty).Trim();
@@ -140,9 +139,10 @@ namespace MailDemon
             {
                 if (email == null)
                 {
+                    model.Error = true;
                     model.Message += "<br/>" + Resources.EmailIsInvalid;
                 }
-                return View(nameof(Subscribe), model);
+                return View(nameof(SubscribeInitial), model);
             }
             else
             {
@@ -151,7 +151,8 @@ namespace MailDemon
                     MailListRegistration reg = db.PreSubscribeToMailingList(model.Fields, email, model.ListName, HttpContext.GetRemoteIPAddress().ToString());
                     string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeConfirm)}?token={reg.SubscribeToken}";
                     reg.SubscribeUrl = url;
-                    await SendMailAsync(reg, MailTemplate.NameSubscribeConfirm);
+                    string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeConfirm);
+                    await SendMailAsync(reg, templateFullName);
                     return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
                 }
                 catch (Exception ex)
@@ -159,7 +160,7 @@ namespace MailDemon
                     MailDemonLog.Error(ex);
                     model.Error = true;
                     model.Message += "<br/>" + ex.Message;
-                    return View(nameof(Subscribe), model);
+                    return View(nameof(SubscribeInitial), model);
                 }
             }
         }
@@ -168,13 +169,13 @@ namespace MailDemon
         public IActionResult SubscribeConfirm(string id)
         {
             id = (id ?? string.Empty).Trim();
-            string text;
             if (id.Length == 0)
             {
                 return NotFound();
             }
-            text = Resources.SubscribeConfirm.FormatHtml(id);
-            return View((object)text);
+
+            // the link will be sent via email
+            return View("SubscribeConfirmNoLink");
         }
 
         [AllowAnonymous]
@@ -187,16 +188,16 @@ namespace MailDemon
             }
             token = (token ?? string.Empty).Trim();
             MailListRegistration reg = db.ConfirmSubscribeToMailingList(id, token);
-            if (reg != null)
+            if (reg == null)
             {
-                string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
-                reg.UnsubscribeUrl = url;
-                await SendMailAsync(reg, MailTemplate.NameSubscribeWelcome);
-                string success = Resources.SubscribeSuccess.FormatHtml(id);
-                return View((object)success);
+                return NotFound();
             }
-            string error = Resources.SubscribeError.FormatHtml(id);
-            return View((object)error);
+
+            string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
+            reg.UnsubscribeUrl = url;
+            string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeWelcome);
+            await SendMailAsync(reg, templateFullName);
+            return View(templateFullName);
         }
 
         [AllowAnonymous]
@@ -217,6 +218,7 @@ namespace MailDemon
             return View((object)error);
         }
 
+        [AllowAnonymous]
         public IActionResult Login(string returnUrl)
         {
             return View(new LoginModel { ReturnUrl = returnUrl });

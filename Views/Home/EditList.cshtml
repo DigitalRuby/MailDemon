@@ -1,6 +1,6 @@
 ﻿@model MailDemon.MailListModel
 @{
-    string errorClass = (Model.Error ? "error-message" : string.Empty);
+    string errorClass = (Model.Error ? "error-message" : "message");
     object nameAttributes = (Model.Value == null || Model.Value.Id == 0 ? null : new { htmlAttributes = new { @readonly = "readonly" } });
 }
 
