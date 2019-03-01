@@ -102,7 +102,7 @@ namespace MailDemonTests
             }
 
             // verify we sent the right confirmation email
-            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirmation), reg, MailListRegistration.VarSubscribeUrl,
+            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm), reg, MailListRegistration.VarSubscribeUrl,
                 $@"{scheme}://{domainName}/SubscribeConfirm\?token=.{{16,}}");
 
             // verify the subscribe confirm has no errors

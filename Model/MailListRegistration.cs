@@ -77,6 +77,10 @@ namespace MailDemon
 
         [NotMapped]
         [LiteDB.BsonIgnore]
+        public string TemplateName { get; set; }
+
+        [NotMapped]
+        [LiteDB.BsonIgnore]
         public MailList MailList
         {
             get => ViewBag<MailList>(VarMailList);

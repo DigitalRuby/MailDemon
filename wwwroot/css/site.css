@@ -155,7 +155,7 @@ pre
 
 form
 {
-    display: inline-block;
+    width: 100%;
 }
 
 ::-webkit-scrollbar
@@ -377,7 +377,7 @@ form
 
 .text-box.single-line
 {
-    width: 500px;
+    width: 99%;
     height: 1.4em;
 }
 

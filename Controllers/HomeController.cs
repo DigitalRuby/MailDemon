@@ -73,9 +73,8 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            SubscribeModel model = (string.IsNullOrWhiteSpace(result) ? new SubscribeModel() : JsonConvert.DeserializeObject<SubscribeModel>(result));
+            MailListRegistration model = (string.IsNullOrWhiteSpace(result) ? new MailListRegistration() : JsonConvert.DeserializeObject<MailListRegistration>(result));
             model.ListName = id;
-            model.Title = Resources.SubscribeTitle.FormatHtml(id);
             model.TemplateName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeInitial);
             return View(model);
         }
@@ -94,7 +93,7 @@ namespace MailDemon
             {
                 error = await MailDemonWebApp.Recaptcha.Verify(captchaValue, "Subscribe", HttpContext.GetRemoteIPAddress().ToString());
             }
-            SubscribeModel model = new SubscribeModel { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
+            MailListRegistration model = new MailListRegistration { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
             model.ListName = (id ?? string.Empty).Trim();
             if (formFields.ContainsKey("TemplateName"))
@@ -143,7 +142,6 @@ namespace MailDemon
                 {
                     model.Message += "<br/>" + Resources.EmailIsInvalid;
                 }
-                model.Title = Resources.SubscribeTitle.FormatHtml(model.ListName);
                 return View(nameof(Subscribe), model);
             }
             else
@@ -153,7 +151,7 @@ namespace MailDemon
                     MailListRegistration reg = db.PreSubscribeToMailingList(model.Fields, email, model.ListName, HttpContext.GetRemoteIPAddress().ToString());
                     string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeConfirm)}?token={reg.SubscribeToken}";
                     reg.SubscribeUrl = url;
-                    await SendMailAsync(reg, MailTemplate.NameSubscribeConfirmation);
+                    await SendMailAsync(reg, MailTemplate.NameSubscribeConfirm);
                     return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
                 }
                 catch (Exception ex)
@@ -269,6 +267,7 @@ namespace MailDemon
 
         public IActionResult EditList(string id)
         {
+
             MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault() ?? new MailList();
             return View(new MailListModel { Value = list, Message = TempData["Message"] as string});
         }
@@ -284,11 +283,15 @@ namespace MailDemon
 
             try
             {
-                if (!model.Value.FromEmailAddress.TryParseEmailAddress(out _))
+                model.Value.Name = model.Value.Name?.Trim();
+                if (model.Value.Name.Length > 16)
+                {
+                    throw new ArgumentException("List name is too long");
+                }
+                else if (!model.Value.FromEmailAddress.TryParseEmailAddress(out _))
                 {
                     throw new ArgumentException(Resources.EmailIsInvalid);
                 }
-                model.Value.Name = model.Value.Name?.Trim();
                 model.Value.Company = model.Value.Company?.Trim();
                 model.Value.Website = model.Value.Website?.Trim();
                 if (!MailTemplate.ValidateName(model.Value.Name))
@@ -344,6 +347,10 @@ namespace MailDemon
         public IActionResult EditTemplate(string id)
         {
             MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault() ?? new MailTemplate();
+            if (template.Id == 0 && string.IsNullOrWhiteSpace(template.Name))
+            {
+                template.Name = id + MailTemplate.FullNameSeparator;
+            }
             return View(new MailTemplateModel { Value = template, Message = TempData["Message"] as string });
         }
 
@@ -359,7 +366,11 @@ namespace MailDemon
             try
             {
                 model.Value.Name = model.Value.Name?.Trim();
-                if (!MailTemplate.GetListNameAndTemplateName(model.Value.Name, out string listName, out string templateName) ||
+                if (model.Value.Name.Length > 64)
+                {
+                    throw new ArgumentException("Template name is too long");
+                }
+                if (!model.Value.GetListNameAndTemplateName(out string listName, out string templateName) ||
                     !MailTemplate.ValidateName(listName) ||
                     !MailTemplate.ValidateName(templateName))
                 {

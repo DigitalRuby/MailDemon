@@ -268,11 +268,11 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Subscribe to the {0} mailing list.
+        ///   Looks up a localized string similar to Subscribe to the &apos;{0}&apos; mailing list.
         /// </summary>
-        public static string SubscribeTitle {
+        public static string SubscribeText {
             get {
-                return ResourceManager.GetString("SubscribeTitle", resourceCulture);
+                return ResourceManager.GetString("SubscribeText", resourceCulture);
             }
         }
         
@@ -327,6 +327,15 @@ namespace MailDemon {
         public static string UnsubscribeSuccess {
             get {
                 return ResourceManager.GetString("UnsubscribeSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unsubscribe from the &apos;{0}&apos; mailing list.
+        /// </summary>
+        public static string UnsubscribeText {
+            get {
+                return ResourceManager.GetString("UnsubscribeText", resourceCulture);
             }
         }
         
