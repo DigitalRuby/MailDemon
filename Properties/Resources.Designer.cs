@@ -241,7 +241,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Please check your email for a confirmation link, you should open this link to confirm your subscription to the {0} mailing list..
+        ///   Looks up a localized string similar to Please check your email for a confirmation link, you should open this link to confirm your subscription to the &apos;{0}&apos; mailing list..
         /// </summary>
         public static string SubscribeConfirm {
             get {
@@ -250,20 +250,11 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to There was an error subscribing to the {0} mailing list, please contact support..
+        ///   Looks up a localized string similar to There was an error subscribing to the &apos;{0}&apos; mailing list, please contact support..
         /// </summary>
         public static string SubscribeError {
             get {
                 return ResourceManager.GetString("SubscribeError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Thank you for subscribing to the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc..
-        /// </summary>
-        public static string SubscribeSuccess {
-            get {
-                return ResourceManager.GetString("SubscribeSuccess", resourceCulture);
             }
         }
         
@@ -273,6 +264,15 @@ namespace MailDemon {
         public static string SubscribeText {
             get {
                 return ResourceManager.GetString("SubscribeText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Welcome to the &apos;{0}&apos; mailing list. Your subscription is now active. To unsubscribe from this mailing list, please use the following link: .
+        /// </summary>
+        public static string SubscribeWelcome {
+            get {
+                return ResourceManager.GetString("SubscribeWelcome", resourceCulture);
             }
         }
         
