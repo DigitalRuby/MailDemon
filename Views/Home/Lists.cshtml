@@ -6,7 +6,7 @@
             <th>@MailDemon.Resources.Name</th>
             <th>@MailDemon.Resources.Company</th>
             <th>@MailDemon.Resources.Website</th>
-            <td></td>
+            <th>&nbsp;</th>
         </tr>
     </thead>
     <tbody>
@@ -23,7 +23,8 @@
                 @item.Website
             </td>
             <td>
-                @Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditList), new { id = item.Name })
+                @Html.ActionLink(MailDemon.Resources.Edit, nameof(MailDemon.HomeController.EditList), new { id = item.Name })&nbsp;
+                @Html.ActionLink(MailDemon.Resources.NewTemplate, nameof(MailDemon.HomeController.EditTemplate), new { id = item.Name })
             </td>
         </tr>
         }

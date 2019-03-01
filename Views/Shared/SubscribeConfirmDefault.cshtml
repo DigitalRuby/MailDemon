@@ -1,9 +1,9 @@
 ﻿@model MailDemon.MailListRegistration
 
-<!-- Subject: Please confirm your subscription to the @Model.ListName mailing list -->
+<!-- Subject: Please confirm your subscription to the '@Model.MailList.Title' mailing list -->
 
 <div>
-    <p>Please confirm your subscription to the @Model.ListName mailing list by clicking this link:</p>
+    <p>Please confirm your subscription to the '@Model.MailList.Title' mailing list by clicking this link:</p>
     <p><a href="@Html.Raw(Model.SubscribeUrl)" target="_blank">@Model.SubscribeUrl</a></p>
-    <p>If you do not click the link, you will not receive emails from the @Model.ListName mailing list.</p>
+    <p>If you do not click the link, you will not receive emails from the @Model.MailList.Title mailing list.</p>
 </div>

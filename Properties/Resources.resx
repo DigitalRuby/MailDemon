@@ -186,8 +186,8 @@
   <data name="SubscribeSuccess" xml:space="preserve">
     <value>Thank you for subscribing to the {0} mailing list.\n\nYou should get a confirmation email shortly with details, unsubscribe information, etc.</value>
   </data>
-  <data name="SubscribeTitle" xml:space="preserve">
-    <value>Subscribe to the {0} mailing list</value>
+  <data name="SubscribeText" xml:space="preserve">
+    <value>Subscribe to the '{0}' mailing list</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>Success</value>
@@ -206,6 +206,9 @@
   </data>
   <data name="UnsubscribeSuccess" xml:space="preserve">
     <value>You are now unsubscribed from the {0} mailing list.</value>
+  </data>
+  <data name="UnsubscribeText" xml:space="preserve">
+    <value>Unsubscribe from the '{0}' mailing list</value>
   </data>
   <data name="UsernameOrPasswordIsBlank" xml:space="preserve">
     <value>Username or password is blank</value>

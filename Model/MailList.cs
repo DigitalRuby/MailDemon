@@ -21,6 +21,11 @@ namespace MailDemon
         public string Name { get; set; }
 
         /// <summary>
+        /// List title
+        /// </summary>
+        public string Title { get; set; }
+
+        /// <summary>
         /// Mail list from address to send emails with
         /// </summary>
         public string FromEmailAddress { get; set; }

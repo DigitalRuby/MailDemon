@@ -1,6 +1,6 @@
-﻿@model MailDemon.SubscribeModel
+﻿@model MailDemon.MailListRegistration
 
-<h2>@Html.Encode(Model.Title)</h2>
+<h2>@string.Format(MailDemon.Resources.SubscribeText, Model.MailList.Title)</h2>
 
 @using (Html.BeginForm(FormMethod.Post, new { action = "/Subscribe/" + Model.ListName, id = "subscribeForm" }))
 {

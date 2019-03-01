@@ -10,6 +10,7 @@
 {
     <div class="@errorClass">@Model.Message</div><br />
     @Html.LabelFor(m => m.Value.Name) @Html.EditorFor(m => m.Value.Name, nameAttributes)<br />
+    @Html.LabelFor(m => m.Value.Title) @Html.EditorFor(m => m.Value.Title)<br />
     @Html.LabelFor(m => m.Value.FromEmailAddress) @Html.EditorFor(m => m.Value.FromEmailAddress)<br />
     @Html.LabelFor(m => m.Value.FromEmailName) @Html.EditorFor(m => m.Value.FromEmailName)<br />
     @Html.LabelFor(m => m.Value.Company) @Html.EditorFor(m => m.Value.Company)<br />

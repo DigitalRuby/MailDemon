@@ -21,9 +21,9 @@ namespace MailDemon
         public const string NameSubscribeInitial = "SubscribeInitial";
 
         /// <summary>
-        /// Subscribe confirmation template name. The template that requests the user to confirm their subscription.
+        /// Subscribe confirm template name. The template that requests the user to confirm their subscription.
         /// </summary>
-        public const string NameSubscribeConfirmation = "SubscribeConfirmation";
+        public const string NameSubscribeConfirm = "SubscribeConfirm";
 
         /// <summary>
         /// Welcome subscription template name. The template that informs the user of their active subscription.
@@ -44,20 +44,19 @@ namespace MailDemon
         /// <summary>
         /// Get a list and template name from a full template name
         /// </summary>
-        /// <param name="fullTemplateName">Full template name</param>
         /// <param name="listName">List name</param>
         /// <param name="templateName">Template name</param>
         /// <returns>True if success, false if invalid full template name</returns>
-        public static bool GetListNameAndTemplateName(string fullTemplateName, out string listName, out string templateName)
+        public bool GetListNameAndTemplateName(out string listName, out string templateName)
         {
-            int pos = fullTemplateName.IndexOf(FullNameSeparator);
+            int pos = Name.IndexOf(FullNameSeparator);
             if (pos < 0)
             {
                 listName = templateName = null;
                 return false;
             }
-            listName = fullTemplateName.Substring(0, pos);
-            templateName = fullTemplateName.Substring(++pos);
+            listName = Name.Substring(0, pos);
+            templateName = Name.Substring(++pos);
             return true;
         }
 
