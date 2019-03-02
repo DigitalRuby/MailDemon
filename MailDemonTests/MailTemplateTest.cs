@@ -21,7 +21,7 @@ namespace MailDemonTests
         public void Setup()
         {
             TearDown();
-            viewRenderer = new RazorRenderer();
+            viewRenderer = new RazorRenderer(Path.Combine(Directory.GetCurrentDirectory(), "../../.."));
         }
 
         [TearDown]

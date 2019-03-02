@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -30,6 +31,11 @@ namespace MailDemon
 
         public IChangeToken Watch(string filter)
         {
+            filter = filter.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (File.Exists(filter))
+            {
+                return new MailDemonFileChangeToken(filter);
+            }
             return new MailDemonDatabaseChangeToken(filter);
         }
     }

@@ -21,7 +21,7 @@ namespace MailDemon
         {
             this.rootPath = rootPath;
             this.fileName = viewPath;
-            this.fullPath = Path.Combine(rootPath, viewPath);
+            this.fullPath = (Path.IsPathFullyQualified(viewPath) ? viewPath : Path.Combine(rootPath, viewPath)).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
             this.name = Path.GetFileName(viewPath);
             GetContent();
@@ -69,6 +69,12 @@ namespace MailDemon
 
         private void GetContent()
         {
+            if (File.Exists(fullPath))
+            {
+                Exists = true;
+                contents = File.ReadAllBytes(fullPath);
+                return;
+            }
             using (var db = new MailDemonDatabase())
             {
                 MailTemplate template = null;
@@ -81,11 +87,6 @@ namespace MailDemon
                 {
                     Exists = true;
                     contents = System.Text.Encoding.UTF8.GetBytes(template.Text);
-                }
-                else if (File.Exists(fullPath))
-                {
-                    Exists = true;
-                    contents = File.ReadAllBytes(fullPath);
                 }
             }
         }
