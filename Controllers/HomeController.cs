@@ -170,11 +170,18 @@ namespace MailDemon
                 {
                     model.IPAddress = HttpContext.GetRemoteIPAddress().ToString();
                     model = db.PreSubscribeToMailingList(model);
-                    string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeConfirm)}?token={model.SubscribeToken}";
-                    model.SubscribeUrl = url;
-                    string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeConfirm);
-                    await SendMailAsync(model, templateFullName);
-                    return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
+                    if (model.UnsubscribedDate == default && model.UnsubscribeToken != null)
+                    {
+                        throw new InvalidOperationException(Resources.AlreadySubscribed.FormatHtml(id));
+                    }
+                    else
+                    {
+                        string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(SubscribeWelcome)}/{id}?token={model.SubscribeToken}";
+                        model.SubscribeUrl = url;
+                        string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeConfirm);
+                        await SendMailAsync(model, templateFullName);
+                        return RedirectToAction(nameof(SubscribeConfirm), new { id = model.ListName });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -218,11 +225,13 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            string url = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
-            reg.UnsubscribeUrl = url;
+
+            // temp property does not go in db
+            reg.UnsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={reg.UnsubscribeToken}";
+
             string templateFullName = MailTemplate.GetFullTemplateName(id, MailTemplate.NameSubscribeWelcome);
             await SendMailAsync(reg, templateFullName);
-            return View(templateFullName);
+            return View(reg);
         }
 
         [AllowAnonymous]
@@ -313,7 +322,7 @@ namespace MailDemon
                 model.Value.Name = model.Value.Name?.Trim();
                 if (model.Value.Name.Length > 16)
                 {
-                    throw new ArgumentException("List name is too long");
+                    throw new ArgumentException(Resources.NameIsTooLong.FormatHtml(16));
                 }
                 else if (!model.Value.FromEmailAddress.TryParseEmailAddress(out _))
                 {
@@ -323,12 +332,12 @@ namespace MailDemon
                 model.Value.Website = model.Value.Website?.Trim();
                 if (!MailTemplate.ValidateName(model.Value.Name))
                 {
-                    throw new ArgumentException("Invalid list name, use only letters, numbers, spaces, period, hyphen or underscore.");
+                    throw new ArgumentException(Resources.NameInvalidChars);
                 }
-                MailList existingList = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
-                if (existingList != null && existingList.Name != model.Value.Name)
+                MailList existingList = db.Select<MailList>(l => l.Name == model.Value.Name).FirstOrDefault();
+                if (existingList != null && (existingList.Name != model.Value.Name || model.Value.Id == 0))
                 {
-                    throw new ArgumentException("Cannot rename list once it is created");
+                    throw new ArgumentException(Resources.NameCannotChange);
                 }
                 db.Upsert(model.Value);
                 TempData["Message"] = Resources.Success;
@@ -350,8 +359,9 @@ namespace MailDemon
                 MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
                 if (list != null)
                 {
-                    db.Delete<MailList>(list.Id);
+                    db.Delete<MailListRegistration>(r => r.ListName == id);
                     db.Delete<MailTemplate>(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator));
+                    db.Delete<MailList>(list.Id);
                 }
             }
             catch (Exception ex)
@@ -395,13 +405,13 @@ namespace MailDemon
                 model.Value.Name = model.Value.Name?.Trim();
                 if (model.Value.Name.Length > 64)
                 {
-                    throw new ArgumentException("Template name is too long");
+                    throw new ArgumentException(Resources.NameIsTooLong.FormatHtml(64));
                 }
                 if (!model.Value.GetListNameAndTemplateName(out string listName, out string templateName) ||
                     !MailTemplate.ValidateName(listName) ||
                     !MailTemplate.ValidateName(templateName))
                 {
-                    throw new ArgumentException($"Invalid template name, use only letters, numbers, spaces, period, hyphen or underscore. Name format is [listname]{MailTemplate.FullNameSeparator}[templatename].");
+                    throw new ArgumentException(Resources.TemplateNameInvalidChars.FormatHtml(MailTemplate.FullNameSeparator));
                 }
                 if (db.Select<MailList>().FirstOrDefault(l => l.Name == listName) == null)
                 {

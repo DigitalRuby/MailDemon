@@ -80,7 +80,7 @@ namespace MailDemon
             var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
             using (var sw = new StringWriter())
             {
-                var viewResult = viewEngine.FindView(actionContext, viewName, false);
+                var viewResult = viewEngine.FindView(actionContext, viewName, isMainPage);
 
                 // Fallback - the above seems to consistently return null when using the EmbeddedFileProvider
                 if (viewResult.View == null)

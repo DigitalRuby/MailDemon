@@ -101,19 +101,19 @@ namespace MailDemonTests
                 Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
             }
 
-            // verify we sent the right confirmation email
-            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm), reg, MailListRegistration.VarSubscribeUrl,
-                $@"{scheme}://{domainName}/SubscribeConfirm\?token=.{{16,}}");
-
             // verify the subscribe confirm has no errors
             homeController.SubscribeConfirm(listName);
+
+            // verify we sent the right confirmation email
+            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm), reg, MailListRegistration.VarSubscribeUrl,
+                $@"{scheme}://{domainName}/{nameof(HomeController.SubscribeWelcome)}/TestList\?token=.{{16,}}");
 
             // perform the final subscribe action
             homeController.SubscribeWelcome(listName, reg.SubscribeToken).Sync();
 
             // verify we sent the right welcome mail
             VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeWelcome), reg, MailListRegistration.VarUnsubscribeUrl,
-                $@"{scheme}://{domainName}/Unsubscribe/TestList\?token=.{{16,}}");
+                $@"{scheme}://{domainName}/{nameof(HomeController.Unsubscribe)}/TestList\?token=.{{16,}}");
 
             // validate there is an unsubscribe in the db
             using (var db = new MailDemonDatabase())

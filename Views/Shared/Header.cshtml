@@ -2,7 +2,7 @@
     @if (User.Identity.IsAuthenticated)
     {
     <div style="float: left;">
-        @Html.ActionLink(MailDemon.Resources.NewList, nameof(MailDemon.HomeController.EditList))<text>&nbsp;&nbsp;</text>
+        @Html.ActionLink(MailDemon.Resources.NewList, nameof(MailDemon.HomeController.EditList), new { id = string.Empty })<text>&nbsp;&nbsp;</text>
         @Html.ActionLink(MailDemon.Resources.Lists, nameof(MailDemon.HomeController.Lists))<text>&nbsp;&nbsp;</text>
         @Html.ActionLink(MailDemon.Resources.Templates, nameof(MailDemon.HomeController.Templates))<text>&nbsp;&nbsp;</text>
     </div>
