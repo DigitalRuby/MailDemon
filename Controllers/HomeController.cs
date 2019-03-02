@@ -20,6 +20,8 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Caching.Memory;
 
 #endregion Imports
 
@@ -53,8 +55,8 @@ namespace MailDemon
         public HomeController(MailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender)
         {
             this.db = db;
-            this.mailCreator = mailCreator;
-            this.mailSender = mailSender;
+            this.mailCreator = mailCreator ?? throw new ArgumentNullException(nameof(mailCreator));
+            this.mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
         }
 
         [AllowAnonymous]

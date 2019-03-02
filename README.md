@@ -1,6 +1,6 @@
 # & Mail Demon &
 
-Mail Demon is a simple and lightweight C# smtp server for sending unlimited emails and text messages. With a focus on simplicity, async and performance, you'll be able to easily send thousands of messages per second even on a cheap Linux VPS. Memory usage and CPU usage are optimized to the max. Security and spam prevention is also built in using SPF validation.
+Mail Demon is a simple and lightweight C# smtp server and mail list system for sending unlimited emails and text messages. With a focus on simplicity, async and performance, you'll be able to easily send thousands of messages per second even on a cheap Linux VPS. Memory usage and CPU usage are optimized to the max. Security and spam prevention is also built in using SPF validation.
 
 Mail Demon requires .NET core 2.2+ installed, or you can build a stand-alone executable to remove this dependancy.
 
@@ -10,8 +10,8 @@ Thanks to MimeKit and MailKit for their tremendous codebase.
 
 Mail Demon is great for sending notifications, announcements and even text messages. See <a href='http://smsemailgateway.com/'>SMS Email Gateway</a> for more information on text messages.
 
-Setup Instructions:
-- Download code, open in Visual Studio, set release configuration.
+## Project Setup Instructions:
+- Download code, open in Visual Studio or VS Code, set release configuration.
 - Update appsettings.json with your settings. I recommend an SSL certificate. Lets encrypt is a great option. Make sure to set the users to something other than the default.
 - Right click on project, select 'publish' option.
 - Find the publish folder (right click on project and open in explorer), then browse to bin/release/publish/netcoreapp and make sure it looks good.
@@ -39,6 +39,7 @@ sudo systemctl start MailDemon
 systemctl status MailDemon
 ```
 
+## Smtp Setup Instructions
 - Ensure you have setup DNS for your domain (TXT, A and MX record)
   - Setup SPF record: v=spf1 mx -all
   - Setup MX record: @ or smtp or email, etc.
@@ -60,6 +61,22 @@ Supported smtp extensions:
 
 Known Issues:
 - Hotmail.com, live.com and outlook.com have had an invalid SSL certificate for quite a while now. I've added them to appsettings.json. You may need to add additional entries for mail services with bad certificates.
+
+## Mail List Setup
+- Make sure your smtp settings are correct in appsettings.json.
+- Setup appsettings.json, mailDemonWeb section. Enable web, set your admin user/password, google recaptcha key, etc.
+- Use --server.urls parameter to set the kestrel binding for the web server.
+- Login with https://yourdomain.com/MailDemonLogin. Replace yourdomain.com with your actual domain name.
+- Create a new mailing list using menu at top.
+- List name is meant to be more like a short variable name, somewhat human readable, but short. List title is what subscribers will see.
+- Send your victims, I mean subscribers, to https://yourdomain.com/SubscribeInitial/[listname]. Replace yourdomain.com with your actual domain name. Replace [listname] with the actual list name.
+- Create new templates by selecting lists at the top, then using create template button.
+- The template title is NOT the subject of the email, it is just informational for you only.
+- To set the email subject, add a &lt;!-- Subjbect: ... --&gt; to the body of your template, it will then be set as the email subject.
+- Full razor syntax, @Html, etc. is supported. The model for the templates is the MailListSubscription class.
+- Feel free to create and edit templates in visual studio and then paste them into the template text box.
+- (WIP) Blast out an email using the send button on the edit template screen.
+- Note that the MailDemon.db file contains all the lists, templates, subscribers, etc. Backup this file regularly!
 
 Enjoy!
 

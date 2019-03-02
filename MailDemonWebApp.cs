@@ -269,6 +269,7 @@ namespace MailDemon
                 app.UseAuthentication();
                 app.UseResponseCompression();
                 app.UseResponseCaching();
+                app.UseMiddleware<RateLimitMiddleware>();
                 app.UseMvc(routes =>
                 {
                     routes.MapRoute("home", "/{action=Index}/{id?}", new { controller = "Home" });
