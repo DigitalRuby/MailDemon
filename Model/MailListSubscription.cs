@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MailDemon
 {
-    public class MailListRegistration : BaseModel
+    public class MailListSubscription : BaseModel
     {
         /// <summary>
         /// Mail list var name

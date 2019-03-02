@@ -34,7 +34,7 @@ namespace MailDemon
         {
             using (var db = GetDB())
             {
-                var coll = db.GetCollection<MailListRegistration>();
+                var coll = db.GetCollection<MailListSubscription>();
                 coll.EnsureIndex("Fields.EmailAddress");
                 coll.EnsureIndex(x => x.ListName);
                 coll.EnsureIndex(x => x.SubscribeToken);

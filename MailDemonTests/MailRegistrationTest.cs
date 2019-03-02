@@ -57,7 +57,7 @@ namespace MailDemonTests
 
         private string GetMailCreationFullText(string subject, string templateName, object model, ExpandoObject extraInfo)
         {
-            (extraInfo as IDictionary<string, object>).Remove(MailListRegistration.VarMailList);
+            (extraInfo as IDictionary<string, object>).Remove(MailListSubscription.VarMailList);
             string extraInfoText = string.Join(";", extraInfo.Select(x => x.Key + "=" + x.Value));
             string fullText = (subject + ";" + templateName + ";" + (model?.ToString()) + ";" + extraInfoText);
             return fullText;
@@ -86,10 +86,10 @@ namespace MailDemonTests
             }).Sync();
 
             // check database for registration
-            MailListRegistration reg = null;
+            MailListSubscription reg = null;
             using (var db = new MailDemonDatabase())
             {
-                reg = db.Select<MailListRegistration>().FirstOrDefault();
+                reg = db.Select<MailListSubscription>().FirstOrDefault();
                 Assert.NotNull(reg);
                 Assert.AreEqual("Bob", reg.Fields["firstName"]);
                 Assert.AreEqual("Smith", reg.Fields["lastName"]);
@@ -105,20 +105,20 @@ namespace MailDemonTests
             homeController.SubscribeConfirm(listName);
 
             // verify we sent the right confirmation email
-            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm), reg, MailListRegistration.VarSubscribeUrl,
+            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm), reg, MailListSubscription.VarSubscribeUrl,
                 $@"{scheme}://{domainName}/{nameof(HomeController.SubscribeWelcome)}/TestList\?token=.{{16,}}");
 
             // perform the final subscribe action
             homeController.SubscribeWelcome(listName, reg.SubscribeToken).Sync();
 
             // verify we sent the right welcome mail
-            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeWelcome), reg, MailListRegistration.VarUnsubscribeUrl,
+            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeWelcome), reg, MailListSubscription.VarUnsubscribeUrl,
                 $@"{scheme}://{domainName}/{nameof(HomeController.Unsubscribe)}/TestList\?token=.{{16,}}");
 
             // validate there is an unsubscribe in the db
             using (var db = new MailDemonDatabase())
             {
-                reg = db.Select<MailListRegistration>().FirstOrDefault();
+                reg = db.Select<MailListSubscription>().FirstOrDefault();
                 Assert.AreEqual(listName, reg.ListName);
                 Assert.AreEqual("127.0.0.1", reg.IPAddress);
                 Assert.IsNotNull(reg.UnsubscribeToken);
@@ -137,7 +137,7 @@ namespace MailDemonTests
             // validate that we are unsubscribed
             using (var db = new MailDemonDatabase())
             {
-                MailListRegistration reg = db.Select<MailListRegistration>().FirstOrDefault();
+                MailListSubscription reg = db.Select<MailListSubscription>().FirstOrDefault();
                 Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
             }
         }
@@ -187,7 +187,7 @@ namespace MailDemonTests
             // check database for registration not exist
             using (var db = new MailDemonDatabase())
             {
-                Assert.AreEqual(0, db.Select<MailListRegistration>().Count());
+                Assert.AreEqual(0, db.Select<MailListSubscription>().Count());
             }
         }
 

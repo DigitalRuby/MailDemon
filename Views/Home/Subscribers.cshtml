@@ -1,0 +1,38 @@
+﻿@model ICollection<MailDemon.MailListSubscription>
+
+@if (Model.Count == 0)
+{
+    <h2>@MailDemon.Resources.ListHasNoSubscribers</h2>
+}
+else
+{
+    <h2>@string.Format(MailDemon.Resources.ListSubscribers, ViewBag.ListName)</h2>
+
+    <table class="defaultTable">
+        <thead>
+            <tr>
+                <th>@MailDemon.Resources.EmailAddress</th>
+                <th>@MailDemon.Resources.SubscribedDate</th>
+                <th>@MailDemon.Resources.UnsubscribedDate</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @item.EmailAddress
+                    </td>
+                    <td>
+                        @(item.SubscribedDate == default ? string.Empty : item.SubscribedDate.ToString())
+                    </td>
+                    <td>
+                        @(item.UnsubscribedDate == default ? string.Empty : item.UnsubscribedDate.ToString())
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+

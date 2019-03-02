@@ -137,6 +137,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Email Address.
+        /// </summary>
+        public static string EmailAddress {
+            get {
+                return ResourceManager.GetString("EmailAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Email is invalid..
         /// </summary>
         public static string EmailIsInvalid {
@@ -164,6 +173,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to List has no subscribers.
+        /// </summary>
+        public static string ListHasNoSubscribers {
+            get {
+                return ResourceManager.GetString("ListHasNoSubscribers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to List Name.
         /// </summary>
         public static string ListName {
@@ -187,6 +205,15 @@ namespace MailDemon {
         public static string Lists {
             get {
                 return ResourceManager.GetString("Lists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Subscribers for &apos;{0}&apos; mailing list.
+        /// </summary>
+        public static string ListSubscribers {
+            get {
+                return ResourceManager.GetString("ListSubscribers", resourceCulture);
             }
         }
         
@@ -326,6 +353,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Subscribed Date.
+        /// </summary>
+        public static string SubscribedDate {
+            get {
+                return ResourceManager.GetString("SubscribedDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to There was an error subscribing to the &apos;{0}&apos; mailing list, please contact support..
         /// </summary>
         public static string SubscribeError {
@@ -398,6 +434,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unsubscribed Date.
+        /// </summary>
+        public static string UnsubscribedDate {
+            get {
+                return ResourceManager.GetString("UnsubscribedDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to There was an error unsubscribing from the &apos;{0}&apos; mailing list, please contact support..
         /// </summary>
         public static string UnsubscribeError {
@@ -430,6 +475,15 @@ namespace MailDemon {
         public static string UsernameOrPasswordIsBlank {
             get {
                 return ResourceManager.GetString("UsernameOrPasswordIsBlank", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to View.
+        /// </summary>
+        public static string View {
+            get {
+                return ResourceManager.GetString("View", resourceCulture);
             }
         }
         

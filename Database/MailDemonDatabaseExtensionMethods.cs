@@ -13,10 +13,10 @@ namespace MailDemon
         /// <param name="db">DB</param>
         /// <param name="reg">Registration</param>
         /// <returns>Registration</returns>
-        public static MailListRegistration PreSubscribeToMailingList(this MailDemonDatabase db, MailListRegistration reg)
+        public static MailListSubscription PreSubscribeToMailingList(this MailDemonDatabase db, MailListSubscription reg)
         {
             string token = string.Empty;
-            db.Select<MailListRegistration>(r => r.EmailAddress == reg.EmailAddress && r.ListName == reg.ListName, (foundReg) =>
+            db.Select<MailListSubscription>(r => r.EmailAddress == reg.EmailAddress && r.ListName == reg.ListName, (foundReg) =>
             {
                 foundReg.Fields.Clear();
                 foreach (var kv in reg.Fields)
@@ -47,10 +47,10 @@ namespace MailDemon
         /// <param name="listName">List name</param>
         /// <param name="token">Subscribe token</param>
         /// <returns>Registration or null if not found</returns>
-        public static MailListRegistration ConfirmSubscribeToMailingList(this MailDemonDatabase db, string listName, string token)
+        public static MailListSubscription ConfirmSubscribeToMailingList(this MailDemonDatabase db, string listName, string token)
         {
-            MailListRegistration reg = null;
-            db.Select<MailListRegistration>(r => r.SubscribeToken == token, (foundReg) =>
+            MailListSubscription reg = null;
+            db.Select<MailListSubscription>(r => r.SubscribeToken == token, (foundReg) =>
             {
                 if (foundReg.ListName == listName && foundReg.SubscribedDate == default && foundReg.SubscribeToken == token)
                 {
@@ -76,7 +76,7 @@ namespace MailDemon
         public static bool UnsubscribeFromMailingList(this MailDemonDatabase db, string listName, string token)
         {
             bool foundOne = false;
-            db.Select<MailListRegistration>(r => r.UnsubscribeToken == token, (foundReg) =>
+            db.Select<MailListSubscription>(r => r.UnsubscribeToken == token, (foundReg) =>
             {
                 if (foundReg.ListName == listName && foundReg.UnsubscribedDate == default)
                 {
