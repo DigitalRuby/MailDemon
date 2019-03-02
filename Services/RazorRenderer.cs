@@ -17,7 +17,7 @@ using Microsoft.Extensions.ObjectPool;
 namespace MailDemon
 {
     /// <summary>
-    /// Renders razor pages with the absolute minimum setup of MVC, easy to use in console application
+    /// Renders razor pages with the absolute minimum setup of MVC, easy to use in console application, does not require any other classes or setup.
     /// </summary>
     public class RazorRenderer : IViewRenderService, ILoggerFactory, ILogger
     {
