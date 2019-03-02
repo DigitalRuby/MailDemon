@@ -145,6 +145,9 @@
   <data name="EditTemplate" xml:space="preserve">
     <value>Edit Template</value>
   </data>
+  <data name="EmailAddress" xml:space="preserve">
+    <value>Email Address</value>
+  </data>
   <data name="EmailIsInvalid" xml:space="preserve">
     <value>Email is invalid.</value>
   </data>
@@ -153,6 +156,9 @@
   </data>
   <data name="LastModified" xml:space="preserve">
     <value>Last Modified</value>
+  </data>
+  <data name="ListHasNoSubscribers" xml:space="preserve">
+    <value>List has no subscribers</value>
   </data>
   <data name="ListName" xml:space="preserve">
     <value>List Name</value>
@@ -208,6 +214,9 @@
   <data name="SubscribeConfirm" xml:space="preserve">
     <value>Please check your email for a confirmation link, you should open this link to confirm your subscription to the '{0}' mailing list.</value>
   </data>
+  <data name="SubscribedDate" xml:space="preserve">
+    <value>Subscribed Date</value>
+  </data>
   <data name="SubscribeError" xml:space="preserve">
     <value>There was an error subscribing to the '{0}' mailing list, please contact support.</value>
   </data>
@@ -232,6 +241,9 @@
   <data name="UnknownError" xml:space="preserve">
     <value>An unknown error has happened, please contact support.</value>
   </data>
+  <data name="UnsubscribedDate" xml:space="preserve">
+    <value>Unsubscribed Date</value>
+  </data>
   <data name="UnsubscribeError" xml:space="preserve">
     <value>There was an error unsubscribing from the '{0}' mailing list, please contact support.</value>
   </data>
@@ -246,5 +258,11 @@
   </data>
   <data name="Website" xml:space="preserve">
     <value>Website</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="ListSubscribers" xml:space="preserve">
+    <value>Subscribers for '{0}' mailing list</value>
   </data>
 </root>

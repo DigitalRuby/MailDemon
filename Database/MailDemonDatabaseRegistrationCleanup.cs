@@ -19,9 +19,9 @@ namespace MailDemon
                 DateTime dt = DateTime.UtcNow;
                 using (MailDemonDatabase db = new MailDemonDatabase())
                 {
-                    foreach (MailListRegistration reg in db.Select<MailListRegistration>(r => r.Expires <= dt && r.UnsubscribeToken == null))
+                    foreach (MailListSubscription reg in db.Select<MailListSubscription>(r => r.Expires <= dt && r.UnsubscribeToken == null))
                     {
-                        db.Delete<MailListRegistration>(reg.Id);
+                        db.Delete<MailListSubscription>(reg.Id);
                     }
                 }
             }

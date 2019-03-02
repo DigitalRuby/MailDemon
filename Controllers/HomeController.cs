@@ -35,7 +35,7 @@ namespace MailDemon
 
         public bool RequireCaptcha { get; set;  } = true;
 
-        private async Task SendMailAsync(MailListRegistration reg, string fullTemplateName)
+        private async Task SendMailAsync(MailListSubscription reg, string fullTemplateName)
         {
             MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
@@ -79,7 +79,7 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            MailListRegistration model = (string.IsNullOrWhiteSpace(result) ? new MailListRegistration() : JsonConvert.DeserializeObject<MailListRegistration>(result));
+            MailListSubscription model = (string.IsNullOrWhiteSpace(result) ? new MailListSubscription() : JsonConvert.DeserializeObject<MailListSubscription>(result));
             model.MailList = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
             if (model.MailList == null)
             {
@@ -105,7 +105,7 @@ namespace MailDemon
             {
                 error = await MailDemonWebApp.Recaptcha.Verify(captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
             }
-            MailListRegistration model = new MailListRegistration { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
+            MailListSubscription model = new MailListSubscription { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
             MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
             if (list == null)
@@ -220,7 +220,7 @@ namespace MailDemon
                 return NotFound();
             }
             token = (token ?? string.Empty).Trim();
-            MailListRegistration reg = db.ConfirmSubscribeToMailingList(id, token);
+            MailListSubscription reg = db.ConfirmSubscribeToMailingList(id, token);
             if (reg == null)
             {
                 return NotFound();
@@ -359,7 +359,7 @@ namespace MailDemon
                 MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
                 if (list != null)
                 {
-                    db.Delete<MailListRegistration>(r => r.ListName == id);
+                    db.Delete<MailListSubscription>(r => r.ListName == id);
                     db.Delete<MailTemplate>(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator));
                     db.Delete<MailList>(list.Id);
                 }
@@ -456,7 +456,7 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            MailListRegistration tempReg = new MailListRegistration
+            MailListSubscription tempReg = new MailListSubscription
             {
                 EmailAddress = "test@domain.com",
                 IPAddress = HttpContext.GetRemoteIPAddress().ToString(),
@@ -469,6 +469,23 @@ namespace MailDemon
                 Expires = DateTime.MinValue
             };
             return View(id, tempReg);
+        }
+
+        public IActionResult Subscribers(string id)
+        {
+            id = (id ?? string.Empty).Trim();
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
+            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            if (list == null)
+            {
+                return NotFound();
+            }
+            ICollection<MailListSubscription> subscribers = db.Select<MailListSubscription>(s => s.ListName == id).ToList();
+            ViewBag.ListName = id;
+            return View(subscribers);
         }
     }
 }

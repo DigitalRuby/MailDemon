@@ -14,7 +14,7 @@ namespace MailDemonTests
 {
     public class MailTemplateTests
     {
-        private static readonly MailListRegistration model = new MailListRegistration { FirstName = "Bob", LastName = "Smith", EmailAddress = "bobsmith@anotherdomain.com", Company = "Fake Company" };
+        private static readonly MailListSubscription model = new MailListSubscription { FirstName = "Bob", LastName = "Smith", EmailAddress = "bobsmith@anotherdomain.com", Company = "Fake Company" };
         private RazorRenderer viewRenderer;
 
         [SetUp]
