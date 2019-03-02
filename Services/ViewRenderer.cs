@@ -20,30 +20,42 @@ using Microsoft.AspNetCore.Routing;
 
 namespace MailDemon
 {
+    /// <summary>
+    /// View render service interface
+    /// </summary>
     public interface IViewRenderService
     {
+        /// <summary>
+        /// Render a view to a string
+        /// </summary>
+        /// <typeparam name="TModel">Type of model</typeparam>
+        /// <param name="viewName">View name or full path</param>
+        /// <param name="model">Model</param>
+        /// <param name="viewBag">View bag</param>
+        /// <param name="isMainPage">Is main page (true) or partial page (false)</param>
+        /// <returns>Rendered view or null if not found</returns>
         Task<string> RenderToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false);
     }
 
+    /// <summary>
+    /// Razor view renderer that takes depenencies
+    /// </summary>
     public class ViewRenderService : IDisposable, IViewRenderService, ITempDataProvider, IServiceProvider
     {
         private static readonly System.Net.IPAddress localIPAddress = System.Net.IPAddress.Parse("127.0.0.1");
 
         private readonly Dictionary<string, object> tempData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        private readonly IRazorViewEngine _viewEngine;
-        private readonly ITempDataProvider _tempDataProvider;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRazorViewEngine viewEngine;
+        private readonly ITempDataProvider tempDataProvider;
+        private readonly IServiceProvider serviceProvider;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public ViewRenderService(IRazorViewEngine viewEngine,
-            IHttpContextAccessor httpContextAccessor,
-            ITempDataProvider tempDataProvider,
-            IServiceProvider serviceProvider)
+        public ViewRenderService(IRazorViewEngine viewEngine, IHttpContextAccessor httpContextAccessor, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider)
         {
-            _viewEngine = viewEngine;
-            _httpContextAccessor = httpContextAccessor;
-            _tempDataProvider = tempDataProvider ?? this;
-            _serviceProvider = serviceProvider ?? this;
+            this.viewEngine = viewEngine;
+            this.httpContextAccessor = httpContextAccessor;
+            this.tempDataProvider = tempDataProvider ?? this;
+            this.serviceProvider = serviceProvider ?? this;
         }
 
         public void Dispose()
@@ -51,28 +63,29 @@ namespace MailDemon
             
         }
 
+        /// <inheritdoc />
         public async Task<string> RenderToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
         {
             HttpContext httpContext;
-            if (_httpContextAccessor?.HttpContext != null)
+            if (httpContextAccessor?.HttpContext != null)
             {
-                httpContext = _httpContextAccessor.HttpContext;
+                httpContext = httpContextAccessor.HttpContext;
             }
             else
             {
-                DefaultHttpContext defaultContext = new DefaultHttpContext { RequestServices = _serviceProvider };
+                DefaultHttpContext defaultContext = new DefaultHttpContext { RequestServices = serviceProvider };
                 defaultContext.Connection.RemoteIpAddress = localIPAddress;
                 httpContext = defaultContext;
             }
             var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
             using (var sw = new StringWriter())
             {
-                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
+                var viewResult = viewEngine.FindView(actionContext, viewName, false);
 
                 // Fallback - the above seems to consistently return null when using the EmbeddedFileProvider
                 if (viewResult.View == null)
                 {
-                    viewResult = _viewEngine.GetView("~/", viewName, isMainPage);
+                    viewResult = viewEngine.GetView("~/", viewName, isMainPage);
                 }
 
                 if (viewResult.View == null)
@@ -95,7 +108,7 @@ namespace MailDemon
                     actionContext,
                     viewResult.View,
                     viewDictionary,
-                    new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
+                    new TempDataDictionary(actionContext.HttpContext, tempDataProvider),
                     sw,
                     new HtmlHelperOptions()
                 );
