@@ -37,7 +37,7 @@ namespace MailDemon
 
         private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault)
         {
-            string html = await templateEngine.RenderToStringAsync(templateName, model, extraInfo);
+            string html = await templateEngine.RenderViewToStringAsync(templateName, model, extraInfo);
 
             if (html != null)
             {

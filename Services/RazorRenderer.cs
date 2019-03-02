@@ -32,7 +32,7 @@ namespace MailDemon
             services = new ServiceCollection();
             ConfigureDefaultServices(services);
             serviceProvider = services.BuildServiceProvider();
-            viewRenderer = new ViewRenderService(serviceProvider.GetRequiredService<IRazorViewEngine>(), null, null, serviceProvider);
+            viewRenderer = new ViewRenderService(rootPath, serviceProvider.GetRequiredService<IRazorViewEngine>(), null, null, serviceProvider);
         }
 
         private void ConfigureDefaultServices(IServiceCollection services)
@@ -63,9 +63,16 @@ namespace MailDemon
         {
         }
 
-        public Task<string> RenderToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
+        /// <inheritdoc />
+        public Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
         {
-            return viewRenderer.RenderToStringAsync(viewName, model, viewBag, isMainPage);
+            return viewRenderer.RenderViewToStringAsync(viewName, model, viewBag, isMainPage);
+        }
+
+        /// <inheritdoc />
+        public Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
+        {
+            return viewRenderer.RenderStringToStringAsync(key, text, model, viewBag, isMainPage);
         }
 
         void ILoggerFactory.AddProvider(ILoggerProvider provider)
