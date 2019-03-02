@@ -56,6 +56,7 @@ namespace MailDemon
                 {
                     reg = foundReg;
                     foundReg.SubscribedDate = DateTime.UtcNow;
+                    foundReg.UnsubscribedDate = default;
                     foundReg.UnsubscribeToken = Guid.NewGuid().ToString("N");
                     foundReg.MailList = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
                     return true;

@@ -61,6 +61,37 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to You are already subscribed to the &apos;{0}&apos; mailing list..
+        /// </summary>
+        public static string AlreadySubscribed {
+            get {
+                return ResourceManager.GetString("AlreadySubscribed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;p&gt;Please confirm your subscription to the &apos;{0}&apos; mailing list by clicking this link:&lt;/p&gt;
+        ///&lt;p&gt;&lt;a href=&quot;{1}&quot; target=&quot;_blank&quot;&gt;{1}&lt;/a&gt;&lt;/p&gt;
+        ///&lt;p&gt;If you do not click the link, you will not receive emails from the &apos;{0}&apos; mailing list.&lt;/p&gt;.
+        /// </summary>
+        public static string BodyConfirmSubscription {
+            get {
+                return ResourceManager.GetString("BodyConfirmSubscription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;p&gt;Welcome to your subscription to the &apos;{0}&apos; mailing list.&lt;/p&gt;
+        ///&lt;p&gt;To unsubscribe from this mailing list, please use the following link:&lt;/p&gt;
+        ///&lt;p&gt;&lt;a href=&quot;{1}&quot; target=&quot;_blank&quot;&gt;{1}&lt;/a&gt;&lt;/p&gt;.
+        /// </summary>
+        public static string BodyWelcomeSubscription {
+            get {
+                return ResourceManager.GetString("BodyWelcomeSubscription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Company.
         /// </summary>
         public static string Company {
@@ -205,6 +236,33 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Name may not change.
+        /// </summary>
+        public static string NameCannotChange {
+            get {
+                return ResourceManager.GetString("NameCannotChange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid name, use only letters, numbers, spaces, period, hyphen or underscore..
+        /// </summary>
+        public static string NameInvalidChars {
+            get {
+                return ResourceManager.GetString("NameInvalidChars", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Name is too long, limit is {0} characters.
+        /// </summary>
+        public static string NameIsTooLong {
+            get {
+                return ResourceManager.GetString("NameIsTooLong", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to New List.
         /// </summary>
         public static string NewList {
@@ -237,6 +295,24 @@ namespace MailDemon {
         public static string Save {
             get {
                 return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please confirm your subscription to the &apos;{0}&apos; mailing list.
+        /// </summary>
+        public static string SubjectConfirmSubscription {
+            get {
+                return ResourceManager.GetString("SubjectConfirmSubscription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Welcome to your subscription to the &apos;{0}&apos; mailing list..
+        /// </summary>
+        public static string SubjectWelcomeSubscription {
+            get {
+                return ResourceManager.GetString("SubjectWelcomeSubscription", resourceCulture);
             }
         }
         
@@ -286,6 +362,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid template name, use only letters, numbers, spaces, period, hyphen or underscore. Format is [listname]{0}[templatename]..
+        /// </summary>
+        public static string TemplateNameInvalidChars {
+            get {
+                return ResourceManager.GetString("TemplateNameInvalidChars", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Templates.
         /// </summary>
         public static string Templates {
@@ -313,7 +398,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to There was an error unsubscribing from the {0} mailing list, please contact support..
+        ///   Looks up a localized string similar to There was an error unsubscribing from the &apos;{0}&apos; mailing list, please contact support..
         /// </summary>
         public static string UnsubscribeError {
             get {
@@ -322,7 +407,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to You are now unsubscribed from the {0} mailing list..
+        ///   Looks up a localized string similar to You are now unsubscribed from the &apos;{0}&apos; mailing list..
         /// </summary>
         public static string UnsubscribeSuccess {
             get {

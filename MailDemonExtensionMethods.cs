@@ -187,6 +187,41 @@ namespace MailDemon
         }
 
         /// <summary>
+        /// Async wait
+        /// </summary>
+        /// <param name="handle">Wait handle</param>
+        /// <param name="timeout">Timeout</param>
+        /// <param name="cancellationToken">Cancel token</param>
+        /// <returns>True if cancel/signalled, false otherwise</returns>
+        public static async Task<bool> WaitOneAsync(this WaitHandle handle, TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            RegisteredWaitHandle registeredHandle = null;
+            CancellationTokenRegistration tokenRegistration = default;
+            try
+            {
+                var tcs = new TaskCompletionSource<bool>();
+                registeredHandle = ThreadPool.RegisterWaitForSingleObject(
+                    handle,
+                    (state, timedOut) => ((TaskCompletionSource<bool>)state).TrySetResult(!timedOut),
+                    tcs,
+                    timeout,
+                    true);
+                tokenRegistration = cancellationToken.Register(
+                    state => ((TaskCompletionSource<bool>)state).TrySetCanceled(),
+                    tcs);
+                return await tcs.Task;
+            }
+            finally
+            {
+                if (registeredHandle != null)
+                {
+                    registeredHandle.Unregister(null);
+                }
+                tokenRegistration.Dispose();
+            }
+        }
+
+        /// <summary>
         /// Make a task execute synchronously
         /// </summary>
         /// <param name="task">Task</param>

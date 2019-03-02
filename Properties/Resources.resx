@@ -117,6 +117,19 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AlreadySubscribed" xml:space="preserve">
+    <value>You are already subscribed to the '{0}' mailing list.</value>
+  </data>
+  <data name="BodyConfirmSubscription" xml:space="preserve">
+    <value>&lt;p&gt;Please confirm your subscription to the '{0}' mailing list by clicking this link:&lt;/p&gt;
+&lt;p&gt;&lt;a href="{1}" target="_blank"&gt;{1}&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;If you do not click the link, you will not receive emails from the '{0}' mailing list.&lt;/p&gt;</value>
+  </data>
+  <data name="BodyWelcomeSubscription" xml:space="preserve">
+    <value>&lt;p&gt;Welcome to your subscription to the '{0}' mailing list.&lt;/p&gt;
+&lt;p&gt;To unsubscribe from this mailing list, please use the following link:&lt;/p&gt;
+&lt;p&gt;&lt;a href="{1}" target="_blank"&gt;{1}&lt;/a&gt;&lt;/p&gt;</value>
+  </data>
   <data name="Company" xml:space="preserve">
     <value>Company</value>
   </data>
@@ -165,6 +178,15 @@
   <data name="Name" xml:space="preserve">
     <value>Name</value>
   </data>
+  <data name="NameCannotChange" xml:space="preserve">
+    <value>Name may not change</value>
+  </data>
+  <data name="NameInvalidChars" xml:space="preserve">
+    <value>Invalid name, use only letters, numbers, spaces, period, hyphen or underscore.</value>
+  </data>
+  <data name="NameIsTooLong" xml:space="preserve">
+    <value>Name is too long, limit is {0} characters</value>
+  </data>
   <data name="NewList" xml:space="preserve">
     <value>New List</value>
   </data>
@@ -176,6 +198,12 @@
   </data>
   <data name="Save" xml:space="preserve">
     <value>Save</value>
+  </data>
+  <data name="SubjectConfirmSubscription" xml:space="preserve">
+    <value>Please confirm your subscription to the '{0}' mailing list</value>
+  </data>
+  <data name="SubjectWelcomeSubscription" xml:space="preserve">
+    <value>Welcome to your subscription to the '{0}' mailing list.</value>
   </data>
   <data name="SubscribeConfirm" xml:space="preserve">
     <value>Please check your email for a confirmation link, you should open this link to confirm your subscription to the '{0}' mailing list.</value>
@@ -192,6 +220,9 @@
   <data name="Success" xml:space="preserve">
     <value>Success</value>
   </data>
+  <data name="TemplateNameInvalidChars" xml:space="preserve">
+    <value>Invalid template name, use only letters, numbers, spaces, period, hyphen or underscore. Format is [listname]{0}[templatename].</value>
+  </data>
   <data name="Templates" xml:space="preserve">
     <value>Templates</value>
   </data>
@@ -202,10 +233,10 @@
     <value>An unknown error has happened, please contact support.</value>
   </data>
   <data name="UnsubscribeError" xml:space="preserve">
-    <value>There was an error unsubscribing from the {0} mailing list, please contact support.</value>
+    <value>There was an error unsubscribing from the '{0}' mailing list, please contact support.</value>
   </data>
   <data name="UnsubscribeSuccess" xml:space="preserve">
-    <value>You are now unsubscribed from the {0} mailing list.</value>
+    <value>You are now unsubscribed from the '{0}' mailing list.</value>
   </data>
   <data name="UnsubscribeText" xml:space="preserve">
     <value>Unsubscribe from the '{0}' mailing list</value>
