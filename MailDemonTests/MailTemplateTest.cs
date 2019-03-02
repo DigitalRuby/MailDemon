@@ -33,7 +33,7 @@ namespace MailDemonTests
         [Test]
         public void TestTemplateCacheDatabase()
         {
-            MailTemplate template = new MailTemplate { Name = "test", Text = "<b>Hello World</b> @Model.Fields[\"firstName\"].ToString()" };
+            MailTemplate template = new MailTemplate { Name = "test", Text = "<b>Hello World</b> @Model.FirstName" };
 
             using (var db = new MailDemonDatabase())
             {
@@ -41,9 +41,9 @@ namespace MailDemonTests
                 db.Insert<MailTemplate>(template);
             }
 
-            string html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            string html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob", html);
-            html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob", html);
 
             template.Text += " <br/>New Line<br/>";
@@ -55,9 +55,9 @@ namespace MailDemonTests
                 db.Update(template);
             }
 
-            html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
-            html = viewRenderer.RenderToStringAsync("test", model).Sync();
+            html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
         }
 
@@ -67,17 +67,17 @@ namespace MailDemonTests
             string path = Path.Combine(Directory.GetCurrentDirectory(), "test.cshtml");
             try
             {
-                File.WriteAllText(path, "<b>Hello World</b> @Model.Fields[\"firstName\"].ToString()");
-                string html = viewRenderer.RenderToStringAsync(path, model).Sync();
+                File.WriteAllText(path, "<b>Hello World</b> @Model.FirstName");
+                string html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob", html);
-                html = viewRenderer.RenderToStringAsync(path, model).Sync();
+                html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob", html);
 
                 File.AppendAllText(path, " <br/>New Line<br/>");
 
-                html = viewRenderer.RenderToStringAsync(path, model).Sync();
+                html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
-                html = viewRenderer.RenderToStringAsync(path, model).Sync();
+                html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
             }
             finally
@@ -87,6 +87,13 @@ namespace MailDemonTests
                     File.Delete(path);
                 }
             }
+        }
+
+        [Test]
+        public void TestStringTemplate()
+        {
+            string result = viewRenderer.RenderStringToStringAsync("test", "Hello @Model.FirstName", model).Sync();
+            Assert.AreEqual("Hello Bob", result);
         }
     }
 }
