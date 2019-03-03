@@ -48,6 +48,13 @@ namespace MailDemon
         }
 
         /// <summary>
+        /// Constructor
+        /// </summary>
+        public MailDemonDatabase()
+        {
+        }
+
+        /// <summary>
         /// Delete database file - use with caution!
         /// </summary>
         public static void DeleteDatabase()
