@@ -110,6 +110,11 @@ namespace MailDemon
             }
         }
 
+        public ViewRenderService(IRazorViewEngine viewEngine, IHttpContextAccessor httpContextAccessor, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider) :
+            this(Directory.GetCurrentDirectory(), viewEngine, httpContextAccessor, tempDataProvider, serviceProvider)
+        {
+        }
+
         public ViewRenderService(string rootPath, IRazorViewEngine viewEngine, IHttpContextAccessor httpContextAccessor, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider)
         {
             this.rootPath = rootPath;

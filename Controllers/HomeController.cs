@@ -460,6 +460,8 @@ namespace MailDemon
             return Ok();
         }
 
+        [HttpGet]
+        [HttpPost]
         public IActionResult DebugTemplate(string id)
         {
             id = (id ?? string.Empty).Trim();
