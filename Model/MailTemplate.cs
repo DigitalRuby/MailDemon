@@ -31,6 +31,21 @@ namespace MailDemon
         public const string NameSubscribeWelcome = "SubscribeWelcome";
 
         /// <summary>
+        /// Get a list name from a full template name
+        /// </summary>
+        /// <param name="fullTemplateName">Full template name</param>
+        /// <returns>List name</returns>
+        public static string GetListName(string fullTemplateName)
+        {
+            int pos = fullTemplateName.IndexOf(MailTemplate.FullNameSeparator);
+            if (pos >= 0)
+            {
+                fullTemplateName = fullTemplateName.Substring(0, pos);
+            }
+            return fullTemplateName;
+        }
+
+        /// <summary>
         /// Get a template name from a full template name
         /// </summary>
         /// <param name="fullTemplateName">Full template name</param>

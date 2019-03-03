@@ -212,10 +212,11 @@ namespace MailDemon
                 services.AddResponseCaching();
                 services.AddSingleton<IMailCreator>((provider) => new MailCreator(provider.GetService<IViewRenderService>()));
                 services.AddSingleton<IMailSender>((provider) => mailService);
+                services.AddSingleton<IBulkMailSender>(new BulkMailSender());
                 services.AddSingleton<MailDemonDatabase>((provider) => new MailDemonDatabase());
                 services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
                 services.AddTransient<IViewRenderService, ViewRenderService>();
-                services.AddHostedService<MailDemonDatabaseRegistrationCleanup>();
+                services.AddHostedService<SubscriptionCleanup>();
                 services.AddMvc((options) =>
                 {
 

@@ -28,7 +28,7 @@ namespace MailDemon
         public bool DisableSending { get; set; }
 
         /// <inheritdoc />
-        public async Task SendMailAsync(MimeMessage message, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> onPrepare = null)
+        public async Task SendMailAsync(string toDomain, IEnumerable<MimeMessage> messages)
         {
             using (SmtpClient client = new SmtpClient()
             {
@@ -43,9 +43,6 @@ namespace MailDemon
                 LookupClient lookup = new LookupClient();
                 MailDemonLog.Debug("QueryAsync mx for domain {0}", toDomain);
                 IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
-                message.From.Clear();
-                message.From.Add(from);
-                onPrepare?.Invoke(message);
                 foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
                     // attempt to send, if fail, try next address
@@ -62,22 +59,24 @@ namespace MailDemon
                             string host = ip.HostName;
                             try
                             {
-                                MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                foreach (MailboxAddress address in toAddresses)
+                                foreach (MimeMessage message in messages)
                                 {
-                                    message.To.Clear();
-                                    message.To.Add(address);
                                     if (dkimSigner != null)
                                     {
                                         message.Prepare(EncodingConstraint.SevenBit);
                                         message.Sign(dkimSigner, headersToSign);
                                     }
+                                    MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
                                     await client.SendAsync(message, cancelToken).TimeoutAfter(30000);
                                 }
 
                                 // success!
                                 return;
+                            }
+                            catch (InvalidOperationException)
+                            {
+                                throw;
                             }
                             catch (Exception ex)
                             {
@@ -94,6 +93,10 @@ namespace MailDemon
                                 }
                             }
                         }
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -115,13 +118,12 @@ namespace MailDemon
         /// <param name="writer">Writer</param>
         /// <param name="line">Line</param>
         /// <param name="endPoint">End point</param>
-        /// <param name="validateSpf">Whether to validate spf</param>
-        /// <param name="onPrepare">Called before message is prepared</param>
+        /// <param name="prepMessage">Allow changing mime message right before it is sent</param>
         /// <returns>Task</returns>
-        private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint, Action<MimeMessage> onPrepare = null)
+        private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint, Action<MimeMessage> prepMessage)
         {
             MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line, endPoint);
-            SendMail(writer, result, endPoint, true, onPrepare).GetAwaiter();
+            SendMail(writer, result, endPoint, true, prepMessage).GetAwaiter();
             await writer.WriteLineAsync($"250 2.1.0 OK");
         }
 
@@ -132,9 +134,9 @@ namespace MailDemon
         /// <param name="result">Mail result to send</param>
         /// <param name="endPoint">End point</param>
         /// <param name="dispose">Whether to dispose result when done</param>
-        /// <param name="onPrepare">Called before message is prepared</param>
+        /// <param name="prepMessage">Allow changing mime message right before it is sent</param>
         /// <returns>Task</returns>
-        private async Task SendMail(StreamWriter writer, MailFromResult result, IPEndPoint endPoint, bool dispose, Action<MimeMessage> onPrepare = null)
+        private async Task SendMail(StreamWriter writer, MailFromResult result, IPEndPoint endPoint, bool dispose, Action<MimeMessage> prepMessage)
         {
             try
             {
@@ -144,7 +146,7 @@ namespace MailDemon
                 List<Task> tasks = new List<Task>();
                 foreach (var group in result.ToAddresses)
                 {
-                    tasks.Add(SendMailInternal(writer, result.BackingFile, result.From, group.Key, group.Value, endPoint, onPrepare));
+                    tasks.Add(SendMailInternal(writer, result.BackingFile, result.From, group.Key, group.Value, endPoint, null));
                     count++;
                 }
                 await Task.WhenAll(tasks);
@@ -163,15 +165,27 @@ namespace MailDemon
             }
         }
 
-        private async Task SendMailInternal(StreamWriter writer, string fileName, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses,
-            IPEndPoint endPoint, Action<MimeMessage> onPrepare)
+        private IEnumerable<MimeMessage> EnumerateMessages(MimeMessage message, string toDomain, MailboxAddress from, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> prepMessage)
+        {
+            foreach (MailboxAddress toAddress in toAddresses)
+            {
+                message.From.Clear();
+                message.To.Clear();
+                message.From.Add(from);
+                message.To.Add(toAddress);
+                prepMessage?.Invoke(message);
+                yield return message;
+            }
+        }
+
+        private async Task SendMailInternal(StreamWriter writer, string fileName, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, IPEndPoint endPoint, Action<MimeMessage> prepMessage)
         {
             try
             {
                 using (Stream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
                 {
                     MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
-                    await SendMailAsync(message, from, toDomain, toAddresses, onPrepare);
+                    await SendMailAsync(toDomain, EnumerateMessages(message, toDomain, from, toAddresses, prepMessage));
                 }
             }
             catch (Exception ex)
