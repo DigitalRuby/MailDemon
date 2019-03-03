@@ -14,10 +14,13 @@
     @Html.HiddenFor(m => m.Value.Id)
     <br />
     <button class="submit-button" name="action" value="save">@MailDemon.Resources.Save</button>
-    <button class="submit-button" name="action" value="send" style="margin-left: 20px;" onclick="return confirm('! Confirm Send !');">@MailDemon.Resources.Send</button>
     if (Model.Value.Id != 0)
     {
         <button class="submit-button" type="submit" formmethod="post" formaction="/@nameof(MailDemon.HomeController.DebugTemplate)/@Model.Value.Name" formtarget="_blank" style="margin-left: 20px;">@MailDemon.Resources.Test</button>
+    }
+    if (Model.Value.Id != 0)
+    {
+        <button class="submit-button" name="action" value="send" style="margin-left: 20px;" onclick="return confirm('! Confirm Send !');">@MailDemon.Resources.Send</button>
         <button class="delete-button" name="action" value="delete" onclick="return confirm('! Confirm Deletion !');">@MailDemon.Resources.Delete</button>
         <br /><br />
     }

@@ -34,8 +34,21 @@ namespace MailDemon
         private readonly MailDemonDatabase db;
         private readonly IMailCreator mailCreator;
         private readonly IMailSender mailSender;
+        private readonly IBulkMailSender bulkMailSender;
 
         public bool RequireCaptcha { get; set;  } = true;
+
+        private IEnumerable<MimeMessage> GetMessages(MimeMessage message, MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
+        {
+            foreach (MailboxAddress toAddress in toAddresses)
+            {
+                message.From.Clear();
+                message.To.Clear();
+                message.From.Add(fromAddress);
+                message.To.Add(toAddress);
+                yield return message;
+            }
+        }
 
         private async Task SendMailAsync(MailListSubscription reg, string fullTemplateName)
         {
@@ -43,7 +56,7 @@ namespace MailDemon
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
             MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
             MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, reg.ViewBagObject as ExpandoObject);
-            await mailSender.SendMailAsync(message, fromAddress, toDomain, toAddresses);
+            await mailSender.SendMailAsync(toDomain, GetMessages(message, fromAddress, toAddresses));
         }
 
         protected override void Dispose(bool disposing)
@@ -52,11 +65,12 @@ namespace MailDemon
             db.Dispose();
         }
 
-        public HomeController(MailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender)
+        public HomeController(MailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender, IBulkMailSender bulkMailSender)
         {
             this.db = db;
             this.mailCreator = mailCreator ?? throw new ArgumentNullException(nameof(mailCreator));
             this.mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
+            this.bulkMailSender = bulkMailSender;
         }
 
         [AllowAnonymous]
@@ -457,7 +471,24 @@ namespace MailDemon
 
         private IActionResult EditTemplateSend(string id)
         {
-            return Ok();
+            id = (id ?? string.Empty).Trim();
+            if (id.Length == 0)
+            {
+                return NotFound();
+            }
+            string listName = MailTemplate.GetListName(id);
+            MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
+            if (list == null)
+            {
+                return NotFound();
+            }
+            if (bulkMailSender == null)
+            {
+                return NotFound();
+            }
+            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, id).GetAwaiter();
+            TempData["Message"] = Resources.SendStarted;
+            return RedirectToAction(nameof(HomeController.EditTemplate), new { id });
         }
 
         [HttpGet]

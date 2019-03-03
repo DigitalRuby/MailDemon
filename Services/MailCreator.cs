@@ -54,6 +54,10 @@ namespace MailDemon
                         Subject = subjectText
                     };
                 }
+                else
+                {
+                    throw new InvalidOperationException(Resources.MissingSubjectInTemplate);
+                }
             }
             else if (allowDefault)
             {

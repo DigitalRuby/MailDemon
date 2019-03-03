@@ -82,6 +82,11 @@ namespace MailDemon
 
         private async Task<string> RenderViewAsync<TModel>(IView view, ActionContext actionContext, TModel model, ExpandoObject viewBag)
         {
+            if (view == null)
+            {
+                return null;
+            }
+
             var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
             {
                 Model = model

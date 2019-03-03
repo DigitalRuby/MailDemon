@@ -63,6 +63,23 @@ namespace MailDemon
         public DateTime UnsubscribedDate { get; set; }
         public string SubscribeToken { get; set; }
         public string UnsubscribeToken { get; set; }
+        public string EmailAddressDomain
+        {
+            get
+            {
+                string emailAddress = EmailAddress;
+                if (string.IsNullOrWhiteSpace(emailAddress))
+                {
+                    return null;
+                }
+                int pos = emailAddress.IndexOf('@');
+                if (pos < 0)
+                {
+                    return null;
+                }
+                return emailAddress.Substring(++pos);
+            }
+        }
 
         public string EmailAddress { get => Field("EmailAddress"); set => SetField("EmailAddress", value); }
         public string FirstName { get => Field("FirstName"); set => SetField("FirstName", value); }

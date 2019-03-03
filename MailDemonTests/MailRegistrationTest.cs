@@ -144,7 +144,7 @@ namespace MailDemonTests
 
         public MailRegistrationTest()
         {
-             homeController = new HomeController(new MailDemonDatabase(), this, this);
+             homeController = new HomeController(new MailDemonDatabase(), this, this, null);
         }
 
         [SetUp]
@@ -221,8 +221,10 @@ namespace MailDemonTests
             return Task.FromResult(msg);
         }
 
-        Task IMailSender.SendMailAsync(MimeMessage message, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> onPrepare)
+        Task IMailSender.SendMailAsync(string toDomain, IEnumerable<MimeMessage> messages)
         {
+            MimeMessage message = messages.FirstOrDefault();
+            Assert.NotNull(message);
             Assert.AreEqual(subject, message.Subject);
             Assert.AreEqual("<html><body>Mail Body: " + templateName + "</body></html>", message.HtmlBody);
             sentMail++;

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace MailDemon
 {
-    public class MailDemonDatabaseRegistrationCleanup : IHostedService
+    public class SubscriptionCleanup : IHostedService
     {
         private readonly TimeSpan loopTimeSpan = TimeSpan.FromMinutes(1.0);
 

@@ -268,4 +268,10 @@
   <data name="Send" xml:space="preserve">
     <value>Send</value>
   </data>
+  <data name="SendStarted" xml:space="preserve">
+    <value>Send Started</value>
+  </data>
+  <data name="MissingSubjectInTemplate" xml:space="preserve">
+    <value>Missing subject in template</value>
+  </data>
 </root>

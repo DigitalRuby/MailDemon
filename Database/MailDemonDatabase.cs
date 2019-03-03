@@ -39,6 +39,7 @@ namespace MailDemon
                 coll.EnsureIndex(x => x.ListName);
                 coll.EnsureIndex(x => x.SubscribeToken);
                 coll.EnsureIndex(x => x.UnsubscribeToken);
+                coll.EnsureIndex(x => x.EmailAddressDomain);
                 var coll2 = db.GetCollection<MailTemplate>();
                 coll2.EnsureIndex(x => x.Name, true);
                 var coll3 = db.GetCollection<MailList>();

@@ -254,6 +254,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Missing subject in template.
+        /// </summary>
+        public static string MissingSubjectInTemplate {
+            get {
+                return ResourceManager.GetString("MissingSubjectInTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Name.
         /// </summary>
         public static string Name {
@@ -331,6 +340,15 @@ namespace MailDemon {
         public static string Send {
             get {
                 return ResourceManager.GetString("Send", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Send Started.
+        /// </summary>
+        public static string SendStarted {
+            get {
+                return ResourceManager.GetString("SendStarted", resourceCulture);
             }
         }
         

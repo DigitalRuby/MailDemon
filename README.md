@@ -72,10 +72,14 @@ Known Issues:
 - Send your victims, I mean subscribers, to https://yourdomain.com/SubscribeInitial/[listname]. Replace yourdomain.com with your actual domain name. Replace [listname] with the actual list name.
 - Create new templates by selecting lists at the top, then using create template button.
 - The template title is NOT the subject of the email, it is just informational for you only.
-- To set the email subject, add a &lt;!-- Subjbect: ... --&gt; to the body of your template, it will then be set as the email subject.
 - Full razor syntax, @Html, etc. is supported. The model for the templates is the MailListSubscription class.
 - Feel free to create and edit templates in visual studio and then paste them into the template text box.
-- (WIP) Blast out an email using the send button on the edit template screen.
+- To set the email subject, add a &lt;!-- Subject: ... --&gt; to the body of your template, it will then be set as the email subject. This is required in order to send email.
+- To bulk send email from a mail list, select (or create) the template from the list to send, edit it, add your subject and save. Then use the send button to perform the bulk email operation. Errors will be logged.
+- There are three magic template names that can override the default behavior for a list:
+  - SubscribeInitial (see SubscribeInitialDefault.cshtml). This is the initial sign-up form.
+  - SubscribeConfirm (see SubscribeConfirmDefault.cshtml). This is the confirmation email with a link to activate the subscription.
+  - SubscribeWelcome (see SubscribeWelcomeDefault.cshtml). This is the welcome email to notify of the active subscription, along with an unsubscribe link.
 - Note that the MailDemon.db file contains all the lists, templates, subscribers, etc. Backup this file regularly!
 
 Enjoy!
