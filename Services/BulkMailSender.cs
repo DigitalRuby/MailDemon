@@ -9,7 +9,7 @@ namespace MailDemon
 {
     public interface IBulkMailSender
     {
-        Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, string fullTemplateName);
+        Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, string fullTemplateName, string unsubscribeUrl);
     }
 
     public class BulkMailSender : IBulkMailSender
@@ -19,7 +19,7 @@ namespace MailDemon
         {
             foreach (MailListSubscription sub in subs)
             {
-                MimeMessage message = mailCreator.CreateMailAsync(fullTemplateName, sub, null).Sync();
+                MimeMessage message = mailCreator.CreateMailAsync(fullTemplateName, sub, null, null).Sync();
                 message.From.Clear();
                 message.To.Clear();
                 if (string.IsNullOrWhiteSpace(list.FromEmailName))
@@ -39,7 +39,7 @@ namespace MailDemon
         {
         }
 
-        public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, string fullTemplateName)
+        public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, string fullTemplateName, string unsubscribeUrl)
         {
             List<MailListSubscription> subs = new List<MailListSubscription>();
             string toDomain = null;
@@ -57,6 +57,7 @@ namespace MailDemon
                     }
                     toDomain = addressDomain;
                     sub.MailList = list;
+                    sub.UnsubscribeUrl = string.Format(unsubscribeUrl, sub.UnsubscribeToken);
                     subs.Add(sub);
                 }
             }
