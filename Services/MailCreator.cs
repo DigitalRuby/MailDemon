@@ -47,6 +47,10 @@ namespace MailDemon
                 if (match.Success)
                 {
                     string subjectText = match.Groups["subject"].Value.Trim();
+
+                    // two or more spaces to one space in subject
+                    subjectText = Regex.Replace(subjectText, "[\r\n ]+", " ");
+
                     html = (htmlModifier == null ? html : htmlModifier.Invoke(html));
 
                     BodyBuilder builder = new BodyBuilder
