@@ -319,7 +319,8 @@ form
     font-size: 0.9em;
 }
 
-.submit-button
+.submit-button,
+.delete-button
 {
     border: 1px solid #888888;
     background-color: #111111;
@@ -329,17 +330,13 @@ form
     padding: 4px;
     min-width: 100px;
     float: left;
+    height: 30px;
 }
 
 .delete-button
 {
     border: 1px solid #FF8888;
     background-color: #991111;
-    color: #EDEDED;
-    text-align: center;
-    text-decoration: none;
-    padding: 4px;
-    min-width: 100px;
     float: right;
 }
 
