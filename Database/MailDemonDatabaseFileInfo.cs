@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.FileProviders;
@@ -21,7 +22,12 @@ namespace MailDemon
         {
             this.rootPath = rootPath;
             this.fileName = viewPath;
-            this.fullPath = (Path.IsPathFullyQualified(viewPath) ? viewPath : Path.Combine(rootPath, viewPath)).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            this.fullPath = Path.Combine(rootPath, viewPath);
+            if (!File.Exists(this.fullPath))
+            {
+                this.fullPath = viewPath;
+            }
+            this.fullPath = this.fullPath.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
             this.name = Path.GetFileName(viewPath);
             GetContent();
@@ -86,7 +92,19 @@ namespace MailDemon
                 if (template != null && template.Text != null)
                 {
                     Exists = true;
-                    contents = System.Text.Encoding.UTF8.GetBytes(template.Text);
+                    string text = template.Text;
+
+                    if (!text.Contains("<html>", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // find layout
+                        Match match = Regex.Match(template.Text, @"@{\w*Layout\w*=\w*"".+?""\w*;+\w*}");
+                        if (!match.Success)
+                        {
+                            text = @"@{Layout=""/Views/_LayoutDefault.cshtml"";}" + Environment.NewLine + template.Text;
+                        }
+                    }
+
+                    contents = System.Text.Encoding.UTF8.GetBytes(text);
                 }
             }
         }

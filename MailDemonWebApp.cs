@@ -59,12 +59,12 @@ namespace MailDemon
         /// <summary>
         /// Recaptcha settings
         /// </summary>
-        public static RecaptchaSettings Recaptcha { get; private set; }
+        public RecaptchaSettings Recaptcha { get; private set; }
 
         /// <summary>
         /// Admin login
         /// </summary>
-        public static KeyValuePair<string, string> AdminLogin;
+        public KeyValuePair<string, string> AdminLogin;
 
         /// <summary>
         /// Command line args
@@ -80,6 +80,11 @@ namespace MailDemon
         /// Server url
         /// </summary>
         public string ServerUrl { get; private set; }
+
+        /// <summary>
+        /// Shared instance
+        /// </summary>
+        public static MailDemonWebApp Instance { get; private set; }
 
         private void OnShutdown()
         {
@@ -98,6 +103,7 @@ namespace MailDemon
             RootDirectory = rootDirectory;
             Configuration = config;
             this.mailService = mailService;
+            Instance = this;
         }
 
         /// <summary>
@@ -247,6 +253,17 @@ namespace MailDemon
             IApplicationLifetime lifetime = app.ApplicationServices.GetService<IApplicationLifetime>();
             loggerFactory.AddProvider(new MailDemonLogProvider());
             bool enableWeb = bool.Parse(Configuration.GetSection("mailDemonWeb")["enable"]);
+            IServerAddressesFeature serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
+            string address = serverAddressesFeature?.Addresses.LastOrDefault();
+            if (address == null)
+            {
+                ServerUrl = "http://" + GetLocalIPAddress() + ":52664";
+            }
+            else
+            {
+                ServerUrl = address;
+            }
+
             if (enableWeb)
             {
                 app.UseStatusCodePagesWithReExecute("/Error/{0}");
@@ -281,17 +298,8 @@ namespace MailDemon
                 {
                     await next.Invoke();
                 });
-                IServerAddressesFeature serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-                string address = serverAddressesFeature?.Addresses.LastOrDefault();
-                if (address == null)
-                {
-                    ServerUrl = "http://" + GetLocalIPAddress() + ":52664";
-                }
-                else
-                {
-                    ServerUrl = address;
-                }
             }
+            ServerUrl = ServerUrl.Trim('/', '?');
             lifetime.ApplicationStopping.Register(OnShutdown);
             runningEvent.Set();
         }
