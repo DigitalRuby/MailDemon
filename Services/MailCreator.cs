@@ -49,13 +49,6 @@ namespace MailDemon
                     string subjectText = match.Groups["subject"].Value.Trim();
                     html = (htmlModifier == null ? html : htmlModifier.Invoke(html));
 
-                    // find layout
-                    match = Regex.Match(html, @"@{\w*Layout\w*=\w*"".+?""\w*}");
-                    if (!match.Success)
-                    {
-                        html = @"@{Layout=""_LayoutDefault.cshtml"";}" + html;
-                    }
-
                     BodyBuilder builder = new BodyBuilder
                     {
                         HtmlBody = (htmlModifier == null ? html : htmlModifier.Invoke(html))

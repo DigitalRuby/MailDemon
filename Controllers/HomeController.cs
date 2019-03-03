@@ -119,7 +119,7 @@ namespace MailDemon
             string error = null;
             if (RequireCaptcha && formFields.TryGetValue("captcha", out string captchaValue))
             {
-                error = await MailDemonWebApp.Recaptcha.Verify(captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
+                error = await MailDemonWebApp.Instance.Recaptcha.Verify(captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
             }
             MailListSubscription model = new MailListSubscription { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             string email = null;
@@ -289,7 +289,7 @@ namespace MailDemon
                 login.Error = true;
                 login.Message = Resources.UsernameOrPasswordIsBlank;
             }
-            else if (login.UserName != MailDemonWebApp.AdminLogin.Key && login.Password != MailDemonWebApp.AdminLogin.Value)
+            else if (login.UserName != MailDemonWebApp.Instance.AdminLogin.Key && login.Password != MailDemonWebApp.Instance.AdminLogin.Value)
             {
                 login.Error = true;
                 login.Message = Resources.LoginFailed;
@@ -400,7 +400,7 @@ namespace MailDemon
         public IActionResult EditTemplate(string id)
         {
             MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault() ?? new MailTemplate();
-            if (template.Id == 0 && string.IsNullOrWhiteSpace(template.Name))
+            if (template.Id == 0 && string.IsNullOrWhiteSpace(template.Name) && id.IndexOf(MailTemplate.FullNameSeparator) < 0)
             {
                 template.Name = id + MailTemplate.FullNameSeparator;
             }
