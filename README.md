@@ -63,24 +63,28 @@ Known Issues:
 - Hotmail.com, live.com and outlook.com have had an invalid SSL certificate for quite a while now. I've added them to appsettings.json. You may need to add additional entries for mail services with bad certificates.
 
 ## Mail List Setup
-- Make sure your smtp settings are correct in appsettings.json.
-- Setup appsettings.json, mailDemonWeb section. Enable web, set your admin user/password, google recaptcha key, etc.
-- Use --server.urls parameter to set the kestrel binding for the web server.
+- Make sure your smtp settings are correct in `appsettings.json`.
+- Setup `appsettings.json`, `mailDemonWeb section`. Set `enableWeb` to true and set your admin user/password, google recaptcha key, etc.
+- Use `--server.urls` parameter to set the kestrel binding for the web server.
 - Login with https://yourdomain.com/MailDemonLogin. Replace yourdomain.com with your actual domain name.
 - Create a new mailing list using menu at top.
-- List name is meant to be more like a short variable name, somewhat human readable, but short. List title is what subscribers will see.
+- List name is meant to be more like a short variable name, somewhat human readable, but short and unique. List title is what subscribers will see.
 - Send your victims, I mean subscribers, to https://yourdomain.com/SubscribeInitial/[listname]. Replace yourdomain.com with your actual domain name. Replace [listname] with the actual list name.
 - Create new templates by selecting lists at the top, then using create template button.
+- The template name format is `[listName]@[templateName]` (without brackets). Just like lists, the template name is a short, human readable and unique name.
 - The template title is NOT the subject of the email, it is just informational for you only.
-- Full razor syntax, @Html, etc. is supported. The model for the templates is the MailListSubscription class.
+- Full razor syntax, `@Html`, etc. is supported. The model for the templates is the MailListSubscription class.
 - Feel free to create and edit templates in visual studio and then paste them into the template text box.
-- To set the email subject, add a &lt;!-- Subject: ... --&gt; to the body of your template, it will then be set as the email subject. This is required in order to send email.
+- Each template should have a layout. A layout is a template that you will never email, it just wraps other templates. You can name your layout `[listName]@[layoutName]` (without brackets). You can start with `_LayoutDefault.cshtml` and customize and provide your own css link. You should also provide an unsubscribe link, along with a physical mailing address to comply with anti-spam laws.
+- Set the layout of your template like this: `@{ Layout = "listName@layoutName"; }`
+- To set the email subject, add a `<!-- Subject: ... -->` to the body of your template, it will then be set as the email subject. This is required in order to send email. See `SubscribeConfirmDefault.cshtml` for an example.
 - To bulk send email from a mail list, select (or create) the template from the list to send, edit it, add your subject and save. Then use the send button to perform the bulk email operation. Errors will be logged.
 - There are three magic template names that can override the default behavior for a list:
   - SubscribeInitial (see SubscribeInitialDefault.cshtml). This is the initial sign-up form.
   - SubscribeConfirm (see SubscribeConfirmDefault.cshtml). This is the confirmation email with a link to activate the subscription.
   - SubscribeWelcome (see SubscribeWelcomeDefault.cshtml). This is the welcome email to notify of the active subscription, along with an unsubscribe link.
 - Note that the MailDemon.db file contains all the lists, templates, subscribers, etc. Backup this file regularly!
+- You can also store your templates in the Views/Shared directory. Follow the same naming convention for a template name 
 
 Enjoy!
 

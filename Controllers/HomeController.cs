@@ -55,7 +55,7 @@ namespace MailDemon
             MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
             MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
-            MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, reg.ViewBagObject as ExpandoObject);
+            MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, reg.ViewBagObject as ExpandoObject, null);
             await mailSender.SendMailAsync(toDomain, GetMessages(message, fromAddress, toAddresses));
         }
 
@@ -486,7 +486,8 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, id).GetAwaiter();
+            string unsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={{0}}";
+            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, id, unsubscribeUrl).GetAwaiter();
             TempData["Message"] = Resources.SendStarted;
             return RedirectToAction(nameof(HomeController.EditTemplate), new { id });
         }
@@ -495,11 +496,24 @@ namespace MailDemon
         [HttpPost]
         public IActionResult DebugTemplate(string id)
         {
+            if (HttpContext.Request.Method == "POST")
+            {
+                // switch to GET request, to avoid stupid double form post popup
+                return RedirectToAction(nameof(DebugTemplate), new { id });
+            }
+
             id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
             {
                 return NotFound();
             }
+            string listName = MailTemplate.GetListName(id);
+            MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
+            if (list == null)
+            {
+                return NotFound();
+            }
+
             MailListSubscription tempReg = new MailListSubscription
             {
                 EmailAddress = "test@domain.com",
@@ -510,7 +524,9 @@ namespace MailDemon
                 ListName = "Default",
                 SubscribedDate = DateTime.UtcNow,
                 SubscribeToken = Guid.NewGuid().ToString("N"),
-                Expires = DateTime.MinValue
+                Expires = DateTime.MinValue,
+                MailList = list,
+                UnsubscribeUrl = "http://localhost/Unsubscribe/" + list.Name + "?notes=this-is-a-fake-unsubscribe-url"
             };
             return View(id, tempReg);
         }

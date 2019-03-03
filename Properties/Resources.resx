@@ -224,7 +224,7 @@
     <value>Subscribe to the '{0}' mailing list</value>
   </data>
   <data name="SubscribeWelcome" xml:space="preserve">
-    <value>Welcome to the '{0}' mailing list. Your subscription is now active. To unsubscribe from this mailing list, please use the following link: </value>
+    <value>Welcome to the '{0}' mailing list. Your subscription is now active. Please check your email for additional information and instructions.</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>Success</value>
@@ -273,5 +273,8 @@
   </data>
   <data name="MissingSubjectInTemplate" xml:space="preserve">
     <value>Missing subject in template</value>
+  </data>
+  <data name="UnsubscribeLink" xml:space="preserve">
+    <value>To unsubscribe from this mailing list, please use the following link: </value>
   </data>
 </root>

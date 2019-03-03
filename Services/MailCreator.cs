@@ -23,8 +23,9 @@ namespace MailDemon
         /// <param name="templateName">Full template name</param>
         /// <param name="model">Model</param>
         /// <param name="extraInfo">Extra info (view bag)</param>
+        /// <param name="htmlModifier">Allow modifying html before it is made part of the message</param>
         /// <returns>MimeMessage with body and subject populated, you will need to set to and from addresses, etc.</returns>
-        Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo);
+        Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string> htmlModifier);
     }
 
     /// <summary>
@@ -35,22 +36,33 @@ namespace MailDemon
     {
         private readonly IViewRenderService templateEngine;
 
-        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault)
+        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Func<string, string> htmlModifier)
         {
             string html = await templateEngine.RenderViewToStringAsync(templateName, model, extraInfo);
 
             if (html != null)
             {
-                Match subject = Regex.Match(html, @"\<!-- ?Subject: (?<subject>.*?) ?--\>", RegexOptions.IgnoreCase);
-                if (subject.Success)
+                // find email subject
+                Match match = Regex.Match(html, @"\<!-- ?Subject: (?<subject>.*?) ?--\>", RegexOptions.IgnoreCase);
+                if (match.Success)
                 {
-                    string subjectText = subject.Groups["subject"].Value.Trim();
+                    string subjectText = match.Groups["subject"].Value.Trim();
+                    html = (htmlModifier == null ? html : htmlModifier.Invoke(html));
+
+                    // find layout
+                    match = Regex.Match(html, @"@{\w*Layout\w*=\w*"".+?""\w*}");
+                    if (!match.Success)
+                    {
+                        html = @"@{Layout=""_LayoutDefault.cshtml"";}" + html;
+                    }
+
+                    BodyBuilder builder = new BodyBuilder
+                    {
+                        HtmlBody = (htmlModifier == null ? html : htmlModifier.Invoke(html))
+                    };
                     return new MimeMessage
                     {
-                        Body = (new BodyBuilder
-                        {
-                            HtmlBody = html
-                        }).ToMessageBody(),
+                        Body = builder.ToMessageBody(),
                         Subject = subjectText
                     };
                 }
@@ -62,7 +74,7 @@ namespace MailDemon
             else if (allowDefault)
             {
                 templateName = MailTemplate.GetTemplateName(templateName);
-                return await CreateMailInternalAsync(templateName + "Default", model, extraInfo, false);
+                return await CreateMailInternalAsync(templateName + "Default", model, extraInfo, false, null);
             }
 
             throw new ArgumentException("No view found for name " + templateName);
@@ -78,9 +90,9 @@ namespace MailDemon
         }
 
         /// <inheritdoc />
-        public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo)
+        public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string> htmlModifier)
         {
-            return CreateMailInternalAsync(templateName, model, extraInfo, true);
+            return CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
         }
     }
 }

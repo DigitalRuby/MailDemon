@@ -407,7 +407,7 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Welcome to the &apos;{0}&apos; mailing list. Your subscription is now active. To unsubscribe from this mailing list, please use the following link: .
+        ///   Looks up a localized string similar to Welcome to the &apos;{0}&apos; mailing list. Your subscription is now active. Please check your email for additional information and instructions..
         /// </summary>
         public static string SubscribeWelcome {
             get {
@@ -475,6 +475,15 @@ namespace MailDemon {
         public static string UnsubscribeError {
             get {
                 return ResourceManager.GetString("UnsubscribeError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to To unsubscribe from this mailing list, please use the following link: .
+        /// </summary>
+        public static string UnsubscribeLink {
+            get {
+                return ResourceManager.GetString("UnsubscribeLink", resourceCulture);
             }
         }
         
