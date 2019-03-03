@@ -265,4 +265,7 @@
   <data name="ListSubscribers" xml:space="preserve">
     <value>Subscribers for '{0}' mailing list</value>
   </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
 </root>

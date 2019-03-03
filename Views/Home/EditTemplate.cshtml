@@ -19,4 +19,6 @@
         <button class="delete-button" name="action" value="delete" onclick="return confirm('! Confirm Deletion !');">@MailDemon.Resources.Delete</button>
         <br /><br />@Html.ActionLink(MailDemon.Resources.Test, nameof(MailDemon.HomeController.DebugTemplate), new { id = Model.Value.Name }, htmlAttributes: new { target = "_blank" })
     }
+    <br /><br />
+    <button class="submit-button" name="action" value="send" onclick="return confirm('! Confirm Send !');">@MailDemon.Resources.Send</button>
 }

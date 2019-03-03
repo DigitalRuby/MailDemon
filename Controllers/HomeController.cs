@@ -401,6 +401,10 @@ namespace MailDemon
             {
                 return EditTemplateDelete(id);
             }
+            else if (action == "send")
+            {
+                return EditTemplateSend(id);
+            }
 
             try
             {
@@ -449,6 +453,11 @@ namespace MailDemon
                 MailDemonLog.Error(ex);
             }
             return RedirectToAction(nameof(EditTemplate));
+        }
+
+        private IActionResult EditTemplateSend(string id)
+        {
+            return Ok();
         }
 
         public IActionResult DebugTemplate(string id)
