@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
@@ -242,6 +243,14 @@ namespace MailDemon
             {
                 return NotFound();
             }
+
+            // stupid bing/outlook email preview
+            string userAgent = Request.Headers["User-Agent"].ToString();
+            if (string.IsNullOrWhiteSpace(userAgent) || userAgent.Contains("preview", StringComparison.OrdinalIgnoreCase))
+            {
+                return Content(string.Empty);
+            }
+
             token = (token ?? string.Empty).Trim();
             MailListSubscription reg = db.ConfirmSubscribeToMailingList(id, token);
             if (reg == null)
@@ -265,6 +274,14 @@ namespace MailDemon
             {
                 return NotFound();
             }
+
+            // stupid bing/outlook email preview
+            string userAgent = Request.Headers["User-Agent"].ToString();
+            if (string.IsNullOrWhiteSpace(userAgent) || userAgent.Contains("preview", StringComparison.OrdinalIgnoreCase))
+            {
+                return Content(string.Empty);
+            }
+
             token = (token ?? string.Empty).Trim();
             if (db.UnsubscribeFromMailingList(id, token))
             {
