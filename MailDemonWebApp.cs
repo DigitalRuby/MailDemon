@@ -39,7 +39,7 @@ using Microsoft.Extensions.FileProviders;
 
 namespace MailDemon
 {
-    public class MailDemonWebApp : IStartup
+    public class MailDemonWebApp : IStartup, IServiceProvider
     {
         private IWebHost host;
         private IServiceProvider serviceProvider;
@@ -104,6 +104,16 @@ namespace MailDemon
             Configuration = config;
             this.mailService = mailService;
             Instance = this;
+        }
+
+        /// <summary>
+        /// IServiceProvider override
+        /// </summary>
+        /// <param name="serviceType">Service type</param>
+        /// <returns>Object</returns>
+        public object GetService(Type serviceType)
+        {
+            return serviceProvider.GetService(serviceType);
         }
 
         /// <summary>
@@ -219,8 +229,9 @@ namespace MailDemon
                 services.AddHttpContextAccessor();
                 services.AddSingleton<IMailSender>((provider) => mailService);
                 services.AddSingleton<IBulkMailSender>(new BulkMailSender());
+                services.AddSingleton<IViewRenderService, ViewRenderService>();
+                services.AddSingleton<IServiceProvider>(this);
                 services.AddTransient<IMailCreator, MailCreator>();
-                services.AddTransient<IViewRenderService, ViewRenderService>();
                 services.AddTransient<MailDemonDatabase>();
                 services.AddHostedService<SubscriptionCleanup>();
                 services.AddMvc((options) =>
@@ -243,7 +254,8 @@ namespace MailDemon
                     options.SuppressXFrameOptionsHeader = false;
                 });
             }
-            return (serviceProvider = services.BuildServiceProvider());
+            serviceProvider = services.BuildServiceProvider();
+            return this;
         }
 
         void IStartup.Configure(IApplicationBuilder app)
