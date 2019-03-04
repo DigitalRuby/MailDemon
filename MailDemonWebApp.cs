@@ -151,10 +151,10 @@ namespace MailDemon
             builder.UseConfiguration(Configuration);
             argsDictionary.TryGetValue("--server.urls", out string serverUrl);
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
-            string certPath = web["sslCertificateFile"];
-            string certPathPrivate = web["sslCertificatePrivateKeyFile"];
-            SecureString certPassword = web["sslCertificatePassword"].ToSecureString();
-            if (File.Exists(certPath))
+            string certPathWeb = web["sslCertificateFile"];
+            string certPathPrivateWeb = web["sslCertificatePrivateKeyFile"];
+            SecureString certPasswordWeb = web["sslCertificatePassword"].ToSecureString();
+            if (File.Exists(certPathWeb) && File.Exists(certPathPrivateWeb))
             {
                 builder.ConfigureKestrel((opt) =>
                 {
@@ -164,7 +164,7 @@ namespace MailDemon
                         {
                             sslOpt.ServerCertificateSelector = (ctx, name) =>
                             {
-                                return MailDemonExtensionMethods.LoadSslCertificate(certPath, certPathPrivate, certPassword);
+                                return MailDemonExtensionMethods.LoadSslCertificate(certPathWeb, certPathPrivateWeb, certPasswordWeb);
                             };
                         });
                     });
