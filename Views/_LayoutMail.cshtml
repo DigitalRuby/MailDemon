@@ -10,23 +10,21 @@
         <link rel="stylesheet" href="@(MailDemon.MailDemonWebApp.Instance.Authority)/css/site.css?v=1" />
     </head>
     <body>
-        <div id="siteContainer">
-            <div id="bodyContainer">
-                <div id="header">
-                    <!-- TODO: Customize header -->
-                    @Model.MailList.Title
-                </div>
-                <div id="content">
-                    @RenderBody()
-                </div>
-                <div id="footer">
-                    <!-- TODO: Customize footer -->
-                    @if (Model.UnsubscribeToken != null)
-                    {
-                        <p><a href='@Model.UnsubscribeUrl'>Unsubscribe</a></p>
-                        <p>@Model.MailList.Company - @Model.MailList.PhysicalAddress</p>
-                    }
-                </div>
+        <div style="padding: 10px; width: calc(100% - 20px);">
+            <h1 id="mailHeader">
+                <!-- TODO: Customize header -->
+                @Model.MailList.Title
+            </h1>
+            <div id="content">
+                @RenderBody()
+            </div>
+            <div id="footer">
+                <!-- TODO: Customize footer -->
+                @if (Model.UnsubscribeToken != null)
+                {
+                    <p><a href='@Model.UnsubscribeUrl'>Unsubscribe</a></p>
+                    <p>@Model.MailList.Company - @Model.MailList.PhysicalAddress</p>
+                }
             </div>
         </div>
     </body>
