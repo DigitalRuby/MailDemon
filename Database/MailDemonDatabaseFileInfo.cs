@@ -89,6 +89,8 @@ namespace MailDemon
                     template = foundTemplate;
                     return true;
                 });
+
+                // views from db get layout default
                 if (template != null && template.Text != null)
                 {
                     Exists = true;
