@@ -58,6 +58,10 @@ namespace MailDemon
 
                     html = (htmlModifier == null ? html : htmlModifier.Invoke(html));
 
+                    PreMailer.Net.PreMailer pre = new PreMailer.Net.PreMailer(html);
+                    var result = pre.MoveCssInline();
+                    html = result.Html;
+
                     BodyBuilder builder = new BodyBuilder
                     {
                         HtmlBody = (htmlModifier == null ? html : htmlModifier.Invoke(html))
