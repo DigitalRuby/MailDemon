@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Reflection;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,18 +23,19 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.Mvc.Razor;
-using Microsoft.Extensions.FileProviders;
 
 #endregion Imports
 
@@ -148,7 +150,27 @@ namespace MailDemon
             builder.UseContentRoot(RootDirectory);
             builder.UseConfiguration(Configuration);
             argsDictionary.TryGetValue("--server.urls", out string serverUrl);
-            if (!string.IsNullOrWhiteSpace(serverUrl))
+            IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
+            string certPath = web["sslCertificateFile"];
+            string certPathPrivate = web["sslCertificatePrivateKeyFile"];
+            SecureString certPassword = web["sslCertificatePassword"].ToSecureString();
+            if (File.Exists(certPath))
+            {
+                builder.ConfigureKestrel((opt) =>
+                {
+                    opt.Listen((serverUrl == null ? System.Net.IPAddress.Any : System.Net.IPAddress.Parse(serverUrl)), 443, listenOptions =>
+                    {
+                        listenOptions.UseHttps((sslOpt) =>
+                        {
+                            sslOpt.ServerCertificateSelector = (ctx, name) =>
+                            {
+                                return MailDemonExtensionMethods.LoadSslCertificate(certPath, certPathPrivate, certPassword);
+                            };
+                        });
+                    });
+                });
+            }
+            else if (serverUrl != null)
             {
                 builder.UseUrls(serverUrl.Split(',', '|', ';'));
             }
@@ -156,7 +178,6 @@ namespace MailDemon
             {
                 services.AddSingleton<IStartup>(this);
             }).Build();
-            IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
             Recaptcha = new RecaptchaSettings(web["recaptchaSiteKey"], web["recaptchaSecretKey"]);
             AdminLogin = new KeyValuePair<string, string>(web["adminUser"], web["adminPassword"]);
             Task runTask = host.RunAsync(CancelToken);
@@ -313,6 +334,7 @@ namespace MailDemon
             }
             ServerUrl = ServerUrl.Trim('/', '?');
             lifetime.ApplicationStopping.Register(OnShutdown);
+            MailDemonLog.Warn("Mail demon web service started");
             runningEvent.Set();
         }
     }

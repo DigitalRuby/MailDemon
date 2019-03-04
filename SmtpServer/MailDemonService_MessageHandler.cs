@@ -220,7 +220,7 @@ namespace MailDemon
 
                         if (port == 465 || port == 587)
                         {
-                            sslCert = (sslCert ?? LoadSslCertificate());
+                            sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
                             Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, false, sslCert);
                             if (tls == null)
                             {
@@ -259,7 +259,7 @@ namespace MailDemon
                                 }
                                 else
                                 {
-                                    sslCert = (sslCert ?? LoadSslCertificate());
+                                    sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
                                     Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
                                     if (tls == null)
                                     {

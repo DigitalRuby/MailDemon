@@ -125,11 +125,7 @@ namespace MailDemon
             sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
             if (!string.IsNullOrWhiteSpace(sslCertificateFile))
             {
-                sslCertificatePassword = new SecureString();
-                foreach (char c in rootSection["sslCertificatePassword"] ?? string.Empty)
-                {
-                    sslCertificatePassword.AppendChar(c);
-                }
+                sslCertificatePassword = (rootSection["sslCertificatePassword"] ?? string.Empty).ToSecureString();
             }
             IConfigurationSection ignoreRegexSection = rootSection.GetSection("ignoreCertificateErrorsRegex");
             if (ignoreRegexSection != null)

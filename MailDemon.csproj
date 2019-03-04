@@ -9,12 +9,9 @@
 
   <ItemGroup>
     <Compile Remove="MailDemonTests\**" />
-    <Compile Remove="RazorLight\**" />
-    <Content Remove="RazorLight\**" />
+    <Content Remove="MailDemonTests\**" />
     <EmbeddedResource Remove="MailDemonTests\**" />
-    <EmbeddedResource Remove="RazorLight\**" />
     <None Remove="MailDemonTests\**" />
-    <None Remove="RazorLight\**" />
   </ItemGroup>
 
   <ItemGroup>

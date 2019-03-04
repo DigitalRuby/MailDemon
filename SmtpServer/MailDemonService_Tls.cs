@@ -31,7 +31,7 @@ namespace MailDemon
         private void TestSslCertificate()
         {
             MailDemonLog.Info("Testing ssl certificate file {0}, private key file {1}", sslCertificateFile, sslCertificatePrivateKeyFile);
-            X509Certificate sslCert = LoadSslCertificate();
+            X509Certificate sslCert = MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword);
             if (sslCert == null)
             {
                 MailDemonLog.Error("SSL certificate failed to load or is not setup in config!");
@@ -42,51 +42,8 @@ namespace MailDemon
             }
         }
 
-        private RSACryptoServiceProvider GetRSAProviderForPrivateKey(string pemPrivateKey)
-        {
-            RSACryptoServiceProvider rsaKey = new RSACryptoServiceProvider();
-            PemReader reader = new PemReader(new StringReader(pemPrivateKey));
-            RsaPrivateCrtKeyParameters rkp = reader.ReadObject() as RsaPrivateCrtKeyParameters;
-            RSAParameters rsaParameters = DotNetUtilities.ToRSAParameters(rkp);
-            rsaKey.ImportParameters(rsaParameters);
-            return rsaKey;
-        }
-
-        private X509Certificate2 LoadSslCertificate()
-        {
-            Exception error = null;
-            if (!string.IsNullOrWhiteSpace(sslCertificateFile))
-            {
-                for (int i = 0; i < 2; i++)
-                {
-                    try
-                    {
-                        byte[] bytes = File.ReadAllBytes(sslCertificateFile);
-                        X509Certificate2 newSslCertificate = (sslCertificatePassword == null ? new X509Certificate2(bytes) : new X509Certificate2(bytes, sslCertificatePassword));
-                        if (!newSslCertificate.HasPrivateKey && !string.IsNullOrWhiteSpace(sslCertificatePrivateKeyFile))
-                        {
-                            newSslCertificate = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(File.ReadAllText(sslCertificatePrivateKeyFile)));
-                        }
-                        MailDemonLog.Info("Loaded ssl certificate {0}", newSslCertificate);
-                        return newSslCertificate;
-                    }
-                    catch (Exception ex)
-                    {
-                        error = ex;
-
-                        // in case something is copying a new certificate, give it a second and try one more time
-                        Thread.Sleep(1000);
-                    }
-                }
-            }
-            if (error != null)
-            {
-                MailDemonLog.Error("Error loading ssl certificate: {0}", error);
-            }
-            return null;
-        }
-
-        private async Task<Tuple<SslStream, Stream, StreamWriter>> StartTls(
+        private async Task<Tuple<SslStream, Stream, StreamWriter>> StartTls
+        (
             TcpClient tcpClient,
             string clientIPAddress,
             Stream reader,
