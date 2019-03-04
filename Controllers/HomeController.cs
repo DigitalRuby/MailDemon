@@ -518,7 +518,7 @@ namespace MailDemon
 
         [HttpGet]
         [HttpPost]
-        public IActionResult DebugTemplate(string id)
+        public async Task<IActionResult> DebugTemplate(string id)
         {
             if (HttpContext.Request.Method == "POST")
             {
@@ -555,7 +555,13 @@ namespace MailDemon
                 UnsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{list.Name}?token={unsubscribeToken}"
             };
             ViewBag.Layout = "/Views/_LayoutMail.cshtml";
-            return View(id, tempReg);
+            MimeMessage msg = await mailCreator.CreateMailAsync(id, tempReg, new ExpandoObject(), (_html, subject) =>
+            {
+                return Regex.Replace(_html, @"\<!-- *Subject:.*?-->", "<div>SUBJECT: " + System.Web.HttpUtility.HtmlEncode(subject) + "</div><br/>");
+            });
+            string html = msg.HtmlBody;
+            
+            return Content(msg.HtmlBody, "text/html");
         }
 
         public IActionResult Subscribers(string id)

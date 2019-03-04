@@ -23,9 +23,9 @@ namespace MailDemon
         /// <param name="templateName">Full template name</param>
         /// <param name="model">Model</param>
         /// <param name="extraInfo">Extra info (view bag)</param>
-        /// <param name="htmlModifier">Allow modifying html before it is made part of the message</param>
+        /// <param name="htmlModifier">Allow modifying html before it is made part of the message. Params are body and subject.</param>
         /// <returns>MimeMessage with body and subject populated, you will need to set to and from addresses, etc.</returns>
-        Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string> htmlModifier);
+        Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier);
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ namespace MailDemon
     {
         private readonly IViewRenderService templateEngine;
 
-        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Func<string, string> htmlModifier)
+        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Func<string, string, string> htmlModifier)
         {
             IDictionary<string, object> extraInfoDict = extraInfo as IDictionary<string, object>;
             if (!extraInfoDict.ContainsKey("Layout"))
@@ -56,15 +56,15 @@ namespace MailDemon
                     // two or more spaces to one space in subject
                     subjectText = Regex.Replace(subjectText, "[\r\n ]+", " ");
 
-                    html = (htmlModifier == null ? html : htmlModifier.Invoke(html));
+                    html = (htmlModifier == null ? html : htmlModifier.Invoke(html, subjectText));
 
                     PreMailer.Net.PreMailer pre = new PreMailer.Net.PreMailer(html);
-                    var result = pre.MoveCssInline();
+                    var result = pre.MoveCssInline(true);
                     html = result.Html;
 
                     BodyBuilder builder = new BodyBuilder
                     {
-                        HtmlBody = (htmlModifier == null ? html : htmlModifier.Invoke(html))
+                        HtmlBody = html
                     };
                     return new MimeMessage
                     {
@@ -96,7 +96,7 @@ namespace MailDemon
         }
 
         /// <inheritdoc />
-        public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string> htmlModifier)
+        public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier)
         {
             return CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
         }
