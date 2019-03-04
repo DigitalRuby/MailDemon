@@ -153,7 +153,7 @@ namespace MailDemon
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
             string certPathWeb = web["sslCertificateFile"];
             string certPathPrivateWeb = web["sslCertificatePrivateKeyFile"];
-            SecureString certPasswordWeb = web["sslCertificatePassword"].ToSecureString();
+            SecureString certPasswordWeb = web["sslCertificatePassword"]?.ToSecureString();
             if (File.Exists(certPathWeb) && File.Exists(certPathPrivateWeb))
             {
                 builder.ConfigureKestrel((opt) =>
