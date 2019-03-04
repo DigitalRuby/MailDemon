@@ -9,9 +9,13 @@
 
   <ItemGroup>
     <Compile Remove="MailDemonTests\**" />
+    <Compile Remove="publish\**" />
     <Content Remove="MailDemonTests\**" />
+    <Content Remove="publish\**" />
     <EmbeddedResource Remove="MailDemonTests\**" />
+    <EmbeddedResource Remove="publish\**" />
     <None Remove="MailDemonTests\**" />
+    <None Remove="publish\**" />
   </ItemGroup>
 
   <ItemGroup>
