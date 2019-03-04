@@ -8,11 +8,11 @@ using Microsoft.Extensions.Hosting;
 
 namespace MailDemon
 {
-    public class SubscriptionCleanup : IHostedService
+    public class SubscriptionCleanup : BackgroundService
     {
         private readonly TimeSpan loopTimeSpan = TimeSpan.FromMinutes(1.0);
 
-        async Task IHostedService.StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             do
             {
@@ -25,12 +25,7 @@ namespace MailDemon
                     }
                 }
             }
-            while (!(await cancellationToken.WaitHandle.WaitOneAsync(loopTimeSpan, cancellationToken)));
-        }
-
-        Task IHostedService.StopAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
+            while (!(await stoppingToken.WaitHandle.WaitOneAsync(loopTimeSpan, stoppingToken)));
         }
     }
 }

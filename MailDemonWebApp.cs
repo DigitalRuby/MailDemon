@@ -41,7 +41,7 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
-    public class MailDemonWebApp : IStartup, IServiceProvider
+    public class MailDemonWebApp : IStartup, IDisposable
     {
         private IWebHost host;
         private IServiceProvider serviceProvider;
@@ -90,6 +90,7 @@ namespace MailDemon
 
         private void OnShutdown()
         {
+            
         }
 
         /// <summary>
@@ -109,13 +110,12 @@ namespace MailDemon
         }
 
         /// <summary>
-        /// IServiceProvider override
+        /// Dispose of the web app
         /// </summary>
-        /// <param name="serviceType">Service type</param>
-        /// <returns>Object</returns>
-        public object GetService(Type serviceType)
+        public void Dispose()
         {
-            return serviceProvider.GetService(serviceType);
+            host?.Dispose();
+            host = null;
         }
 
         /// <summary>
@@ -251,7 +251,6 @@ namespace MailDemon
                 services.AddSingleton<IMailSender>((provider) => mailService);
                 services.AddSingleton<IBulkMailSender>(new BulkMailSender());
                 services.AddSingleton<IViewRenderService, ViewRenderService>();
-                services.AddSingleton<IServiceProvider>(this);
                 services.AddTransient<IMailCreator, MailCreator>();
                 services.AddTransient<MailDemonDatabase>();
                 services.AddHostedService<SubscriptionCleanup>();
@@ -275,8 +274,7 @@ namespace MailDemon
                     options.SuppressXFrameOptionsHeader = false;
                 });
             }
-            serviceProvider = services.BuildServiceProvider();
-            return this;
+            return (serviceProvider = services.BuildServiceProvider());
         }
 
         void IStartup.Configure(IApplicationBuilder app)

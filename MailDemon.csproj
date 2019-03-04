@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <PreserveCompilationContext>true</PreserveCompilationContext>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <DebugType>portable</DebugType>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
