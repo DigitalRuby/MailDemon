@@ -11,33 +11,36 @@ namespace MailDemon
         /// Pre subscribe to a mailing list
         /// </summary>
         /// <param name="db">DB</param>
-        /// <param name="reg">Registration</param>
-        /// <returns>Registration</returns>
-        public static MailListSubscription PreSubscribeToMailingList(this MailDemonDatabase db, MailListSubscription reg)
+        /// <param name="reg">Registration, receives new registration if success</param>
+        /// <returns>True if success, false if already subscribed</returns>
+        public static bool PreSubscribeToMailingList(this MailDemonDatabase db, ref MailListSubscription reg)
         {
             string token = string.Empty;
-            db.Select<MailListSubscription>(r => r.EmailAddress == reg.EmailAddress && r.ListName == reg.ListName, (foundReg) =>
+            MailListSubscription final = reg;
+            db.Select<MailListSubscription>(r => r.EmailAddress == final.EmailAddress && r.ListName == final.ListName, (foundReg) =>
             {
                 foundReg.Fields.Clear();
-                foreach (var kv in reg.Fields)
+                foreach (var kv in final.Fields)
                 {
                     foundReg.SetField(kv.Key, kv.Value);
                 }
-                foundReg.Error = reg.Error;
-                foundReg.Message = reg.Message;
-                foundReg.IPAddress = reg.IPAddress;
-                foundReg.MailList = reg.MailList;
-                foundReg.TemplateName = reg.TemplateName;
-                reg = foundReg;
+                foundReg.Error = final.Error;
+                foundReg.Message = final.Message;
+                foundReg.IPAddress = final.IPAddress;
+                foundReg.MailList = final.MailList;
+                foundReg.TemplateName = final.TemplateName;
+                final = foundReg;
                 return false;
             });
+            reg = final;
             if (reg.SubscribeToken == null)
             {
                 reg.SubscribeToken = Guid.NewGuid().ToString("N");
                 reg.Expires = DateTime.UtcNow.AddHours(1.0);
+                db.Upsert(reg);
+                return true;
             }
-            db.Upsert(reg);
-            return reg;
+            return false;
         }
 
         /// <summary>
@@ -55,6 +58,7 @@ namespace MailDemon
                 if (foundReg.ListName == listName && foundReg.SubscribedDate == default && foundReg.SubscribeToken == token)
                 {
                     reg = foundReg;
+                    foundReg.Expires = DateTime.MaxValue;
                     foundReg.SubscribedDate = DateTime.UtcNow;
                     foundReg.UnsubscribedDate = default;
                     foundReg.UnsubscribeToken = Guid.NewGuid().ToString("N");

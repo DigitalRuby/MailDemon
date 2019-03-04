@@ -41,9 +41,9 @@ namespace MailDemonTests
                 db.Insert<MailTemplate>(template);
             }
 
-            string html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
+            string html = viewRenderer.RenderViewToStringAsync("test", model, isMainPage: false).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob", html);
-            html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
+            html = viewRenderer.RenderViewToStringAsync("test", model, isMainPage: false).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob", html);
 
             template.Text += " <br/>New Line<br/>";
@@ -55,9 +55,9 @@ namespace MailDemonTests
                 db.Update(template);
             }
 
-            html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
+            html = viewRenderer.RenderViewToStringAsync("test", model, isMainPage: false).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
-            html = viewRenderer.RenderViewToStringAsync("test", model).Sync();
+            html = viewRenderer.RenderViewToStringAsync("test", model, isMainPage: false).Sync();
             Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
         }
 
@@ -68,16 +68,16 @@ namespace MailDemonTests
             try
             {
                 File.WriteAllText(path, "<b>Hello World</b> @Model.FirstName");
-                string html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
+                string html = viewRenderer.RenderViewToStringAsync(path, model, isMainPage: false).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob", html);
-                html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
+                html = viewRenderer.RenderViewToStringAsync(path, model, isMainPage: false).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob", html);
 
                 File.AppendAllText(path, " <br/>New Line<br/>");
 
-                html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
+                html = viewRenderer.RenderViewToStringAsync(path, model, isMainPage: false).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
-                html = viewRenderer.RenderViewToStringAsync(path, model).Sync();
+                html = viewRenderer.RenderViewToStringAsync(path, model, isMainPage: false).Sync();
                 Assert.AreEqual("<b>Hello World</b> Bob <br/>New Line<br/>", html);
             }
             finally
@@ -92,7 +92,7 @@ namespace MailDemonTests
         [Test]
         public void TestStringTemplate()
         {
-            string result = viewRenderer.RenderStringToStringAsync("test", "Hello @Model.FirstName", model).Sync();
+            string result = viewRenderer.RenderStringToStringAsync("test", "Hello @Model.FirstName", model, isMainPage: false).Sync();
             Assert.AreEqual("Hello Bob", result);
         }
     }

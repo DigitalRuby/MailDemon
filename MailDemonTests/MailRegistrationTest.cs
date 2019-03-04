@@ -99,6 +99,7 @@ namespace MailDemonTests
                 Assert.IsNull(reg.UnsubscribeToken);
                 Assert.AreEqual(default(DateTime), reg.SubscribedDate);
                 Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
+                Assert.AreNotEqual(default(DateTime), reg.Expires);
             }
 
             // verify the subscribe confirm has no errors
@@ -124,6 +125,7 @@ namespace MailDemonTests
                 Assert.IsNotNull(reg.UnsubscribeToken);
                 Assert.AreNotEqual(default(DateTime), reg.SubscribedDate);
                 Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
+                Assert.AreEqual(DateTime.MaxValue, reg.Expires);
             }
 
             return reg.UnsubscribeToken;

@@ -21,8 +21,11 @@
                 </div>
                 <div id="footer">
                     <!-- TODO: Customize footer -->
-                    <p><a href='@Model.UnsubscribeUrl'>Unsubscribe</a></p>
-                    <p>@Model.MailList.Company - @Model.MailList.PhysicalAddress</p>
+                    @if (Model.UnsubscribeToken != null)
+                    {
+                        <p><a href='@Model.UnsubscribeUrl'>Unsubscribe</a></p>
+                        <p>@Model.MailList.Company - @Model.MailList.PhysicalAddress</p>
+                    }
                 </div>
             </div>
         </div>
