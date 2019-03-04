@@ -25,3 +25,13 @@
         <br /><br />
     }
 }
+
+<script type="text/javascript">
+    var mixedMode =
+    {
+        name: "htmlmixed",
+        scriptTypes: [{ matches: /\/x-handlebars-template|\/x-mustache/i, mode: null },
+        { matches: /(text|application)\/(x-)?vb(a|script)/i, mode: "vbscript" }]
+    };
+    CodeMirror.fromTextArea(document.getElementById('@Html.IdFor(m => m.Value.Text)'), { theme: 'blackboard', lineNumbers: true, styleActiveLine: true, mode: mixedMode });
+</script>
