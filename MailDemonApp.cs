@@ -70,7 +70,7 @@ namespace MailDemon
             Console.WriteLine("Test message sent");
         }
 
-        private void Run(string[] args)
+        private Task Run(string[] args)
         {
             Console.CancelKeyPress += Console_CancelKeyPress;
 
@@ -89,13 +89,13 @@ namespace MailDemon
 
             // start mail server
             mailService = new MailDemonService(args, config);
-            mailService.StartAsync(cancel.Token).ConfigureAwait(false);
+            Task mailTask = mailService.StartAsync(cancel.Token);
 
             // start web server
             webApp = new MailDemonWebApp(args, rootDir, config, mailService);
-            webApp.StartAsync(cancel.Token).ConfigureAwait(false);
+            Task webTask = webApp.StartAsync(cancel.Token);
 
-            MailDemonLog.Info("Mail demon running, press Ctrl-C to exit");
+            MailDemonLog.Info("Mail demon running");
 
             // test sending with the server:
             // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]
@@ -107,13 +107,13 @@ namespace MailDemon
                 TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
             }
 
-            cancel.Token.WaitHandle.WaitOne();
+            return Task.WhenAll(mailTask, webTask);
         }
 
-        public static void Main(string[] args)
+        public static Task Main(string[] args)
         {
             MailDemonApp app = new MailDemonApp();
-            app.Run(args);
+            return app.Run(args);
         }
     }
 }

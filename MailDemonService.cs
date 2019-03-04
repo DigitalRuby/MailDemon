@@ -149,11 +149,15 @@ namespace MailDemon
             server = new TcpListenerActive(IPAddress.Any, port);
             server.Start(maxConnectionCount);
             cancelToken.Register(Dispose);
-            while (server.Active)
+            while (server != null && server.Active)
             {
                 try
                 {
                     await ProcessConnection();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // happens on shutdown
                 }
                 catch (Exception ex)
                 {
