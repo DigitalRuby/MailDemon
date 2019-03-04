@@ -64,13 +64,13 @@ namespace MailDemon
         }
 
         /// <inheritdoc />
-        public Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
+        public Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = true)
         {
             return viewRenderer.RenderViewToStringAsync(viewName, model, viewBag, isMainPage);
         }
 
         /// <inheritdoc />
-        public Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
+        public Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = true)
         {
             return viewRenderer.RenderStringToStringAsync(key, text, model, viewBag, isMainPage);
         }

@@ -185,8 +185,7 @@ namespace MailDemon
                 try
                 {
                     model.IPAddress = HttpContext.GetRemoteIPAddress().ToString();
-                    model = db.PreSubscribeToMailingList(model);
-                    if (model.UnsubscribedDate == default && model.UnsubscribeToken != null)
+                    if (!db.PreSubscribeToMailingList(ref model))
                     {
                         throw new InvalidOperationException(Resources.AlreadySubscribed.FormatHtml(id));
                     }
@@ -514,6 +513,7 @@ namespace MailDemon
                 return NotFound();
             }
 
+            string unsubscribeToken = Guid.NewGuid().ToString("N");
             MailListSubscription tempReg = new MailListSubscription
             {
                 EmailAddress = "test@domain.com",
@@ -526,8 +526,10 @@ namespace MailDemon
                 SubscribeToken = Guid.NewGuid().ToString("N"),
                 Expires = DateTime.MinValue,
                 MailList = list,
-                UnsubscribeUrl = "http://localhost/Unsubscribe/" + list.Name + "?notes=this-is-a-fake-unsubscribe-url"
+                UnsubscribeToken = unsubscribeToken,
+                UnsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{list.Name}?token={unsubscribeToken}"
             };
+            ViewBag.Layout = "/Views/_LayoutMail.cshtml";
             return View(id, tempReg);
         }
 

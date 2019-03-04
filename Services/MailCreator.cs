@@ -38,6 +38,11 @@ namespace MailDemon
 
         private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Func<string, string> htmlModifier)
         {
+            IDictionary<string, object> extraInfoDict = extraInfo as IDictionary<string, object>;
+            if (!extraInfoDict.ContainsKey("Layout"))
+            {
+                extraInfoDict["Layout"] = "/Views/_LayoutMail.cshtml";
+            }
             string html = await templateEngine.RenderViewToStringAsync(templateName, model, extraInfo);
 
             if (html != null)

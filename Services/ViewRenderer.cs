@@ -35,7 +35,7 @@ namespace MailDemon
         /// <param name="viewBag">View bag</param>
         /// <param name="isMainPage">Is main page (true) or partial page (false)</param>
         /// <returns>Rendered view or null if not found</returns>
-        Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false);
+        Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = true);
 
         /// <summary>
         /// Render a string to a string
@@ -47,13 +47,13 @@ namespace MailDemon
         /// <param name="viewBag">View bag</param>
         /// <param name="isMainPage">Is main page( true) or partial page (false)</param>
         /// <returns>Rendered view or null if text is null / empty</returns>
-        Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = false);
+        Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = true);
     }
 
     /// <summary>
     /// Razor view renderer that takes depenencies
     /// </summary>
-    public class ViewRenderService : IDisposable, IViewRenderService, ITempDataProvider, IServiceProvider
+    public class ViewRenderService : IDisposable, IViewRenderService, ITempDataProvider
     {
         private static readonly System.Net.IPAddress localIPAddress = System.Net.IPAddress.Parse("127.0.0.1");
 
@@ -73,7 +73,7 @@ namespace MailDemon
             }
             else
             {
-                DefaultHttpContext defaultContext = new DefaultHttpContext { RequestServices = this };
+                DefaultHttpContext defaultContext = new DefaultHttpContext { RequestServices = serviceProvider };
                 defaultContext.Connection.RemoteIpAddress = localIPAddress;
                 httpContext = defaultContext;
             }
@@ -123,7 +123,7 @@ namespace MailDemon
             this.viewEngine = viewEngine;
             this.httpContextAccessor = httpContextAccessor;
             this.tempDataProvider = tempDataProvider ?? this;
-            this.serviceProvider = serviceProvider ?? this;
+            this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         }
 
         public void Dispose()
@@ -132,7 +132,7 @@ namespace MailDemon
         }
 
         /// <inheritdoc />
-        public async Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
+        public async Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model, ExpandoObject viewBag = null, bool isMainPage = true)
         {
             ActionContext actionContext = GetActionContext();
             var viewResult = viewEngine.FindView(actionContext, viewName, isMainPage);
@@ -147,7 +147,7 @@ namespace MailDemon
         }
 
         /// <inheritdoc />
-        public async Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = false)
+        public async Task<string> RenderStringToStringAsync<TModel>(string key, string text, TModel model, ExpandoObject viewBag = null, bool isMainPage = true)
         {
             if (!key.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase))
             {
@@ -163,11 +163,6 @@ namespace MailDemon
             {
                 File.Delete(fileName);
             }
-        }
-
-        object IServiceProvider.GetService(Type serviceType)
-        {
-            return MailDemonWebApp.Instance.GetService(serviceType);
         }
 
         IDictionary<string, object> ITempDataProvider.LoadTempData(HttpContext context)

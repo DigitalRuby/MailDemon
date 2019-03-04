@@ -75,7 +75,7 @@ Known Issues:
 - The template title is NOT the subject of the email, it is just informational for you only.
 - Full razor syntax, `@Html`, etc. is supported. The model for the templates is the MailListSubscription class.
 - Feel free to create and edit templates in visual studio and then paste them into the template text box.
-- Each template should have a layout. A layout is a template that you will never email, it just wraps other templates. You can name your layout `[listName]@[layoutName]` (without brackets). You can start with `_LayoutDefault.cshtml` and customize and provide your own css link. You should also provide an unsubscribe link, along with a physical mailing address to comply with anti-spam laws.
+- Each template should have a layout. A layout is a template that you will never email, it just wraps other templates. You can name your layout `[listName]@[layoutName]` (without brackets). You can start with `_LayoutMail.cshtml` and customize and provide your own css link. You should also provide an unsubscribe link, along with a physical mailing address to comply with anti-spam laws.
 - Set the layout of your template like this: `@{ Layout = "listName@layoutName"; }`
 - To set the email subject, add a `<!-- Subject: ... -->` to the body of your template, it will then be set as the email subject. This is required in order to send email. See `SubscribeConfirmDefault.cshtml` for an example.
 - To bulk send email from a mail list, select (or create) the template from the list to send, edit it, add your subject and save. Then use the send button to perform the bulk email operation. Errors will be logged.

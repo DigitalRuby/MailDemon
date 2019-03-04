@@ -20,6 +20,11 @@ namespace MailDemon
 
         public MailDemonDatabaseFileInfo(string rootPath, string viewPath)
         {
+            // work-around bug in .NET core pathing with view start for custom rendered razor views
+            if (viewPath.Equals("/_ViewStart.cshtml") || viewPath.Equals("_ViewStart.cshtml", StringComparison.OrdinalIgnoreCase))
+            {
+                viewPath = "Views/_ViewStart.cshtml";
+            }
             this.rootPath = rootPath;
             this.fileName = viewPath;
             this.fullPath = Path.Combine(rootPath, viewPath);
@@ -32,7 +37,7 @@ namespace MailDemon
             this.name = Path.GetFileName(viewPath);
             GetContent();
         }
-        public bool Exists { get; private set; }
+        public bool Exists { get { return contents != null; } }
 
         public bool IsDirectory => false;
 
@@ -77,7 +82,6 @@ namespace MailDemon
         {
             if (File.Exists(fullPath))
             {
-                Exists = true;
                 contents = File.ReadAllBytes(fullPath);
                 return;
             }
@@ -90,23 +94,10 @@ namespace MailDemon
                     return true;
                 });
 
-                // views from db get layout default
+                // views from db get layout default forced if no layout specified
                 if (template != null && template.Text != null)
                 {
-                    Exists = true;
-                    string text = template.Text;
-
-                    if (!text.Contains("<html>", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // find layout
-                        Match match = Regex.Match(template.Text, @"@{\w*Layout\w*=\w*"".+?""\w*;+\w*}");
-                        if (!match.Success)
-                        {
-                            text = @"@{Layout=""/Views/_LayoutDefault.cshtml"";}" + Environment.NewLine + template.Text;
-                        }
-                    }
-
-                    contents = System.Text.Encoding.UTF8.GetBytes(text);
+                    contents = System.Text.Encoding.UTF8.GetBytes(template.Text);
                 }
             }
         }
