@@ -557,5 +557,15 @@ namespace MailDemon
             ViewBag.ListName = id;
             return View(subscribers);
         }
+
+        [HttpPost]
+        public IActionResult Subscribers(string id, string action, long? subId)
+        {
+            if (action == "delete" && subId != null)
+            {
+                db.Delete<MailListSubscription>(subId.Value);
+            }
+            return RedirectToAction(nameof(Subscribers), new { id });
+        }
     }
 }

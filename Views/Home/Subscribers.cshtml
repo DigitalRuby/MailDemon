@@ -30,6 +30,11 @@ else
                     <td>
                         @(item.UnsubscribedDate == default ? string.Empty : item.UnsubscribedDate.ToString())
                     </td>
+                    <td>
+                        <form class="inline-form" action="/Subscribers/@item.ListName?subId=@item.Id" method="post">
+                            <button name="action" value="delete">@MailDemon.Resources.Delete</button>
+                        </form>
+                    </td>
                 </tr>
             }
         </tbody>
