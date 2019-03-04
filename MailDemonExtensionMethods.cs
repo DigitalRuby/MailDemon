@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -16,6 +19,10 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.Extensions.Configuration;
 
 using MimeKit;
+
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
 
 namespace MailDemon
 {
@@ -46,6 +53,16 @@ namespace MailDemon
             {
                 Marshal.ZeroFreeGlobalAllocUnicode(valuePtr);
             }
+        }
+
+        public static SecureString ToSecureString(this string s)
+        {
+            SecureString ss = new SecureString();
+            foreach (char c in s)
+            {
+                ss.AppendChar(c);
+            }
+            return ss;
         }
 
         public static async Task TimeoutAfter(this Task task, int milliseconds)
@@ -184,6 +201,57 @@ namespace MailDemon
             var viewEngine = helper.ViewContext.HttpContext.RequestServices.GetService(typeof(ICompositeViewEngine)) as ICompositeViewEngine;
             var view = viewEngine.FindView(helper.ViewContext, viewName, false);
             return view.View != null;
+        }
+
+        private static RSACryptoServiceProvider GetRSAProviderForPrivateKey(string pemPrivateKey)
+        {
+            RSACryptoServiceProvider rsaKey = new RSACryptoServiceProvider();
+            PemReader reader = new PemReader(new StringReader(pemPrivateKey));
+            RsaPrivateCrtKeyParameters rkp = reader.ReadObject() as RsaPrivateCrtKeyParameters;
+            RSAParameters rsaParameters = DotNetUtilities.ToRSAParameters(rkp);
+            rsaKey.ImportParameters(rsaParameters);
+            return rsaKey;
+        }
+
+        /// <summary>
+        /// Load an ssl certificate from .pem files
+        /// </summary>
+        /// <param name="publicKeyFile">Public key file</param>
+        /// <param name="privateKeyFile">Private key file</param>
+        /// <param name="password">Password</param>
+        /// <returns>X509Certificate2 or null if error</returns>
+        public static X509Certificate2 LoadSslCertificate(string publicKeyFile, string privateKeyFile, SecureString password)
+        {
+            Exception error = null;
+            if (!string.IsNullOrWhiteSpace(publicKeyFile))
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    try
+                    {
+                        byte[] bytes = File.ReadAllBytes(publicKeyFile);
+                        X509Certificate2 newSslCertificate = (password == null ? new X509Certificate2(bytes) : new X509Certificate2(bytes, password));
+                        if (!newSslCertificate.HasPrivateKey && !string.IsNullOrWhiteSpace(privateKeyFile))
+                        {
+                            newSslCertificate = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(File.ReadAllText(privateKeyFile)));
+                        }
+                        MailDemonLog.Info("Loaded ssl certificate {0}", newSslCertificate);
+                        return newSslCertificate;
+                    }
+                    catch (Exception ex)
+                    {
+                        error = ex;
+
+                        // in case something is copying a new certificate, give it a second and try one more time
+                        Thread.Sleep(1000);
+                    }
+                }
+            }
+            if (error != null)
+            {
+                MailDemonLog.Error("Error loading ssl certificate: {0}", error);
+            }
+            return null;
         }
 
         /// <summary>

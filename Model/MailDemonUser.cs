@@ -32,16 +32,8 @@ namespace MailDemon
             }
             Name = name.Trim();
             DisplayName = (string.IsNullOrWhiteSpace(displayName) ? Name : displayName);
-            Password = new SecureString();
-            foreach (char c in password)
-            {
-                Password.AppendChar(c);
-            }
-            PasswordPlain = new SecureString();
-            foreach (char c in string.Format("(null){0}(null){1}", name, password))
-            {
-                PasswordPlain.AppendChar(c);
-            }
+            Password = password.ToSecureString();
+            PasswordPlain = string.Format("(null){0}(null){1}", name, password).ToSecureString();
             if (!string.IsNullOrWhiteSpace(forwardAddress))
             {
                 ForwardAddress = new MailboxAddress(forwardAddress);
