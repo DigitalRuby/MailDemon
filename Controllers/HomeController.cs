@@ -76,14 +76,22 @@ namespace MailDemon
         [AllowAnonymous]
         public IActionResult Index()
         {
-            return View();
+            if (User.Identity.IsAuthenticated)
+            {
+                return View();
+            }
+            return Ok();
         }
 
         [AllowAnonymous]
         public IActionResult Error(string code)
         {
-            var feature = this.HttpContext.Features.Get<IExceptionHandlerFeature>();
-            return View((object)(feature?.Error?.ToString() ?? "Code: " + (code ?? "Unknown")));
+            if (User.Identity.IsAuthenticated)
+            {
+                var feature = this.HttpContext.Features.Get<IExceptionHandlerFeature>();
+                return View((object)(feature?.Error?.ToString() ?? "Code: " + (code ?? "Unknown")));
+            }
+            return Ok();
         }
 
         [AllowAnonymous]
