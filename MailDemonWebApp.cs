@@ -180,10 +180,17 @@ namespace MailDemon
             {
                 builder.UseUrls(serverUrl.Split(',', '|', ';'));
             }
-            host = builder.ConfigureServices(services =>
+            try
             {
-                services.AddSingleton<IStartup>(this);
-            }).Build();
+                host = builder.ConfigureServices(services =>
+                {
+                    services.AddSingleton<IStartup>(this);
+                }).Build();
+            }
+            catch (Exception ex)
+            {
+                MailDemonLog.Error(ex);
+            }
             Recaptcha = new RecaptchaSettings(web["recaptchaSiteKey"], web["recaptchaSecretKey"]);
             AdminLogin = new KeyValuePair<string, string>(web["adminUser"], web["adminPassword"]);
             Task runTask = host.RunAsync(CancelToken);
