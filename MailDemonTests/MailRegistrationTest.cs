@@ -203,7 +203,7 @@ namespace MailDemonTests
             
         }
 
-        Task<MimeMessage> IMailCreator.CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string> htmlModifier)
+        Task<MimeMessage> IMailCreator.CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier)
         {
             string fullText = GetMailCreationFullText(subject, templateName, model, extraInfo);
             this.templateName = templateName;
