@@ -52,7 +52,14 @@ namespace MailDemon
                     addressDomain = sub.EmailAddressDomain;
                     if (toDomain != null && addressDomain != toDomain)
                     {
-                        await mailSender.SendMailAsync(toDomain, GetMessages(subs, mailCreator, list, fullTemplateName));
+                        try
+                        {
+                            await mailSender.SendMailAsync(toDomain, GetMessages(subs, mailCreator, list, fullTemplateName));
+                        }
+                        catch (Exception ex)
+                        {
+                            MailDemonLog.Error(ex);
+                        }
                         subs.Clear();
                     }
                     toDomain = addressDomain;
@@ -63,7 +70,14 @@ namespace MailDemon
             }
             if (subs.Count != 0)
             {
-                await mailSender.SendMailAsync(toDomain, GetMessages(subs, mailCreator, list, fullTemplateName));
+                try
+                {
+                    await mailSender.SendMailAsync(toDomain, GetMessages(subs, mailCreator, list, fullTemplateName));
+                }
+                catch (Exception ex)
+                {
+                    MailDemonLog.Error(ex);
+                }
             }
         }
     }

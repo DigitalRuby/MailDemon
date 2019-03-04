@@ -73,7 +73,7 @@ namespace MailDemon
             }
             else
             {
-                DefaultHttpContext defaultContext = new DefaultHttpContext { RequestServices = serviceProvider };
+                DefaultHttpContext defaultContext = new DefaultHttpContext { RequestServices = this };
                 defaultContext.Connection.RemoteIpAddress = localIPAddress;
                 httpContext = defaultContext;
             }
@@ -98,21 +98,18 @@ namespace MailDemon
                     viewDictionary.Add(kv.Key, kv.Value);
                 }
             }
-            using (StringWriter sw = new StringWriter())
-            {
-                var viewContext = new ViewContext
-                (
-                    actionContext,
-                    view,
-                    viewDictionary,
-                    new TempDataDictionary(actionContext.HttpContext, tempDataProvider),
-                    sw,
-                    new HtmlHelperOptions()
-                );
-
-                await view.RenderAsync(viewContext);
-                return sw.ToString();
-            }
+            StringWriter sw = new StringWriter();
+            var viewContext = new ViewContext
+            (
+                actionContext,
+                view,
+                viewDictionary,
+                new TempDataDictionary(actionContext.HttpContext, tempDataProvider),
+                sw,
+                new HtmlHelperOptions()
+            );
+            await view.RenderAsync(viewContext);
+            return sw.ToString();
         }
 
         public ViewRenderService(IRazorViewEngine viewEngine, IHttpContextAccessor httpContextAccessor, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider) :
@@ -170,7 +167,7 @@ namespace MailDemon
 
         object IServiceProvider.GetService(Type serviceType)
         {
-            return null;
+            return MailDemonWebApp.Instance.GetService(serviceType);
         }
 
         IDictionary<string, object> ITempDataProvider.LoadTempData(HttpContext context)
