@@ -27,6 +27,7 @@ Description=Mail Demon Service
 After=network.target
 
 [Service]
+WorkingDirectory=/root/MailDemon
 ExecStart=/usr/bin/dotnet /root/MailDemon/MailDemon.dll
 Restart=on-failure
 
@@ -63,10 +64,18 @@ Known Issues:
 - Hotmail.com, live.com and outlook.com have had an invalid SSL certificate for quite a while now. I've added them to appsettings.json. You may need to add additional entries for mail services with bad certificates.
 
 ## Mail List Setup
+
+Mail Demon contains an integrated mail list management website and mail list sending service. In order to use this service, you must setup your `appsettings.json` file and make some additional optional customization.
+
 - Make sure your smtp settings are correct in `appsettings.json`.
-- Setup `appsettings.json`, `mailDemonWeb section`. Set `enableWeb` to true and set your admin user/password, google recaptcha key, etc.
+- Setup `appsettings.json`, `mailDemonWeb section`.
+  - Set `enableWeb` to true.
+  - Set the authority to your scheme and host, i.e. https://yourdomain.com.
+  - Set your admin user/password.
+  - Set google recaptcha keys (https://www.google.com/recaptcha).
+  - Set ssl certificate (.pem public and private files along with password).
 - Use `--server.urls` parameter to set the kestrel binding for the web server.
-- Login with https://yourdomain.com/MailDemonLogin. Replace yourdomain.com with your actual domain name.
+- Login with https://yourdomain.com/MailDemonLogin. Replace yourdomain.com with your actual domain name. Use the admin user/password from the `appsettings.json` file. Nothing will show up until you login.
 - Create a new mailing list using menu at top.
 - List name is meant to be more like a short variable name, somewhat human readable, but short and unique. List title is what subscribers will see.
 - Send your victims, I mean subscribers, to https://yourdomain.com/SubscribeInitial/[listname]. Replace yourdomain.com with your actual domain name. Replace [listname] with the actual list name.

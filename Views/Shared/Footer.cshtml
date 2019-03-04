@@ -1,3 +1,6 @@
 ﻿<div id="footer">
-    @Html.Raw(MailDemon.Resources.FooterText)
+    @if (User.Identity.IsAuthenticated)
+    {
+        @Html.Raw(MailDemon.Resources.FooterText)
+    }
 </div>

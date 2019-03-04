@@ -7,6 +7,7 @@
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <DebugType>portable</DebugType>
     <LangVersion>latest</LangVersion>
+    <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
   </PropertyGroup>
 
   <ItemGroup>

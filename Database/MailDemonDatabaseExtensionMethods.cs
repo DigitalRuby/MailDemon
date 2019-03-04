@@ -80,15 +80,12 @@ namespace MailDemon
         public static bool UnsubscribeFromMailingList(this MailDemonDatabase db, string listName, string token)
         {
             bool foundOne = false;
-            db.Select<MailListSubscription>(r => r.UnsubscribeToken == token, (foundReg) =>
+            db.Select<MailListSubscription>(r => r.UnsubscribeToken == token && r.ListName == listName && r.UnsubscribedDate == default, (foundReg) =>
             {
-                if (foundReg.ListName == listName && foundReg.UnsubscribedDate == default)
-                {
-                    foundOne = true;
-                    foundReg.UnsubscribedDate = DateTime.UtcNow;
-                    return true;
-                }
-                return false;
+                foundOne = true;
+                foundReg.UnsubscribedDate = DateTime.UtcNow;
+                foundReg.SubscribeToken = null;
+                return true;
             });
             return foundOne;
         }

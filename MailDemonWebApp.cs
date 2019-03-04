@@ -84,6 +84,11 @@ namespace MailDemon
         public string ServerUrl { get; private set; }
 
         /// <summary>
+        /// Scheme, host and optional port
+        /// </summary>
+        public string Authority { get; private set; }
+
+        /// <summary>
         /// Shared instance
         /// </summary>
         public static MailDemonWebApp Instance { get; private set; }
@@ -151,6 +156,7 @@ namespace MailDemon
             builder.UseConfiguration(Configuration);
             argsDictionary.TryGetValue("--server.urls", out string serverUrl);
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
+            Authority = web["authority"];
             string certPathWeb = web["sslCertificateFile"];
             string certPathPrivateWeb = web["sslCertificatePrivateKeyFile"];
             SecureString certPasswordWeb = web["sslCertificatePassword"]?.ToSecureString();
@@ -331,6 +337,14 @@ namespace MailDemon
                 });
             }
             ServerUrl = ServerUrl.Trim('/', '?');
+            if (string.IsNullOrWhiteSpace(Authority))
+            {
+                Authority = ServerUrl;
+            }
+            else
+            {
+                Authority = Authority.Trim('/', '?');
+            }
             lifetime.ApplicationStopping.Register(OnShutdown);
             MailDemonLog.Warn("Mail demon web service started");
             runningEvent.Set();
