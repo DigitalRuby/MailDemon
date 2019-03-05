@@ -57,10 +57,7 @@ namespace MailDemon
                     subjectText = Regex.Replace(subjectText, "[\r\n ]+", " ");
 
                     html = (htmlModifier == null ? html : htmlModifier.Invoke(html, subjectText));
-
-                    PreMailer.Net.PreMailer pre = new PreMailer.Net.PreMailer(html);
-                    var result = pre.MoveCssInline(true);
-                    html = result.Html;
+                    html = PreMailer.Net.PreMailer.MoveCssInline(html, true).Html;
 
                     BodyBuilder builder = new BodyBuilder
                     {
