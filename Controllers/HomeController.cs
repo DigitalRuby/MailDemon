@@ -313,7 +313,7 @@ namespace MailDemon
                 login.Error = true;
                 login.Message = Resources.UsernameOrPasswordIsBlank;
             }
-            else if (login.UserName != MailDemonWebApp.Instance.AdminLogin.Key && login.Password != MailDemonWebApp.Instance.AdminLogin.Value)
+            else if (login.UserName != MailDemonWebApp.Instance.AdminLogin.Key || login.Password != MailDemonWebApp.Instance.AdminLogin.Value)
             {
                 login.Error = true;
                 login.Message = Resources.LoginFailed;
