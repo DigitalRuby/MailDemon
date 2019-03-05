@@ -333,6 +333,8 @@ namespace MailDemon
                 }
             }
 
+            IPBan.IPBanPlugin.IPBanLoginFailed("HTTPS", login.UserName, HttpContext.GetRemoteIPAddress().ToString());
+
             return View("Login", login);
         }
 
