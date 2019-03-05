@@ -194,18 +194,7 @@ namespace MailDemon
                 return new CacheEntry();
             });
             Interlocked.Increment(ref entry.Count);
-            if (userName != null && Directory.Exists(@"/var/log"))
-            {
-                // write auth log failure for ipban integration
-                try
-                {
-                    File.AppendAllText("/var/log/ipbancustom_maildemon.log", $"{DateTime.UtcNow.ToString("u")}, ipban failed login, ip address: {ipAddress}, source: SMTP, user: {userName}");
-                }
-                catch (Exception ex)
-                {
-                    MailDemonLog.Error("Failed to write ipban auth log", ex);
-                }
-            }
+            IPBan.IPBanPlugin.IPBanLoginFailed("SMTP", userName, ipAddress);
         }
     }
 }
