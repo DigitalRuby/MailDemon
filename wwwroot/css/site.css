@@ -90,6 +90,8 @@ h1
 h2
 {
     font-size: 1.2em;
+    word-wrap: break-word;
+    white-space: normal;
 }
 
 h3
@@ -214,7 +216,8 @@ form
     min-height: calc(100% - 20px);
     padding: 10px;
     margin: 0 auto;
-    width: 1024px;
+    min-width: 320px;
+    max-width: 1280px;
     background: #000000;
 }
 
