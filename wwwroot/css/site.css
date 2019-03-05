@@ -214,8 +214,14 @@ form
     min-height: calc(100% - 20px);
     padding: 10px;
     margin: 0 auto;
-    width: 768px;
+    width: 1024px;
     background: #000000;
+}
+
+#mailBody
+{
+    padding: 10px;
+    width: calc(100% - 20px);
 }
 
 #content
