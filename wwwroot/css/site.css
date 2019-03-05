@@ -42,12 +42,12 @@ blockquote, q
     quotes: none;
 }
 
-    blockquote:before, blockquote:after,
-    q:before, q:after
-    {
-        content: '';
-        content: none;
-    }
+blockquote:before, blockquote:after,
+q:before, q:after
+{
+    content: '';
+    content: none;
+}
 
 table
 {
@@ -65,7 +65,6 @@ html, body
     width: 100%;
     min-width: 100%;
     height: 100%;
-    min-height: 600px;
     overflow-x: hidden;
     font-size: 14px;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -226,6 +225,12 @@ form
     margin-top: 10px;
 }
 
+#mailContent
+{
+    margin-top: 10px;
+    min-height: 600px;
+}
+
 #tabs /* gets shown in the js that creates the tabs */
 {
     display: none;
@@ -283,16 +288,18 @@ form
     padding-bottom: 6px;
 }
 
-#footer
+#footer,
+#mailFooter
 {
     text-align: center;
     padding-top: 10px;
-    height: 50px;
+    min-height: 50px;
     font-size: 0.8em;
     display: block;
 }
 
-#footer a
+#footer a,
+#mailFooter a
 {
     background: none;
     padding: 0;

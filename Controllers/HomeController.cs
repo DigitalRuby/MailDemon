@@ -557,7 +557,7 @@ namespace MailDemon
             ViewBag.Layout = "/Views/_LayoutMail.cshtml";
             MimeMessage msg = await mailCreator.CreateMailAsync(id, tempReg, new ExpandoObject(), (_html, subject) =>
             {
-                return Regex.Replace(_html, @"\<!-- *Subject:.*?-->", "<div>SUBJECT: " + System.Web.HttpUtility.HtmlEncode(subject) + "</div><br/>");
+                return _html.Replace("<body>", "<body><div style='padding: 10px; width: 100%; background-color: #2A2A2A; border-bottom: 1px solid #444444;'>SUBJECT: " + System.Web.HttpUtility.HtmlEncode(subject) + "</div>");
             });
             string html = msg.HtmlBody;
             
