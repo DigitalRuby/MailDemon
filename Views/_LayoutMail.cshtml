@@ -10,7 +10,7 @@
         <link rel="stylesheet" href="@(MailDemon.MailDemonWebApp.Instance.Authority)/css/site.css?v=1" />
     </head>
     <body>
-        <div class="mailBody" style="padding: 10px; width: calc(100% - 20px);">
+        <div id="mailBody">
             <h1 id="mailHeader">
                 <!-- TODO: Customize header -->
                 @Model.MailList.Title

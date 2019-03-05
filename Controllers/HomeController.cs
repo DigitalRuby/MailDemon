@@ -425,7 +425,7 @@ namespace MailDemon
 
         public IActionResult EditTemplate(string id)
         {
-            MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault() ?? new MailTemplate();
+            MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault() ?? new MailTemplate { Text = "<!-- Subject: ReplaceWithYourSubject -->\r\n" };
             if (template.Id == 0 && string.IsNullOrWhiteSpace(template.Name) && id.IndexOf(MailTemplate.FullNameSeparator) < 0)
             {
                 template.Name = id + MailTemplate.FullNameSeparator;
