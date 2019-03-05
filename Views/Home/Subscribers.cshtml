@@ -12,6 +12,8 @@ else
         <thead>
             <tr>
                 <th>@MailDemon.Resources.EmailAddress</th>
+                <th>@MailDemon.Resources.Name</th>
+                <th>@MailDemon.Resources.Company</th>
                 <th>@MailDemon.Resources.SubscribedDate</th>
                 <th>@MailDemon.Resources.UnsubscribedDate</th>
                 <th>&nbsp;</th>
@@ -23,6 +25,12 @@ else
                 <tr>
                     <td>
                         @item.EmailAddress
+                    </td>
+                    <td>
+                        @((item.FirstName + " " + item.LastName).Trim())
+                    </td>
+                    <td>
+                        @item.Company
                     </td>
                     <td>
                         @(item.SubscribedDate == default ? string.Empty : item.SubscribedDate.ToString())
