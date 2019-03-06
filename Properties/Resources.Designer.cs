@@ -317,6 +317,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Optional.
+        /// </summary>
+        public static string Optional {
+            get {
+                return ResourceManager.GetString("Optional", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please contact support.
         /// </summary>
         public static string PleaseContactSupport {
