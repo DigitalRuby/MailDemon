@@ -277,4 +277,7 @@
   <data name="UnsubscribeLink" xml:space="preserve">
     <value>To unsubscribe from this mailing list, please use the following link: </value>
   </data>
+  <data name="Optional" xml:space="preserve">
+    <value>Optional</value>
+  </data>
 </root>
