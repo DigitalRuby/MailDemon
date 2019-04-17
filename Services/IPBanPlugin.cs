@@ -44,6 +44,11 @@ namespace IPBan
         public static Action<Exception> ErrorHandler { get; set; }
 
         /// <summary>
+        /// Process name
+        /// </summary>
+        public static string ProcessName { get; }
+
+        /// <summary>
         /// Static constructor
         /// </summary>
         static IPBanPlugin()
@@ -51,6 +56,10 @@ namespace IPBan
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 eventLog = new EventLog("Application", Environment.MachineName, "IPBanCustom");
+            }
+            using (Process p = Process.GetCurrentProcess())
+            {
+                ProcessName = p.ProcessName;
             }
         }
 
@@ -78,8 +87,7 @@ namespace IPBan
                 // Linux
                 else if (Directory.Exists(@"/var/log"))
                 {
-                    string processName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
-                    File.AppendAllText($"/var/log/ipbancustom_{processName}.log\n", $"{DateTime.UtcNow.ToString("u")}, ipban failed login, ip address: {remoteIpAddress}, source: {source}, user: {userName}");
+                    File.AppendAllText($"/var/log/ipbancustom_{ProcessName}.log\n", $"{DateTime.UtcNow.ToString("u")}, ipban failed login, ip address: {remoteIpAddress}, source: {source}, user: {userName}");
                 }
             }
             catch (Exception ex)
@@ -113,7 +121,7 @@ namespace IPBan
                 else if (Directory.Exists(@"/var/log"))
                 {
                     string processName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
-                    File.AppendAllText($"/var/log/ipbancustom_{processName}.log\n", $"{DateTime.UtcNow.ToString("u")}, ipban success login, ip address: {remoteIpAddress}, source: {source}, user: {userName}");
+                    File.AppendAllText($"/var/log/ipbancustom_{ProcessName}.log\n", $"{DateTime.UtcNow.ToString("u")}, ipban success login, ip address: {remoteIpAddress}, source: {source}, user: {userName}");
                 }
             }
             catch (Exception ex)
