@@ -292,7 +292,11 @@ namespace MailDemon
                             else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
                             {
                                 authenticatedUser = await Authenticate(reader, writer, line);
-                                if (!authenticatedUser.Authenticated)
+                                if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
+                                {
+                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.Name, remoteEndPoint.Address.ToString());
+                                }
+                                else
                                 {
                                     throw new InvalidOperationException("Authentication failed");
                                 }
