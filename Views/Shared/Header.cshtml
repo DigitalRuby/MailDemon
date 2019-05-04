@@ -8,7 +8,7 @@
     </div>
     <div style="float: right">
         @System.String.Format(MailDemon.Resources.LoggedInAs, User.Identity.Name)
-        <form action="@nameof(MailDemon.HomeController.MailDemonLogin)" class="inline-form" method="post">
+        <form action="/@nameof(MailDemon.HomeController.MailDemonLogin)" class="inline-form" method="post">
             <button name="action" value="logout">@MailDemon.Resources.Logout</button>
         </form>
     </div>
