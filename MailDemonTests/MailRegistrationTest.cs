@@ -157,6 +157,7 @@ namespace MailDemonTests
             homeController.RequireCaptcha = false;
             homeController.TempData = new TempDataDictionary(httpContext, this);
             homeController.ControllerContext.HttpContext = httpContext;
+            httpContext.Request.Headers["User-Agent"] = "Test";
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
             httpContext.Request.Scheme = scheme;
             httpContext.Request.Host = new HostString(domainName);
