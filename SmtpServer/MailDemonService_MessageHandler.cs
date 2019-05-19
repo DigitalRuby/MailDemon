@@ -206,7 +206,7 @@ namespace MailDemon
                     // immediately drop if client is blocked
                     if (CheckBlocked(ipAddress))
                     {
-                        MailDemonLog.Warn("Blocking {0}", ipAddress);
+                        MailDemonLog.Warn("Blocked {0}", ipAddress);
                         return;
                     }
 
