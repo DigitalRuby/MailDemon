@@ -127,7 +127,7 @@ namespace MailDemon
             await ValidateGreeting("EHLO", line, endPoint);
             await writer.WriteLineAsync($"250-SIZE {maxMessageSize}");
             await writer.WriteLineAsync($"250-8BITMIME");
-            await writer.WriteLineAsync($"250-AUTH PLAIN");
+            await writer.WriteLineAsync($"250-AUTH LOGIN PLAIN");
             await writer.WriteLineAsync($"250-PIPELINING");
             await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
             await writer.WriteLineAsync($"250-BINARYMIME");
@@ -145,7 +145,7 @@ namespace MailDemon
             await writer.WriteLineAsync($"220 {Domain} Hello {clientDomain}");
         }
 
-        private async Task<MailDemonUser> Authenticate(Stream reader, StreamWriter writer, string line)
+        private async Task<MailDemonUser> AuthenticatePlain(Stream reader, StreamWriter writer, string line)
         {
             MailDemonUser foundUser = null;
             if (line == "AUTH PLAIN")
@@ -157,7 +157,7 @@ namespace MailDemon
             {
                 line = line.Substring(11);
             }
-            string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(line)).Replace("\0", "(null)");
+            string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(line)).Replace("\0", ":").Trim(':');
             foreach (MailDemonUser user in users)
             {
                 if (user.Authenticate(sentAuth))
@@ -185,6 +185,35 @@ namespace MailDemon
                     break;
                 }
             }
+            return new MailDemonUser(userName, userName, null, null, null, false);
+        }
+
+        private async Task<MailDemonUser> AuthenticateLogin(Stream reader, StreamWriter writer, string line)
+        {
+            MailDemonUser foundUser = null;
+            await writer.WriteLineAsync("334 VXNlcm5hbWU6"); // user
+            string userName = await ReadLineAsync(reader) ?? string.Empty;
+            await writer.WriteLineAsync("334 UGFzc3dvcmQ6"); // pwd
+            string password = await ReadLineAsync(reader) ?? string.Empty;
+            string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(userName)) + ":" + Encoding.UTF8.GetString(Convert.FromBase64String(password));
+            foreach (MailDemonUser user in users)
+            {
+                if (user.Authenticate(sentAuth))
+                {
+                    foundUser = user;
+                    break;
+                }
+            }
+            if (foundUser != null)
+            {
+                MailDemonLog.Info("User {0} authenticated", foundUser.Name);
+                await writer.WriteLineAsync($"235 2.7.0 Accepted");
+                return foundUser;
+            }
+
+            // fail
+            MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
+            await writer.WriteLineAsync($"535 authentication failed");
             return new MailDemonUser(userName, userName, null, null, null, false);
         }
 
@@ -291,7 +320,19 @@ namespace MailDemon
                             }
                             else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
                             {
-                                authenticatedUser = await Authenticate(reader, writer, line);
+                                authenticatedUser = await AuthenticatePlain(reader, writer, line);
+                                if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
+                                {
+                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.Name, remoteEndPoint.Address.ToString());
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException("Authentication failed");
+                                }
+                            }
+                            else if (line.StartsWith("AUTH LOGIN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                authenticatedUser = await AuthenticateLogin(reader, writer, line);
                                 if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
                                 {
                                     IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.Name, remoteEndPoint.Address.ToString());

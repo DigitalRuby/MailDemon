@@ -33,7 +33,7 @@ namespace MailDemon
             Name = name.Trim();
             DisplayName = (string.IsNullOrWhiteSpace(displayName) ? Name : displayName);
             Password = password.ToSecureString();
-            PasswordPlain = string.Format("(null){0}(null){1}", name, password).ToSecureString();
+            PasswordPlain = string.Format("{0}:{1}", name, password).ToSecureString();
             if (!string.IsNullOrWhiteSpace(forwardAddress))
             {
                 ForwardAddress = new MailboxAddress(forwardAddress);
@@ -61,7 +61,7 @@ namespace MailDemon
         public override string ToString()
         {
             string password = Password.ToUnsecureString();
-            string passwordPlain = PasswordPlain.ToUnsecureString().Replace("\0", "(null)");
+            string passwordPlain = PasswordPlain.ToUnsecureString();
             return $"Name: {Name}, Display Name: {DisplayName}, Address: {MailAddress}, Forward: {ForwardAddress}, Password: {password}, Password Plain: {passwordPlain}";
         }
 
