@@ -349,7 +349,14 @@ namespace MailDemon
                             {
                                 if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    await SendMail(authenticatedUser, reader, writer, line, endPoint, null);
+                                    try
+                                    {
+                                        await SendMail(authenticatedUser, reader, writer, line, endPoint, null);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new ApplicationException("Error sending mail from " + endPoint, ex);
+                                    }
                                 }
                                 else
                                 {
@@ -361,7 +368,14 @@ namespace MailDemon
                                 if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                                 {
                                     // non-authenticated user, forward message on if possible, check settings
-                                    await ReceiveMail(reader, writer, line, endPoint);
+                                    try
+                                    {
+                                        await ReceiveMail(reader, writer, line, endPoint);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new ApplicationException("Error receiving mail from " + endPoint, ex);
+                                    }
                                 }
                                 else
                                 {
