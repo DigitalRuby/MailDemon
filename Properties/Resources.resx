@@ -126,7 +126,8 @@
 &lt;p&gt;If you do not click the link, you will not receive emails from the '{0}' mailing list.&lt;/p&gt;</value>
   </data>
   <data name="BodyWelcomeSubscription" xml:space="preserve">
-    <value>&lt;p&gt;Welcome to your subscription to the '{0}' mailing list.&lt;/p&gt;
+    <value>&lt;p&gt;Welcome to your subscription to the '{0}' mailing list. Your subscription is now active.&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;
 &lt;p&gt;To unsubscribe from this mailing list, please use the following link:&lt;/p&gt;
 &lt;p&gt;&lt;a href="{1}" target="_blank"&gt;{1}&lt;/a&gt;&lt;/p&gt;</value>
   </data>

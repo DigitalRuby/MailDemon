@@ -81,7 +81,8 @@ namespace MailDemon {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;p&gt;Welcome to your subscription to the &apos;{0}&apos; mailing list.&lt;/p&gt;
+        ///   Looks up a localized string similar to &lt;p&gt;Welcome to your subscription to the &apos;{0}&apos; mailing list. Your subscription is now active.&lt;/p&gt;
+        ///&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;
         ///&lt;p&gt;To unsubscribe from this mailing list, please use the following link:&lt;/p&gt;
         ///&lt;p&gt;&lt;a href=&quot;{1}&quot; target=&quot;_blank&quot;&gt;{1}&lt;/a&gt;&lt;/p&gt;.
         /// </summary>
