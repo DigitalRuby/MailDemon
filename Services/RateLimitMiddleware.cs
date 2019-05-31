@@ -22,7 +22,7 @@ namespace MailDemon
         /// <summary>
         /// Max requests per minute if not authenticated
         /// </summary>
-        public int MaxRequestsPerMinute { get; set; } = 10;
+        public int MaxRequestsPerMinute { get; set; } = 30;
 
         /// <summary>
         /// Override for specific url/path regardless of private api key or not
