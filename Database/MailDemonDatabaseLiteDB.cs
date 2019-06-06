@@ -13,7 +13,7 @@ namespace MailDemon
     /// Mail demon database. All objects in the db should have a long Id property.
     /// This class is thread safe.
     /// </summary>
-    public class MailDemonDatabase : IDisposable
+    public class MailDemonDatabaseLiteDB : IMailDemonDatabase
     {
         /// <summary>
         /// Path to the database
@@ -30,7 +30,7 @@ namespace MailDemon
         /// <summary>
         /// Initialize db
         /// </summary>
-        static MailDemonDatabase()
+        static MailDemonDatabaseLiteDB()
         {
             using (var db = GetDB())
             {
@@ -50,16 +50,17 @@ namespace MailDemon
         /// <summary>
         /// Constructor
         /// </summary>
-        public MailDemonDatabase()
+        public MailDemonDatabaseLiteDB()
         {
         }
 
         /// <summary>
         /// Delete database file - use with caution!
         /// </summary>
-        public static void DeleteDatabase()
+        /// <param name="confirm">True to delete</param>
+        public static void DeleteDatabase(bool confirm)
         {
-            if (File.Exists(MailDemonDatabase.DatabasePath))
+            if (confirm && File.Exists(MailDemonDatabaseLiteDB.DatabasePath))
             {
                 while (true)
                 {
@@ -67,7 +68,7 @@ namespace MailDemon
                     {
                         // WTF litedb releases files in the finalizer...???
                         System.GC.Collect();
-                        File.Delete(MailDemonDatabase.DatabasePath);
+                        File.Delete(MailDemonDatabaseLiteDB.DatabasePath);
                         break;
                     }
                     catch
@@ -82,7 +83,7 @@ namespace MailDemon
         /// Access the underlying db structure - be careful here, if the underlying structure changes, code will break
         /// </summary>
         /// <returns>Database</returns>
-        public static LiteDatabase GetDB()
+        private static LiteDatabase GetDB()
         {
             return new LiteDatabase($"Filename={DatabasePath}; {DatabaseOptions}", mapper);
             //return new LiteDatabase(File.Open(DatabasePath, System.IO.FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite), mapper, null, true);
@@ -145,7 +146,7 @@ namespace MailDemon
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="id">Id to find</param>
         /// <returns>Object or null if not found</returns>
-        public T Select<T>(long id)
+        public T Select<T>(long id) where T : class
         {
             using (var db = GetDB())
             {
@@ -159,7 +160,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <returns>All objects</returns>
-        public IEnumerable<T> Select<T>()
+        public IEnumerable<T> Select<T>() where T : class
         {
             using (var db = GetDB())
             {
@@ -177,7 +178,7 @@ namespace MailDemon
         /// <param name="offset">Skip count</param>
         /// <param name="count">Max select count</param>
         /// <returns>Objects</returns>
-        public IEnumerable<T> Select<T>(Expression<Func<T, bool>> predicate, Func<T, bool> updater = null, int offset = 0, int count = int.MaxValue)
+        public IEnumerable<T> Select<T>(Expression<Func<T, bool>> predicate, Func<T, bool> updater = null, int offset = 0, int count = int.MaxValue) where T : class
         {
             using (var db = GetDB())
             {
@@ -206,7 +207,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="obj">Object to insert or update</param>
-        public void Upsert<T>(in T obj)
+        public void Upsert<T>(in T obj) where T : class
         {
             using (var db = GetDB())
             {
@@ -220,7 +221,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="obj">Objects to insert or update</param>
-        public void Upsert<T>(IEnumerable<T> objs)
+        public void Upsert<T>(IEnumerable<T> objs) where T : class
         {
             using (var db = GetDB())
             {
@@ -237,7 +238,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="obj">Object to insert</param>
-        public void Insert<T>(in T obj)
+        public void Insert<T>(in T obj) where T : class
         {
             using (var db = GetDB())
             {
@@ -251,7 +252,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="obj">Objects to insert</param>
-        public void Insert<T>(IEnumerable<T> objs)
+        public void Insert<T>(IEnumerable<T> objs) where T : class
         {
             using (var db = GetDB())
             {
@@ -265,7 +266,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="obj">Object to update</param>
-        public void Update<T>(in T obj)
+        public void Update<T>(in T obj) where T : class
         {
             using (var db = GetDB())
             {
@@ -279,7 +280,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="obj">Objects to update</param>
-        public void Update<T>(IEnumerable<T> objs)
+        public void Update<T>(IEnumerable<T> objs) where T : class
         {
             using (var db = GetDB())
             {
@@ -293,7 +294,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="id">Id of the object to delete</param>
-        public void Delete<T>(long id)
+        public void Delete<T>(long id) where T : class
         {
             using (var db = GetDB())
             {
@@ -307,7 +308,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="predicate">Query of objects to delete</param>
-        public void Delete<T>(Expression<Func<T, bool>> predicate)
+        public void Delete<T>(Expression<Func<T, bool>> predicate) where T : class
         {
             using (var db = GetDB())
             {

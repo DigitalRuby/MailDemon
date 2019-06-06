@@ -32,7 +32,7 @@ namespace MailDemon
     [ResponseCache(NoStore = true)]
     public class HomeController : Controller
     {
-        private readonly MailDemonDatabase db;
+        private readonly IMailDemonDatabase db;
         private readonly IMailCreator mailCreator;
         private readonly IMailSender mailSender;
         private readonly IBulkMailSender bulkMailSender;
@@ -66,7 +66,7 @@ namespace MailDemon
             db.Dispose();
         }
 
-        public HomeController(MailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender, IBulkMailSender bulkMailSender)
+        public HomeController(IMailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender, IBulkMailSender bulkMailSender)
         {
             this.db = db;
             this.mailCreator = mailCreator ?? throw new ArgumentNullException(nameof(mailCreator));

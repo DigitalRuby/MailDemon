@@ -1,4 +1,6 @@
-﻿using System;
+﻿#region Imports
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -13,6 +15,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
+
+#endregion Imports
 
 namespace MailDemon
 {
@@ -50,7 +54,7 @@ namespace MailDemon
             services.Configure<RazorViewEngineOptions>(options =>
             {
                 options.FileProviders.Clear();
-                options.FileProviders.Add(new MailDemonDatabaseFileProvider(rootPath));
+                options.FileProviders.Add(new MailDemonDatabaseFileProvider(serviceProvider, rootPath));
             });
             services.AddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
             services.AddSingleton<ILoggerFactory>(this);

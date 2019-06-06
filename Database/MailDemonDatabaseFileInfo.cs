@@ -5,12 +5,14 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 
 namespace MailDemon
 {
     public class MailDemonDatabaseFileInfo : IFileInfo
     {
+        private readonly IServiceProvider serviceProvider;
         private readonly string rootPath;
         private readonly string fileName;
         private readonly string fileNameNoExtension;
@@ -18,8 +20,10 @@ namespace MailDemon
         private readonly string name;
         private byte[] contents;
 
-        public MailDemonDatabaseFileInfo(string rootPath, string viewPath)
+        public MailDemonDatabaseFileInfo(IServiceProvider serviceProvider, string rootPath, string viewPath)
         {
+            this.serviceProvider = serviceProvider;
+
             // work-around bug in .NET core pathing with view start for custom rendered razor views
             if (viewPath.Equals("/_ViewStart.cshtml") || viewPath.Equals("_ViewStart.cshtml", StringComparison.OrdinalIgnoreCase))
             {
@@ -51,7 +55,7 @@ namespace MailDemon
                 }
                 else
                 {
-                    using (var db = new MailDemonDatabase())
+                    using (var db = serviceProvider.GetService<IMailDemonDatabase>())
                     {
                         MailTemplate template = db.Select<MailTemplate>(t => t.Name == fileNameNoExtension).FirstOrDefault();
                         if (template == null)
@@ -85,7 +89,7 @@ namespace MailDemon
                 contents = File.ReadAllBytes(fullPath);
                 return;
             }
-            using (var db = new MailDemonDatabase())
+            using (var db = serviceProvider.GetService<IMailDemonDatabase>())
             {
                 MailTemplate template = null;
                 db.Select<MailTemplate>(t => t.Name == fileNameNoExtension, (foundTemplate) =>

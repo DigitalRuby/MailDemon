@@ -27,7 +27,7 @@ namespace MailDemonTests
         [TearDown]
         public void TearDown()
         {
-            MailDemonDatabase.DeleteDatabase();
+            MailDemonDatabaseLiteDB.DeleteDatabase(true);
         }
 
         [Test]
@@ -35,7 +35,7 @@ namespace MailDemonTests
         {
             MailTemplate template = new MailTemplate { Name = "test", Text = "<b>Hello World</b> @Model.FirstName" };
 
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 db.Insert<MailList>(new MailList { Name = "test" });
                 db.Insert<MailTemplate>(template);
@@ -50,7 +50,7 @@ namespace MailDemonTests
             template.LastModified = DateTime.UtcNow;
             template.Dirty = true;
 
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 db.Update(template);
             }

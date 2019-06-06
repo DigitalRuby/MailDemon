@@ -41,7 +41,7 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
-    public class MailDemonWebApp : IStartup, IDisposable
+    public class MailDemonWebApp : IStartup, IServiceProvider, IDisposable
     {
         private IWebHost host;
         private IServiceProvider serviceProvider;
@@ -262,10 +262,10 @@ namespace MailDemon
                 services.AddResponseCaching();
                 services.AddHttpContextAccessor();
                 services.AddSingleton<IMailSender>((provider) => mailService);
-                services.AddSingleton<IBulkMailSender>(new BulkMailSender());
+                services.AddSingleton<IBulkMailSender>((provider) => new BulkMailSender(provider));
                 services.AddSingleton<IViewRenderService, ViewRenderService>();
                 services.AddTransient<IMailCreator, MailCreator>();
-                services.AddTransient<MailDemonDatabase>();
+                services.AddTransient<IMailDemonDatabase>((provider) => new MailDemonDatabaseLiteDB());
                 services.AddHostedService<SubscriptionCleanup>();
                 services.AddMvc((options) =>
                 {
@@ -277,7 +277,7 @@ namespace MailDemon
                 services.Configure<RazorViewEngineOptions>(opts =>
                 {
                     opts.AllowRecompilingViewsOnFileChange = true;
-                    opts.FileProviders.Add(new MailDemonDatabaseFileProvider(RootDirectory));
+                    opts.FileProviders.Add(new MailDemonDatabaseFileProvider(this, RootDirectory));
                 });
                 services.AddAntiforgery(options =>
                 {
@@ -355,6 +355,16 @@ namespace MailDemon
             lifetime.ApplicationStopping.Register(OnShutdown);
             MailDemonLog.Warn("Mail demon web service started");
             runningEvent.Set();
+        }
+
+        /// <summary>
+        /// IServiceProvider implementation
+        /// </summary>
+        /// <param name="serviceType">Service type</param>
+        /// <returns>Found service</returns>
+        object IServiceProvider.GetService(Type serviceType)
+        {
+            return serviceProvider.GetService(serviceType);
         }
     }
 }
