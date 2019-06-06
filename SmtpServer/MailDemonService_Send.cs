@@ -81,6 +81,7 @@ namespace MailDemon
                             }
                             catch (Exception ex)
                             {
+                                // TODO: SmtpCommandException: Greylisted, please try again in 180 seconds
                                 MailDemonLog.Error(host + " (" + toDomain + ")", ex);
                             }
                             finally
