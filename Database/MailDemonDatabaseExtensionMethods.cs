@@ -13,7 +13,7 @@ namespace MailDemon
         /// <param name="db">DB</param>
         /// <param name="reg">Registration, receives new registration if success</param>
         /// <returns>True if success, false if already subscribed</returns>
-        public static bool PreSubscribeToMailingList(this MailDemonDatabase db, ref MailListSubscription reg)
+        public static bool PreSubscribeToMailingList(this IMailDemonDatabase db, ref MailListSubscription reg)
         {
             string token = string.Empty;
             MailListSubscription final = reg;
@@ -50,7 +50,7 @@ namespace MailDemon
         /// <param name="listName">List name</param>
         /// <param name="token">Subscribe token</param>
         /// <returns>Registration or null if not found</returns>
-        public static MailListSubscription ConfirmSubscribeToMailingList(this MailDemonDatabase db, string listName, string token)
+        public static MailListSubscription ConfirmSubscribeToMailingList(this IMailDemonDatabase db, string listName, string token)
         {
             MailListSubscription reg = null;
             db.Select<MailListSubscription>(r => r.SubscribeToken == token, (foundReg) =>
@@ -77,7 +77,7 @@ namespace MailDemon
         /// <param name="listName">List name</param>
         /// <param name="token">Unsubscribe token</param>
         /// <returns>True if unsubscribed, false if not</returns>
-        public static bool UnsubscribeFromMailingList(this MailDemonDatabase db, string listName, string token)
+        public static bool UnsubscribeFromMailingList(this IMailDemonDatabase db, string listName, string token)
         {
             bool foundOne = false;
             db.Select<MailListSubscription>(r => r.UnsubscribeToken == token && r.ListName == listName && r.UnsubscribedDate == default, (foundReg) =>

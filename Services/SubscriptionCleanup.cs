@@ -4,12 +4,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace MailDemon
 {
     public class SubscriptionCleanup : BackgroundService
     {
+        private readonly IServiceProvider serviceProvider;
         private readonly TimeSpan loopTimeSpan = TimeSpan.FromMinutes(1.0);
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -17,7 +19,7 @@ namespace MailDemon
             do
             {
                 DateTime dt = DateTime.UtcNow;
-                using (MailDemonDatabase db = new MailDemonDatabase())
+                using (IMailDemonDatabase db = serviceProvider.GetService<IMailDemonDatabase>())
                 {
                     foreach (MailListSubscription reg in db.Select<MailListSubscription>(r => r.Expires <= dt && r.UnsubscribeToken == null))
                     {
@@ -26,6 +28,11 @@ namespace MailDemon
                 }
             }
             while (!(await stoppingToken.WaitHandle.WaitOneAsync(loopTimeSpan, stoppingToken)));
+        }
+
+        public SubscriptionCleanup(IServiceProvider serviceProvider)
+        {
+            this.serviceProvider = serviceProvider;
         }
     }
 }

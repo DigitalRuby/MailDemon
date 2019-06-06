@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
+
 namespace MailDemon
 {
     public interface IBulkMailSender
@@ -14,6 +16,8 @@ namespace MailDemon
 
     public class BulkMailSender : IBulkMailSender
     {
+        private readonly IServiceProvider serviceProvider;
+
         // TODO: Use async enumerator
         private IEnumerable<MimeMessage> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list, string fullTemplateName)
         {
@@ -35,8 +39,9 @@ namespace MailDemon
             }
         }
 
-        public BulkMailSender()
+        public BulkMailSender(IServiceProvider serviceProvider)
         {
+            this.serviceProvider = serviceProvider;
         }
 
         public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, string fullTemplateName, string unsubscribeUrl)
@@ -45,7 +50,7 @@ namespace MailDemon
             string toDomain = null;
             string addressDomain;
 
-            using (MailDemonDatabase db = new MailDemonDatabase())
+            using (var db = serviceProvider.GetService<IMailDemonDatabase>())
             {
                 foreach (MailListSubscription sub in db.Select<MailListSubscription>(s => s.ListName == list.Name && s.SubscribedDate != default && s.UnsubscribedDate == default).OrderBy(s => s.EmailAddressDomain))
                 {

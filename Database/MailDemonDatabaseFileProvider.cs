@@ -11,10 +11,12 @@ namespace MailDemon
 {
     public class MailDemonDatabaseFileProvider : IFileProvider
     {
+        private readonly IServiceProvider serviceProvider;
         private readonly string rootPath;
 
-        public MailDemonDatabaseFileProvider(string rootPath)
+        public MailDemonDatabaseFileProvider(IServiceProvider serviceProvider, string rootPath)
         {
+            this.serviceProvider = serviceProvider;
             this.rootPath = rootPath;
         }
 
@@ -25,7 +27,7 @@ namespace MailDemon
 
         public IFileInfo GetFileInfo(string subPath)
         {
-            var result = new MailDemonDatabaseFileInfo(rootPath, subPath);
+            var result = new MailDemonDatabaseFileInfo(serviceProvider, rootPath, subPath);
             return result.Exists ? result as IFileInfo : new NotFoundFileInfo(subPath);
         }
 
@@ -36,7 +38,7 @@ namespace MailDemon
             {
                 return new MailDemonFileChangeToken(filter);
             }
-            return new MailDemonDatabaseChangeToken(filter);
+            return new MailDemonDatabaseChangeToken(serviceProvider, filter);
         }
     }
 }

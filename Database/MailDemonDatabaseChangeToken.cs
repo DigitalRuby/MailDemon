@@ -4,17 +4,20 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 
 namespace MailDemon
 {
     public class MailDemonDatabaseChangeToken : IChangeToken
     {
+        private readonly IServiceProvider serviceProvider;
         private readonly string viewPath;
         private readonly string fileNameNoExtension;
 
-        public MailDemonDatabaseChangeToken(string viewPath)
+        public MailDemonDatabaseChangeToken(IServiceProvider serviceProvider, string viewPath)
         {
+            this.serviceProvider = serviceProvider;
             this.viewPath = viewPath.Trim('/', '\\', '~');
             this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
         }
@@ -25,7 +28,7 @@ namespace MailDemon
         {
             get
             {
-                using (var db = new MailDemonDatabase())
+                using (var db = serviceProvider.GetService<IMailDemonDatabase>())
                 {
                     bool changed = false;
                     db.Select<MailTemplate>(l => l.Name == fileNameNoExtension, (t) =>

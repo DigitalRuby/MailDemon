@@ -65,13 +65,13 @@ namespace MailDemonTests
 
         private void Cleanup()
         {
-            MailDemonDatabase.DeleteDatabase();
+            MailDemonDatabaseLiteDB.DeleteDatabase(true);
             createdMail.Clear();
         }
 
         private string Subscribe()
         {
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 db.Insert<MailList>(new MailList { Name = listName, FromEmailAddress = fromAddress, FromEmailName = fromName,
                     Company = company, PhysicalAddress = fullAddress, Website = website });
@@ -87,7 +87,7 @@ namespace MailDemonTests
 
             // check database for registration
             MailListSubscription reg = null;
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 reg = db.Select<MailListSubscription>().FirstOrDefault();
                 Assert.NotNull(reg);
@@ -117,7 +117,7 @@ namespace MailDemonTests
                 $@"{scheme}://{domainName}/{nameof(HomeController.Unsubscribe)}/TestList\?token=.{{16,}}");
 
             // validate there is an unsubscribe in the db
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 reg = db.Select<MailListSubscription>().FirstOrDefault();
                 Assert.AreEqual(listName, reg.ListName);
@@ -137,7 +137,7 @@ namespace MailDemonTests
             homeController.Unsubscribe(listName, unsubscribeToken);
 
             // validate that we are unsubscribed
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 MailListSubscription reg = db.Select<MailListSubscription>().FirstOrDefault();
                 Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
@@ -146,14 +146,14 @@ namespace MailDemonTests
 
         public MailRegistrationTest()
         {
-             homeController = new HomeController(new MailDemonDatabase(), this, this, null);
+             homeController = new HomeController(new MailDemonDatabaseLiteDB(), this, this, null);
         }
 
         [SetUp]
         public void Setup()
         {
             Cleanup();
-            MailDemonDatabase.DatabaseOptions = "Journal=false; Flush=true;";
+            MailDemonDatabaseLiteDB.DatabaseOptions = "Journal=false; Flush=true;";
             homeController.RequireCaptcha = false;
             homeController.TempData = new TempDataDictionary(httpContext, this);
             homeController.ControllerContext.HttpContext = httpContext;
@@ -188,7 +188,7 @@ namespace MailDemonTests
             }).Sync();
 
             // check database for registration not exist
-            using (var db = new MailDemonDatabase())
+            using (var db = new MailDemonDatabaseLiteDB())
             {
                 Assert.AreEqual(0, db.Select<MailListSubscription>().Count());
             }
