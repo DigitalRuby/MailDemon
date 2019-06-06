@@ -35,8 +35,8 @@ namespace MailDemon
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
                     return (sslPolicyErrors == SslPolicyErrors.None ||
-                        (ignoreCertificateErrorsRegex.TryGetValue("*", out Regex regex) || ignoreCertificateErrorsRegex.TryGetValue(toDomain, out regex)) &&
-                        regex.IsMatch(certificate.Subject));
+                        ignoreCertificateErrorsRegex.TryGetValue("*", out _) ||
+                        (ignoreCertificateErrorsRegex.TryGetValue(toDomain, out Regex regex)) && regex.IsMatch(certificate.Subject));
                 }
             })
             {

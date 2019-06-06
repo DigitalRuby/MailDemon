@@ -77,9 +77,9 @@ namespace MailDemon
             // read config
             string rootDir = Directory.GetCurrentDirectory();
             IConfigurationBuilder configBuilder = new ConfigurationBuilder().SetBasePath(rootDir);
-            if (File.Exists(Path.Combine(rootDir, "appsettings.debug.json")))
+            if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.debug.json")))
             {
-                configBuilder.AddJsonFile("appsettings.debug.json");
+                configBuilder.AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.debug.json"));
             }
             else
             {
