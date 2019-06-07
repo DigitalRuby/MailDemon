@@ -30,7 +30,7 @@ namespace MailDemon
                 foundReg.MailList = final.MailList;
                 foundReg.TemplateName = final.TemplateName;
                 final = foundReg;
-                return false;
+                return true;
             });
             reg = final;
             if (reg.SubscribeToken == null)

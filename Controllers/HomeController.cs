@@ -39,7 +39,7 @@ namespace MailDemon
 
         public bool RequireCaptcha { get; set;  } = true;
 
-        private IEnumerable<MimeMessage> GetMessages(MimeMessage message, MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
+        private IEnumerable<MailToSend> GetMessages(MailListSubscription sub, MimeMessage message, MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
         {
             foreach (MailboxAddress toAddress in toAddresses)
             {
@@ -47,7 +47,7 @@ namespace MailDemon
                 message.To.Clear();
                 message.From.Add(fromAddress);
                 message.To.Add(toAddress);
-                yield return message;
+                yield return new MailToSend { Subscription = sub, Message = message };
             }
         }
 
@@ -57,7 +57,7 @@ namespace MailDemon
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
             MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
             MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, reg.ViewBagObject as ExpandoObject, null);
-            await mailSender.SendMailAsync(toDomain, GetMessages(message, fromAddress, toAddresses));
+            await mailSender.SendMailAsync(toDomain, GetMessages(reg, message, fromAddress, toAddresses));
         }
 
         protected override void Dispose(bool disposing)
@@ -444,7 +444,8 @@ namespace MailDemon
             }
             else if (action == "send")
             {
-                return EditTemplateSend(id);
+                model.All = Request.Form.ContainsKey("All");
+                return EditTemplateSend(id, model.All);
             }
 
             try
@@ -496,7 +497,7 @@ namespace MailDemon
             return RedirectToAction(nameof(EditTemplate));
         }
 
-        private IActionResult EditTemplateSend(string id)
+        private IActionResult EditTemplateSend(string id, bool all)
         {
             id = (id ?? string.Empty).Trim();
             if (id.Length == 0)
@@ -514,7 +515,7 @@ namespace MailDemon
                 return NotFound();
             }
             string unsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={{0}}";
-            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, id, unsubscribeUrl).ConfigureAwait(false).GetAwaiter();
+            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, all, id, unsubscribeUrl).ConfigureAwait(false).GetAwaiter();
             TempData["Message"] = Resources.SendStarted;
             return RedirectToAction(nameof(HomeController.EditTemplate), new { id });
         }

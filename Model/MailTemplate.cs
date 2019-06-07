@@ -137,5 +137,14 @@ namespace MailDemon
         public bool Dirty { get; set; } = true;
     }
 
-    public class MailTemplateModel : BaseModel<MailTemplate> { }
+    /// <summary>
+    /// Mail template model
+    /// </summary>
+    public class MailTemplateModel : BaseModel<MailTemplate>
+    {
+        /// <summary>
+        /// Whether to send to all or just error state subscribers
+        /// </summary>
+        public bool All { get; set; } = true;
+    }
 }

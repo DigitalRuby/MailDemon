@@ -21,7 +21,8 @@ namespace MailDemon
             {
                 var nlogLevel = MailDemonLog.GetNLogLevel(logLevel);
                 string logText = formatter(state, exception);
-                logger.Log(nlogLevel, logText + (exception == null ? string.Empty : Environment.NewLine + exception.ToString()));
+                string stackTrace = (logText.Contains("antiforgery") ? Environment.StackTrace : (exception == null ? string.Empty : exception.ToString()));
+                logger.Log(nlogLevel, logText + (Environment.NewLine + stackTrace).Trim());
             }
         }
 

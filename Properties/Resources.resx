@@ -281,4 +281,16 @@
   <data name="Optional" xml:space="preserve">
     <value>Optional</value>
   </data>
+  <data name="LastResult" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="LastTimestamp" xml:space="preserve">
+    <value>Timestamp</value>
+  </data>
+  <data name="SendToAll" xml:space="preserve">
+    <value>Send to All (uncheck to send to errors only)</value>
+  </data>
+  <data name="TemplateInstructions" xml:space="preserve">
+    <value>Save first, then test, then send</value>
+  </data>
 </root>

@@ -40,6 +40,7 @@ namespace MailDemon
                 coll.EnsureIndex(x => x.SubscribeToken);
                 coll.EnsureIndex(x => x.UnsubscribeToken);
                 coll.EnsureIndex(x => x.EmailAddressDomain);
+                coll.EnsureIndex(x => x.Result);
                 var coll2 = db.GetCollection<MailTemplate>();
                 coll2.EnsureIndex(x => x.Name, true);
                 var coll3 = db.GetCollection<MailList>();
@@ -174,7 +175,7 @@ namespace MailDemon
         /// </summary>
         /// <typeparam name="T">Type of object</typeparam>
         /// <param name="predicate">Predicate to query</param>
-        /// <param name="updater">Allow update for found objects, null return value</param>
+        /// <param name="updater">Allow update for found objects if return is true</param>
         /// <param name="offset">Skip count</param>
         /// <param name="count">Max select count</param>
         /// <returns>Objects</returns>
@@ -190,14 +191,21 @@ namespace MailDemon
                 }
                 else
                 {
+                    List<T> toUpdate = new List<T>();
+                    List<T> toNotUpdate = new List<T>();
                     foreach (T obj in results)
                     {
-                        if (updater.Invoke(obj))
+                        if (updater(obj))
                         {
-                            coll.Update(obj);
+                            toUpdate.Add(obj);
+                        }
+                        else
+                        {
+                            toNotUpdate.Add(obj);
                         }
                     }
-                    return null;
+                    coll.Update(toUpdate);
+                    return toUpdate.Union(toNotUpdate);
                 }
             }
         }

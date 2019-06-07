@@ -28,7 +28,7 @@ namespace MailDemon
         public bool DisableSending { get; set; }
 
         /// <inheritdoc />
-        public async Task SendMailAsync(string toDomain, IEnumerable<MimeMessage> messages)
+        public async Task SendMailAsync(string toDomain, IEnumerable<MailToSend> messages)
         {
             using (SmtpClient client = new SmtpClient()
             {
@@ -44,6 +44,7 @@ namespace MailDemon
                 LookupClient lookup = new LookupClient();
                 MailDemonLog.Debug("QueryAsync mx for domain {0}", toDomain);
                 IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
+                bool connected = false;
                 foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
                 {
                     // attempt to send, if fail, try next address
@@ -53,35 +54,42 @@ namespace MailDemon
                         ip = await Dns.GetHostEntryAsync(record.Exchange);
                         foreach (IPAddress ipAddress in ip.AddressList)
                         {
-                            if (DisableSending)
-                            {
-                                return;
-                            }
                             string host = ip.HostName;
                             try
                             {
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                foreach (MimeMessage message in messages)
+                                connected = true;
+                                foreach (MailToSend message in messages)
                                 {
                                     if (dkimSigner != null)
                                     {
-                                        message.Prepare(EncodingConstraint.SevenBit);
-                                        message.Sign(dkimSigner, headersToSign);
+                                        message.Message.Prepare(EncodingConstraint.SevenBit);
+                                        message.Message.Sign(dkimSigner, headersToSign);
                                     }
-                                    MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.From, message.To);
-                                    await client.SendAsync(message, cancelToken).TimeoutAfter(30000);
-                                }
+                                    try
+                                    {
+                                        if (!DisableSending)
+                                        {
+                                            MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
+                                            await client.SendAsync(message.Message, cancelToken).TimeoutAfter(30000);
+                                            MailDemonLog.Warn("Success message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
+                                        }
 
-                                // success!
-                                return;
-                            }
-                            catch (InvalidOperationException)
-                            {
-                                throw;
+                                        // callback success
+                                        message.Callback?.Invoke(message.Subscription, string.Empty);
+                                    }
+                                    catch (Exception exInner)
+                                    {
+                                        MailDemonLog.Warn("Fail message to host {0}, from {1}, to {2} {3}", host, message.Message.From, message.Message.To, exInner);
+
+                                        // TODO: Handle SmtpCommandException: Greylisted, please try again in 180 seconds
+                                        // callback error
+                                        message.Callback?.Invoke(message.Subscription, exInner.Message);
+                                    }
+                                }
                             }
                             catch (Exception ex)
                             {
-                                // TODO: SmtpCommandException: Greylisted, please try again in 180 seconds
                                 MailDemonLog.Error(host + " (" + toDomain + ")", ex);
                             }
                             finally
@@ -94,6 +102,11 @@ namespace MailDemon
                                 {
                                 }
                             }
+                            if (connected)
+                            {
+                                // we successfuly got a mail server, don't loop more ips
+                                break;
+                            }
                         }
                     }
                     catch (InvalidOperationException)
@@ -102,7 +115,13 @@ namespace MailDemon
                     }
                     catch (Exception ex)
                     {
+                        // dns error, move on to next mail server
                         MailDemonLog.Error(toDomain, ex);
+                    }
+                    if (connected)
+                    {
+                        // we successfuly got a mail server, don't loop more dns entries
+                        break;
                     }
                 }
             }
@@ -167,7 +186,7 @@ namespace MailDemon
             }
         }
 
-        private IEnumerable<MimeMessage> EnumerateMessages(MimeMessage message, string toDomain, MailboxAddress from, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> prepMessage)
+        private IEnumerable<MailToSend> EnumerateMessages(MimeMessage message, string toDomain, MailboxAddress from, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> prepMessage)
         {
             foreach (MailboxAddress toAddress in toAddresses)
             {
@@ -176,7 +195,7 @@ namespace MailDemon
                 message.From.Add(from);
                 message.To.Add(toAddress);
                 prepMessage?.Invoke(message);
-                yield return message;
+                yield return new MailToSend { Message = message };
             }
         }
 

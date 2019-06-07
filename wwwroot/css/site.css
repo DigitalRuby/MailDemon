@@ -217,7 +217,7 @@ form
     padding: 10px;
     margin: 0 auto;
     min-width: 320px;
-    max-width: 1280px;
+    max-width: 1800px;
     background: #000000;
 }
 
@@ -447,6 +447,7 @@ form
 /* Table CSS */
 table.defaultTable
 {
+    table-layout: fixed;
     width: 100%;
 }
 
@@ -471,6 +472,7 @@ table.defaultTable td
     position: relative;
     padding: 4px 8px 4px 8px;
     height: 1.1em;
+    word-wrap: break-word;
 }
 
 table.defaultTable th span,

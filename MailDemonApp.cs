@@ -91,21 +91,26 @@ namespace MailDemon
             mailService = new MailDemonService(args, config);
             Task mailTask = mailService.StartAsync(cancel.Token);
 
-            // start web server
-            webApp = new MailDemonWebApp(args, rootDir, config, mailService);
-            Task webTask = webApp.StartAsync(cancel.Token);
-
             MailDemonLog.Info("Mail demon running");
 
             // test sending with the server:
             // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]
-            if (args.Length > 1 && args[0].StartsWith("test", StringComparison.OrdinalIgnoreCase))
+            if (args.Length > 0 && args[0].StartsWith("test", StringComparison.OrdinalIgnoreCase))
             {
-                mailService.DisableSending = args[0].Equals("test");
+                mailService.DisableSending = true;
                 string file = args.Length > 2 ? args[3] : null;
-                TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
-                TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                if (file != null)
+                {
+                    TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                    TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                }
+
+                args = new string[0];
             }
+
+            // start web server
+            webApp = new MailDemonWebApp(args, rootDir, config, mailService);
+            Task webTask = webApp.StartAsync(cancel.Token);
 
             return Task.WhenAll(mailTask, webTask);
         }
