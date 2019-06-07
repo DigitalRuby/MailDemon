@@ -364,10 +364,15 @@ namespace MailDemon
         {
             try
             {
+                if (logger == null)
+                {
+                    throw new ArgumentNullException(nameof(logger));
+                }
                 logger?.Log(GetNLogLevel(level), text, args);
             }
             catch
             {
+                Console.WriteLine("{0}: {1}", level, string.Format(text, args));
             }
         }
 

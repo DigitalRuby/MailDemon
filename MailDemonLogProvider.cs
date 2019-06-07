@@ -19,10 +19,15 @@ namespace MailDemon
         {
             if (logger != null)
             {
-                var nlogLevel = MailDemonLog.GetNLogLevel(logLevel);
                 string logText = formatter(state, exception);
-                string stackTrace = (logText.Contains("antiforgery") ? Environment.StackTrace : (exception == null ? string.Empty : exception.ToString()));
-                logger.Log(nlogLevel, logText + (Environment.NewLine + stackTrace).Trim());
+
+                /// WTF Microsoft, no way to turn these warnings off???
+                if (!logText.Contains("antiforgery", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nlogLevel = MailDemonLog.GetNLogLevel(logLevel);
+                    string stackTrace = (exception == null ? string.Empty : exception.ToString());
+                    logger.Log(nlogLevel, logText + (Environment.NewLine + stackTrace).Trim());
+                }
             }
         }
 
