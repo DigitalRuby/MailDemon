@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -257,6 +258,7 @@ namespace MailDemon
                     o.LoginPath = "/MailDemonLogin";
                     o.LogoutPath = "/MailDemonLogin";
                     o.Cookie.HttpOnly = true;
+                    o.ExpireTimeSpan = TimeSpan.FromDays(30.0);
                 });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
@@ -327,7 +329,20 @@ namespace MailDemon
                     SupportedCultures = supportedCultures,
                     SupportedUICultures = supportedCultures
                 });
-                app.UseStaticFiles();
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    OnPrepareResponse = (ctx) =>
+                    {
+                        ctx.Context.Response.GetTypedHeaders().CacheControl =
+                        new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+                        {
+                            Public = true,
+                            MaxAge = TimeSpan.FromDays(7.0)
+                        };
+                        ctx.Context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] =
+                            new string[] { "Accept-Encoding" };
+                    }
+                });
                 app.UseAuthentication();
                 app.UseResponseCompression();
                 app.UseResponseCaching();
@@ -337,10 +352,9 @@ namespace MailDemon
                     routes.MapRoute("home", "/{action=Index}/{id?}", new { controller = "Home" });
                 });
                 // confusingly and strangely, WTF Microsoft, the UseCookiePolicy must come AFTER app.UseMvc for TempData to work.
-                app.UseCookiePolicy();
-                app.Use(async (context, next) =>
+                // this is not documented anywhere that I could find
+                app.UseCookiePolicy(new CookiePolicyOptions
                 {
-                    await next.Invoke();
                 });
             }
             ServerUrl = ServerUrl.Trim('/', '?');

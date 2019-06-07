@@ -54,6 +54,12 @@ namespace MailDemon
         {
             if (context == null || context.Request == null || context.User.Identity.IsAuthenticated)
             {
+                context.Response.GetTypedHeaders().CacheControl =
+                    new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+                    {
+                        NoCache = true,
+                        NoStore = true
+                    };
                 return int.MaxValue;
             }
             else if (parameters.RateLimitPaths != null && parameters.RateLimitPaths.TryGetValue(context.Request.Path.Value, out int limit))
