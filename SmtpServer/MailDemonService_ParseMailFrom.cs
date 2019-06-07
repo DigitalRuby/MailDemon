@@ -50,7 +50,7 @@ namespace MailDemon
 
             // denote success for sender and binarymime
             string binaryMimeOk = (binaryMime ? " and BINARYMIME" : string.Empty);
-            string fromUserName = (fromUser == null ? fromAddress : fromUser.Name);
+            string fromUserName = (fromUser == null ? fromAddress : fromUser.UserName);
             await writer.WriteLineAsync($"250 2.1.0 sender {fromUserName}{binaryMimeOk} OK");
 
             // read to addresses

@@ -39,7 +39,7 @@ namespace MailDemon
                 Timeout = 60000 // 60 secs
             };
             await client.ConnectAsync(server, 25, MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable);
-            await client.AuthenticateAsync(new NetworkCredential(demon.Users.First().Name, demon.Users.First().Password));
+            await client.AuthenticateAsync(new NetworkCredential(demon.Users.First().UserName, demon.Users.First().Password));
 
             MimeMessage msg = new MimeMessage();
             msg.From.Add(demon.Users.First().MailAddress);

@@ -147,7 +147,6 @@ namespace MailDemon
 
         private async Task<MailDemonUser> AuthenticatePlain(Stream reader, StreamWriter writer, string line)
         {
-            MailDemonUser foundUser = null;
             if (line == "AUTH PLAIN")
             {
                 await writer.WriteLineAsync($"334");
@@ -158,40 +157,27 @@ namespace MailDemon
                 line = line.Substring(11);
             }
             string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(line)).Replace("\0", ":").Trim(':');
+            string userName = sentAuth;
+            string password = null;
+            int pos = sentAuth.IndexOf(':');
+            if (pos >= 0)
+            {
+                userName = sentAuth.Substring(0, pos).Trim();
+                password = sentAuth.Substring(++pos);
+            }
             foreach (MailDemonUser user in users)
             {
-                if (user.Authenticate(sentAuth))
+                if (user.Authenticate(userName, password))
                 {
-                    foundUser = user;
-                    break;
+                    MailDemonLog.Info("User {0} authenticated", user.UserName);
+                    await writer.WriteLineAsync($"235 2.7.0 Accepted");
+                    return user;
                 }
-            }
-            if (foundUser != null)
-            {
-                MailDemonLog.Info("User {0} authenticated", foundUser.Name);
-                await writer.WriteLineAsync($"235 2.7.0 Accepted");
-                return foundUser;
             }
 
             // fail
             MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
-            string userName = null;
-            for (int i = 0; i < sentAuth.Length; i++)
-            {
-                if (sentAuth[i] == '\0')
-                {
-                    userName = sentAuth.Substring(0, i);
-                    break;
-                }
-            }
-            string password = "?";
-            int pos = userName.IndexOf(':');
-            if (pos >= 0)
-            {
-                password = userName.Substring(pos + 1);
-                userName = userName.Substring(0, pos);
-            }
             return new MailDemonUser(userName, userName, password, userName, null, false);
         }
 
@@ -202,10 +188,12 @@ namespace MailDemon
             string userName = await ReadLineAsync(reader) ?? string.Empty;
             await writer.WriteLineAsync("334 UGFzc3dvcmQ6"); // pwd
             string password = await ReadLineAsync(reader) ?? string.Empty;
-            string sentAuth = Encoding.UTF8.GetString(Convert.FromBase64String(userName)) + ":" + Encoding.UTF8.GetString(Convert.FromBase64String(password));
+            userName = Encoding.UTF8.GetString(Convert.FromBase64String(userName)).Trim();
+            password = Encoding.UTF8.GetString(Convert.FromBase64String(password));
+            string sentAuth = userName + ":" + password;
             foreach (MailDemonUser user in users)
             {
-                if (user.Authenticate(sentAuth))
+                if (user.Authenticate(userName, password))
                 {
                     foundUser = user;
                     break;
@@ -213,7 +201,7 @@ namespace MailDemon
             }
             if (foundUser != null)
             {
-                MailDemonLog.Info("User {0} authenticated", foundUser.Name);
+                MailDemonLog.Info("User {0} authenticated", foundUser.UserName);
                 await writer.WriteLineAsync($"235 2.7.0 Accepted");
                 return foundUser;
             }
@@ -330,7 +318,7 @@ namespace MailDemon
                                 authenticatedUser = await AuthenticatePlain(reader, writer, line);
                                 if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
                                 {
-                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.Name, remoteEndPoint.Address.ToString());
+                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.UserName, remoteEndPoint.Address.ToString());
                                 }
                                 else
                                 {
@@ -342,7 +330,7 @@ namespace MailDemon
                                 authenticatedUser = await AuthenticateLogin(reader, writer, line);
                                 if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
                                 {
-                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.Name, remoteEndPoint.Address.ToString());
+                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.UserName, remoteEndPoint.Address.ToString());
                                 }
                                 else
                                 {
@@ -394,7 +382,7 @@ namespace MailDemon
                 }
                 catch (Exception ex)
                 {
-                    IncrementFailure(ipAddress, authenticatedUser?.Name);
+                    IncrementFailure(ipAddress, authenticatedUser?.UserName);
                     MailDemonLog.Error(ex);
                 }
                 finally
