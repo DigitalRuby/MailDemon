@@ -64,9 +64,6 @@ namespace MailDemon
         {
             MailDemonLog.Warn("Started bulk send for {0}", fullTemplateName);
 
-            List<MailListSubscription> subs = new List<MailListSubscription>();
-            string toDomain = null;
-            string addressDomain;
             DateTime now = DateTime.UtcNow;
             int count = 0;
 
@@ -80,50 +77,39 @@ namespace MailDemon
                 }
 
                 // mark subs as pending
-                IEnumerable<MailListSubscription> updates = db.Select<MailListSubscription>(s =>
+                IEnumerable<MailListSubscription> pendingSubs = db.Select<MailListSubscription>(s =>
                     s.ListName == list.Name && s.SubscribedDate != default && s.UnsubscribedDate == default && (all || !string.IsNullOrWhiteSpace(s.Result)),
                     (sub) =>
                     {
                         sub.MakePending(now, all);
+                        count++;
                         return true;
                     });
-                foreach (MailListSubscription sub in db.Select<MailListSubscription>(s => s.ListName == list.Name && s.Result == "Pending"))
+                Dictionary<string, List<MailListSubscription>> subsByDomain = new Dictionary<string, List<MailListSubscription>>();
+                foreach (MailListSubscription sub in pendingSubs)
                 {
-                    addressDomain = sub.EmailAddressDomain;
-                    if (toDomain != null && addressDomain != toDomain)
+                    string domain = sub.EmailAddressDomain;
+                    if (!subsByDomain.TryGetValue(domain, out List<MailListSubscription> subList))
                     {
-                        now = DateTime.UtcNow;
-                        try
-                        {
-                            await mailSender.SendMailAsync(toDomain, GetMessages(subs, mailCreator, list, fullTemplateName, callbackHandler));
-                        }
-                        catch (Exception ex)
-                        {
-                            MailDemonLog.Error(ex);
-                        }
-                        subs.Clear();
+                        subsByDomain[domain] = subList = new List<MailListSubscription>();
                     }
-                    toDomain = addressDomain;
                     sub.MailList = list;
                     sub.UnsubscribeUrl = string.Format(unsubscribeUrl, sub.UnsubscribeToken);
-                    subs.Add(sub);
-                    count++;
+                    subList.Add(sub);
                 }
-
-                // handle any left-over subs
-                if (subs.Count != 0)
+                pendingSubs = null;
+                foreach (KeyValuePair<string, List<MailListSubscription>> kv in subsByDomain)
                 {
-                    count += subs.Count;
+                    now = DateTime.UtcNow;
                     try
                     {
-                        await mailSender.SendMailAsync(toDomain, GetMessages(subs, mailCreator, list, fullTemplateName, callbackHandler));
+                        await mailSender.SendMailAsync(kv.Key, GetMessages(kv.Value, mailCreator, list, fullTemplateName, callbackHandler));
                     }
                     catch (Exception ex)
                     {
                         MailDemonLog.Error(ex);
                     }
                 }
-
                 MailDemonLog.Warn("Finished bulk send {0} messages for {1}", count, fullTemplateName);
             }
         }
