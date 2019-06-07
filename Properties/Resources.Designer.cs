@@ -174,6 +174,24 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Result.
+        /// </summary>
+        public static string LastResult {
+            get {
+                return ResourceManager.GetString("LastResult", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Timestamp.
+        /// </summary>
+        public static string LastTimestamp {
+            get {
+                return ResourceManager.GetString("LastTimestamp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to List has no subscribers.
         /// </summary>
         public static string ListHasNoSubscribers {
@@ -363,6 +381,15 @@ namespace MailDemon {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Send to All (uncheck to send to errors only).
+        /// </summary>
+        public static string SendToAll {
+            get {
+                return ResourceManager.GetString("SendToAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please confirm your subscription to the &apos;{0}&apos; mailing list.
         /// </summary>
         public static string SubjectConfirmSubscription {
@@ -431,6 +458,15 @@ namespace MailDemon {
         public static string Success {
             get {
                 return ResourceManager.GetString("Success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save first, then test, then send.
+        /// </summary>
+        public static string TemplateInstructions {
+            get {
+                return ResourceManager.GetString("TemplateInstructions", resourceCulture);
             }
         }
         

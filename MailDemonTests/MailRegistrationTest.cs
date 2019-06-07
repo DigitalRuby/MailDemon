@@ -224,12 +224,14 @@ namespace MailDemonTests
             return Task.FromResult(msg);
         }
 
-        Task IMailSender.SendMailAsync(string toDomain, IEnumerable<MimeMessage> messages)
+        Task IMailSender.SendMailAsync(string toDomain, IEnumerable<MailToSend> messages)
         {
-            MimeMessage message = messages.FirstOrDefault();
+            MailToSend mail = messages.FirstOrDefault();
+            MimeMessage message = mail?.Message;
             Assert.NotNull(message);
             Assert.AreEqual(subject, message.Subject);
             Assert.AreEqual("<html><body>Mail Body: " + templateName + "</body></html>", message.HtmlBody);
+            mail.Callback?.Invoke(mail.Subscription, string.Empty);
             sentMail++;
             return Task.CompletedTask;
         }

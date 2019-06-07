@@ -95,7 +95,7 @@ namespace MailDemon
                 db.Select<MailTemplate>(t => t.Name == fileNameNoExtension, (foundTemplate) =>
                 {
                     template = foundTemplate;
-                    return true;
+                    return false;
                 });
 
                 // views from db get layout default forced if no layout specified

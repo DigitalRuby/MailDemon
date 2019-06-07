@@ -53,6 +53,16 @@ namespace MailDemon
             return string.Empty;
         }
 
+        public MailListSubscription MakePending(DateTime dt, bool all)
+        {
+            if (all || string.IsNullOrWhiteSpace(Result) || Result == "Pending")
+            {
+                Result = "Pending";
+                ResultTimestamp = dt;
+            }
+            return this;
+        }
+
         public long Id { get; set; }
         public string ListName { get; set; }
         public string LanguageCode { get; set; }
@@ -63,6 +73,9 @@ namespace MailDemon
         public DateTime UnsubscribedDate { get; set; }
         public string SubscribeToken { get; set; }
         public string UnsubscribeToken { get; set; }
+        public string Result { get; set; }
+        public DateTime ResultTimestamp { get; set; }
+
         public string EmailAddressDomain
         {
             get
