@@ -30,10 +30,9 @@ namespace MailDemon
             {
                 throw new ArgumentException("Password must not be null or empty", nameof(password));
             }
-            Name = name.Trim();
-            DisplayName = (string.IsNullOrWhiteSpace(displayName) ? Name : displayName);
+            UserName = name.Trim();
+            DisplayName = (string.IsNullOrWhiteSpace(displayName) ? UserName : displayName);
             Password = password.ToSecureString();
-            PasswordPlain = string.Format("{0}:{1}", name, password).ToSecureString();
             if (!string.IsNullOrWhiteSpace(forwardAddress))
             {
                 ForwardAddress = new MailboxAddress(forwardAddress);
@@ -43,15 +42,16 @@ namespace MailDemon
         }
 
         /// <summary>
-        /// Authenticate against plain auth
+        /// Authenticate a user
         /// </summary>
-        /// <param name="authPlain">Plain auth. \0 should be replaced with (null) first.</param>
-        /// <returns>True if authenticate, false otherwise</returns>
-        public bool Authenticate(string authPlain)
+        /// <param name="userName">User name</param>
+        /// <param name="password">Password</param>
+        /// <returns>True if authenticated, false otherwise</returns>
+        public bool Authenticate(string userName, string password)
         {
-            string passwordPlain = PasswordPlain.ToUnsecureString();
-            MailDemonLog.Debug("Attempting auth {0} against user auth {1}", authPlain, passwordPlain);
-            return (passwordPlain == authPlain);
+            MailDemonLog.Debug("Attempting auth {0},{1} against user {2}", userName, password, UserName);
+            return (UserName.Equals(userName, StringComparison.OrdinalIgnoreCase) &&
+                Password.ToUnsecureString().Equals(password, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -61,14 +61,13 @@ namespace MailDemon
         public override string ToString()
         {
             string password = Password.ToUnsecureString();
-            string passwordPlain = PasswordPlain.ToUnsecureString();
-            return $"Name: {Name}, Display Name: {DisplayName}, Address: {MailAddress}, Forward: {ForwardAddress}, Password: {password}, Password Plain: {passwordPlain}";
+            return $"User Name: {UserName}, Display Name: {DisplayName}, Address: {MailAddress}, Forward: {ForwardAddress}, Password: {password}";
         }
 
         /// <summary>
         /// User name
         /// </summary>
-        public string Name { get; private set; }
+        public string UserName { get; private set; }
 
         /// <summary>
         /// Display name
@@ -79,11 +78,6 @@ namespace MailDemon
         /// User password
         /// </summary>
         public SecureString Password { get; private set; }
-
-        /// <summary>
-        /// User login+password for plain authentication
-        /// </summary>
-        public SecureString PasswordPlain { get; private set; }
 
         /// <summary>
         /// Email address object

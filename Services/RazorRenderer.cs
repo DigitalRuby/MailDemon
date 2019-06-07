@@ -35,6 +35,7 @@ namespace MailDemon
             this.rootPath = rootPath;
             services = new ServiceCollection();
             ConfigureDefaultServices(services);
+            services.AddTransient<IMailDemonDatabase>((provider) => new MailDemonDatabaseLiteDB());
             serviceProvider = services.BuildServiceProvider();
             viewRenderer = new ViewRenderService(rootPath, serviceProvider.GetRequiredService<IRazorViewEngine>(), null, null, serviceProvider);
         }
