@@ -38,11 +38,12 @@ namespace MailDemon
         /// <summary>
         /// Verify captcha from form
         /// </summary>
+        /// <param name="url">Url</param>
         /// <param name="response">Response</param>
         /// <param name="action">Action</param>
         /// <param name="remoteip">Remote ip</param>
         /// <returns>String error or null if success in verify</returns>
-        public async Task<string> Verify(string response, string action, string remoteip)
+        public async Task<string> Verify(string url, string response, string action, string remoteip)
         {
             /* {
                 "success": true|false,
@@ -52,7 +53,7 @@ namespace MailDemon
             } */
 
             WebClient client = new WebClient();
-            string jsonReceived = await client.DownloadStringTaskAsync(string.Format(url, SecretKey, response, remoteip));
+            string jsonReceived = await client.DownloadStringTaskAsync(string.Format(RecaptchaSettings.url, SecretKey, response, remoteip));
             JToken token = JToken.Parse(jsonReceived);
             string actualAction = token.Value<string>("action");
             bool success = token.Value<bool>("success");
@@ -61,18 +62,23 @@ namespace MailDemon
             {
                 return null;
             }
-
-            StringBuilder errorCodes = new StringBuilder("Action mismatch,");
+            StringBuilder errorCodes = new StringBuilder();
             JToken errors = token["error-codes"];
             if (errors != null)
             {
                 foreach (JToken errorToken in token["error-codes"])
                 {
-                    errorCodes.AppendFormat("{0},", errorToken.Value<string>());
+                    errorCodes.Append(errorToken.Value<string>());
+                    errorCodes.Append(',');
+                }
+                if (errorCodes.Length != 0)
+                {
+                    errorCodes.Length--;
                 }
             }
-            errorCodes.Length--;
-            return errorCodes.ToString();
+            MailDemonLog.Warn("Catpcha failed, url: {0}, success: {1}, score: {2}, action: {3} actual action: {4}, error-codes: {5}",
+                url, success, score, action, actualAction, errorCodes);
+            return "Unknown Error";
         }
     }
 }

@@ -137,7 +137,7 @@ namespace MailDemon
             string error = null;
             if (RequireCaptcha && formFields.TryGetValue("captcha", out string captchaValue))
             {
-                error = await MailDemonWebApp.Instance.Recaptcha.Verify(captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
+                error = await MailDemonWebApp.Instance.Recaptcha.Verify(Request.GetDisplayUrl(), captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
             }
             MailListSubscription model = new MailListSubscription { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             MailList list;
