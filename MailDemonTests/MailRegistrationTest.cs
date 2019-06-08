@@ -21,7 +21,7 @@ using MailKit.Net.Smtp;
 
 namespace MailDemonTests
 {
-    public class MailRegistrationTest : ITempDataProvider, IMailSender, IAuthority
+    public class MailRegistrationTest : ITempDataProvider, IMailSender, IAuthority, IMailDemonDatabaseProvider
     {
         private const string listName = "TestList";
         private const string scheme = "https";
@@ -46,6 +46,7 @@ namespace MailDemonTests
         private string expectedBody;
         private int sentMailCount;
         private MailCreator mailCreator;
+        private IMailDemonDatabaseProvider dbProvider;
 
         private void Cleanup()
         {
@@ -58,7 +59,7 @@ namespace MailDemonTests
 
         private string Subscribe()
         {
-            using (var db = new MailDemonDatabase())
+            using (var db = dbProvider.GetDatabase())
             {
                 db.Lists.Add(new MailList { Name = listName, FromEmailAddress = fromAddress, FromEmailName = fromName,
                     Company = company, PhysicalAddress = fullAddress, Website = website });
@@ -77,7 +78,7 @@ namespace MailDemonTests
 
             // check database for registration
             MailListSubscription reg = null;
-            using (var db = new MailDemonDatabase())
+            using (var db = dbProvider.GetDatabase())
             {
                 reg = db.Subscriptions.FirstOrDefault();
                 Assert.NotNull(reg);
@@ -99,13 +100,13 @@ namespace MailDemonTests
 
             // perform the final subscribe action
             expectedSubject = "Hello2 Bob";
-            expectedBody = "<!-- Subject: Hello2 Bob --> Body2: Last Name Smith, Subscribe: https://testdomain.com/SubscribeWelcome/TestList?token={subscribe-token}, Unsubscribe: https://testdomain.com/Unsubscribe/TestList?token={unsubscribe-token}";
+            expectedBody = "<!-- Subject: Hello2 Bob --> Body2: Last Name Smith, Subscribe: , Unsubscribe: https://testdomain.com/Unsubscribe/TestList?token={unsubscribe-token}";
             homeController.SubscribeWelcome(listName, reg.SubscribeToken).Sync();
             Assert.AreEqual(1, sentMailCount);
             sentMailCount = 0;
 
             // validate there is an unsubscribe in the db
-            using (var db = new MailDemonDatabase())
+            using (var db = dbProvider.GetDatabase())
             {
                 reg = db.Subscriptions.FirstOrDefault();
                 Assert.AreEqual(listName, reg.ListName);
@@ -125,7 +126,7 @@ namespace MailDemonTests
             homeController.Unsubscribe(listName, unsubscribeToken);
 
             // validate that we are unsubscribed
-            using (var db = new MailDemonDatabase())
+            using (var db = dbProvider.GetDatabase())
             {
                 MailListSubscription reg = db.Subscriptions.FirstOrDefault();
                 Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
@@ -136,7 +137,8 @@ namespace MailDemonTests
         public void Setup()
         {
             Cleanup();
-            using (var db = new MailDemonDatabase())
+            dbProvider = this as IMailDemonDatabaseProvider;
+            using (var db = dbProvider.GetDatabase())
             {
                 db.Initialize();
                 MailList list = new MailList
@@ -169,7 +171,7 @@ namespace MailDemonTests
                 db.SaveChanges();
             }
             mailCreator = new MailCreator(new RazorRenderer(AppDomain.CurrentDomain.BaseDirectory)) { IgnoreElements = authority };
-            homeController = new HomeController(new MailDemonDatabase(), mailCreator, this, null, this)
+            homeController = new HomeController(this, mailCreator, this, null, this)
             {
                 RequireCaptcha = false,
                 TempData = new TempDataDictionary(httpContext, this)
@@ -205,7 +207,7 @@ namespace MailDemonTests
             }).Sync();
 
             // check database for registration not exist
-            using (var db = new MailDemonDatabase())
+            using (var db = dbProvider.GetDatabase())
             {
                 Assert.AreEqual(0, db.Subscriptions.Count());
             }
@@ -237,6 +239,11 @@ namespace MailDemonTests
             mail.Callback?.Invoke(mail.Subscription, string.Empty);
             sentMailCount++;
             return Task.CompletedTask;
+        }
+
+        MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase()
+        {
+            return new MailDemonDatabase();
         }
     }
 }
