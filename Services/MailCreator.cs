@@ -38,7 +38,6 @@ namespace MailDemon
 
         private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject viewBag, bool allowDefault, Func<string, string, string> htmlModifier)
         {
-            viewBag = (viewBag ?? new ExpandoObject());
             if (!(viewBag is IDictionary<string, object> viewBagDictionary))
             {
                 throw new ArgumentException($"Parameter {nameof(viewBag)} must implement IDictionary<string, object>");

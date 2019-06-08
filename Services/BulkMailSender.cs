@@ -36,7 +36,7 @@ namespace MailDemon
         private readonly IServiceProvider serviceProvider;
 
         // TODO: Use async enumerator
-        private IEnumerable<MailToSend> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
+        private IEnumerable<MailToSend> GetMessages(List<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
             ExpandoObject viewBag, string fullTemplateName, Action<MailListSubscription, string> callback)
         {
             foreach (MailListSubscription sub in subs)
@@ -94,8 +94,8 @@ namespace MailDemon
                 // preventing locking errors, especially with sqlite drivers
                 using (var dbBulk = serviceProvider.GetService<MailDemonDatabase>())
                 {
-                    IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> pendingSubs = dbBulk.BeginBulkEmail(list, unsubscribeUrl, all);
-                    foreach (KeyValuePair<string, IEnumerable<MailListSubscription>> sub in pendingSubs)
+                    IEnumerable<KeyValuePair<string, List<MailListSubscription>>> pendingSubs = dbBulk.BeginBulkEmail(list, unsubscribeUrl, all);
+                    foreach (KeyValuePair<string, List<MailListSubscription>> sub in pendingSubs)
                     {
                         now = DateTime.UtcNow;
                         try

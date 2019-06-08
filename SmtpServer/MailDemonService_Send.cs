@@ -57,7 +57,10 @@ namespace MailDemon
                             string host = ip.HostName;
                             try
                             {
-                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
+                                if (!DisableSending)
+                                {
+                                    await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
+                                }
                                 connected = true;
                                 foreach (MailToSend message in messages)
                                 {
