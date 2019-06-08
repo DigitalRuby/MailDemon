@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
+using System.Dynamic;
 
 namespace MailDemon
 {
@@ -20,11 +21,12 @@ namespace MailDemon
         /// <param name="list">List to send email from</param>
         /// <param name="mailCreator">Creates the email message</param>
         /// <param name="mailSender">Sends the email message</param>
+        /// <param name="viewBag">View bag</param>
         /// <param name="all">True to send to all subscribers, false to only send to subscribers with a non-empty result (error state)</param>
         /// <param name="fullTemplateName">The template to create, i.e. List@TemplateName</param>
         /// <param name="unsubscribeUrl">The unsubscribe url to put in the message, {0} is the unsubscribe token</param>
         /// <returns>Task</returns>
-        Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, bool all,
+        Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, ExpandoObject viewBag, bool all,
             string fullTemplateName, string unsubscribeUrl);
     }
 
@@ -34,11 +36,11 @@ namespace MailDemon
 
         // TODO: Use async enumerator
         private IEnumerable<MailToSend> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
-            string fullTemplateName, Action<MailListSubscription, string> callback)
+            ExpandoObject viewBag, string fullTemplateName, Action<MailListSubscription, string> callback)
         {
             foreach (MailListSubscription sub in subs)
             {
-                MimeMessage message = mailCreator.CreateMailAsync(fullTemplateName, sub, null, null).Sync();
+                MimeMessage message = mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null).Sync();
                 message.From.Clear();
                 message.To.Clear();
                 if (string.IsNullOrWhiteSpace(list.FromEmailName))
@@ -59,8 +61,8 @@ namespace MailDemon
             this.serviceProvider = serviceProvider;
         }
 
-        public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, bool all,
-            string fullTemplateName, string unsubscribeUrl)
+        public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, ExpandoObject viewBag,
+            bool all, string fullTemplateName, string unsubscribeUrl)
         {
             MailDemonLog.Warn("Started bulk send for {0}", fullTemplateName);
 
@@ -84,7 +86,7 @@ namespace MailDemon
                     now = DateTime.UtcNow;
                     try
                     {
-                        await mailSender.SendMailAsync(sub.Key, GetMessages(sub.Value, mailCreator, list, fullTemplateName, callbackHandler));
+                        await mailSender.SendMailAsync(sub.Key, GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler));
                     }
                     catch (Exception ex)
                     {
