@@ -135,7 +135,7 @@ namespace MailDemon
             }
             List<MailListSubscription> subs = new List<MailListSubscription>();
             string domain = null;
-            foreach (MailListSubscription sub in Subscriptions.Where(s => s.Result == "Pending").OrderBy(s => s.EmailAddressDomain))
+            foreach (MailListSubscription sub in Subscriptions.Where(s => s.ListName == list.Name && s.Result == "Pending").OrderBy(s => s.EmailAddressDomain))
             {
                 if (sub.EmailAddressDomain != domain)
                 {
