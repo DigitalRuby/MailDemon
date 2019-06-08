@@ -37,6 +37,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.DataProtection;
 
 #endregion Imports
 
@@ -316,6 +317,7 @@ namespace MailDemon
                 Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(Configuration);
                 services.AddTransient<MailDemonDatabase>((provider) => new MailDemonDatabase(dbOptions));
                 services.AddHostedService<SubscriptionCleanup>();
+                services.AddDataProtection().SetApplicationName(GetType().Name).PersistKeysToFileSystem(new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory));
                 services.AddMvc((options) =>
                 {
 
