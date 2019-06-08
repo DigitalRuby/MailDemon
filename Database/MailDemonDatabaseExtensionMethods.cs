@@ -114,7 +114,7 @@ namespace MailDemon
             }
             else
             {
-                db.Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result <> '')", DateTime.UtcNow, list.Name);
+                db.Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result <> ''", DateTime.UtcNow, list.Name);
             }
             List<MailListSubscription> subs = new List<MailListSubscription>();
             string domain = null;
