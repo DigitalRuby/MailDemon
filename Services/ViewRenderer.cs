@@ -99,6 +99,10 @@ namespace MailDemon
                 }
             }
             StringWriter sw = new StringWriter();
+            if (tempDataProvider == null)
+            {
+                throw new ArgumentNullException(nameof(tempDataProvider));
+            }
             var viewContext = new ViewContext
             (
                 actionContext,

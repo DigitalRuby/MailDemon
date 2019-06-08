@@ -44,7 +44,15 @@ namespace MailDemon
                 MimeMessage message;
                 lock (mailCreator)
                 {
-                    message = mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null).Sync();
+                    try
+                    {
+                        message = mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null).Sync();
+                    }
+                    catch (Exception ex)
+                    {
+                        MailDemonLog.Error(ex);
+                        continue;
+                    }
                 }
                 message.From.Clear();
                 message.To.Clear();
@@ -82,6 +90,9 @@ namespace MailDemon
                 {
                     lock (db)
                     {
+                        // although this is slow, it is required as we do not want to double email people in the event
+                        // that server reboots, loses power, etc. for every message we have to mark that person
+                        // with the correct status immediately
                         _sub.Result = error;
                         _sub.ResultTimestamp = DateTime.UtcNow;
                         db.Update(_sub);
