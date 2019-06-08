@@ -127,11 +127,11 @@ namespace MailDemon
         {
             if (all)
             {
-                Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0}", DateTime.UtcNow);
+                Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1}", DateTime.UtcNow, list.Name);
             }
             else
             {
-                Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE Result IN ('', 'Pending')", DateTime.UtcNow);
+                Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result IN ('', 'Pending')", DateTime.UtcNow);
             }
             List<MailListSubscription> subs = new List<MailListSubscription>();
             string domain = null;
