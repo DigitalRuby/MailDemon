@@ -42,7 +42,7 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
-    public class MailDemonWebApp : IStartup, IServiceProvider, IAuthority, IDisposable
+    public class MailDemonWebApp : IStartup, IServiceProvider, IAuthority, IMailDemonDatabaseProvider, IDisposable
     {
         private IWebHost host;
         private IServiceProvider serviceProvider;
@@ -309,6 +309,7 @@ namespace MailDemon
                 services.AddSingleton<IBulkMailSender>((provider) => new BulkMailSender(provider));
                 services.AddSingleton<IViewRenderService, ViewRenderService>();
                 services.AddSingleton<IAuthority>(this);
+                services.AddSingleton<IMailDemonDatabaseProvider>(this);
                 services.AddTransient<IMailCreator, MailCreator>();
                 Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(Configuration);
                 services.AddTransient<MailDemonDatabase>((provider) => new MailDemonDatabase(dbOptions));
@@ -424,6 +425,15 @@ namespace MailDemon
         object IServiceProvider.GetService(Type serviceType)
         {
             return serviceProvider.GetService(serviceType);
+        }
+
+        /// <summary>
+        /// IMailDemonDatabaseProvider
+        /// </summary>
+        /// <returns>MailDemonDatabase</returns>
+        MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase()
+        {
+            return serviceProvider.GetService<MailDemonDatabase>();
         }
     }
 }

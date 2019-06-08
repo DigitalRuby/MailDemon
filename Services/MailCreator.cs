@@ -47,6 +47,10 @@ namespace MailDemon
             {
                 viewBagDictionary["Layout"] = "/Views/_LayoutMail.cshtml";
             }
+            if (!viewBagDictionary.ContainsKey("BaseUrl"))
+            {
+                throw new ArgumentException($"Parameter {nameof(viewBag)} must provide a BaseUrl property, i.e. http://yourwebsite.com");
+            }
             string html = await templateEngine.RenderViewToStringAsync(templateName, model, viewBag);
 
             if (html != null)

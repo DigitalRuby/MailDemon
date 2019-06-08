@@ -123,39 +123,6 @@ namespace MailDemon
             }
         }
 
-        public IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> BeginBulkEmail(MailList list, string unsubscribeUrl, bool all)
-        {
-            if (all)
-            {
-                Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1}", DateTime.UtcNow, list.Name);
-            }
-            else
-            {
-                Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result IN ('', 'Pending')", DateTime.UtcNow);
-            }
-            List<MailListSubscription> subs = new List<MailListSubscription>();
-            string domain = null;
-            foreach (MailListSubscription sub in Subscriptions.Where(s => s.ListName == list.Name && s.Result == "Pending").OrderBy(s => s.EmailAddressDomain))
-            {
-                if (sub.EmailAddressDomain != domain)
-                {
-                    if (subs.Count != 0)
-                    {
-                        yield return new KeyValuePair<string, IEnumerable<MailListSubscription>>(domain, subs);
-                        subs.Clear();
-                    }
-                    domain = sub.EmailAddressDomain;
-                }
-                sub.MailList = list;
-                sub.UnsubscribeUrl = string.Format(unsubscribeUrl, sub.UnsubscribeToken);
-                subs.Add(sub);
-            }
-            if (subs.Count != 0)
-            {
-                yield return new KeyValuePair<string, IEnumerable<MailListSubscription>>(domain, subs);
-            }
-        }
-
         public DbSet<MailListSubscription> Subscriptions { get; set; }
         public DbSet<MailList> Lists { get; set; }
         public DbSet<MailTemplate> Templates { get; set; }
@@ -209,5 +176,17 @@ namespace MailDemon
             IConfiguration config = new ConfigurationBuilder().AddJsonFile(jsonPath).Build();
             return new MailDemonDatabase(ConfigureDB(config));
         }
+    }
+
+    /// <summary>
+    /// Provides mail demon database
+    /// </summary>
+    public interface IMailDemonDatabaseProvider
+    {
+        /// <summary>
+        /// Get a database instance. Must dispose when done with.
+        /// </summary>
+        /// <returns>Database</returns>
+        MailDemonDatabase GetDatabase();
     }
 }

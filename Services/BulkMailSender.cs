@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
 using System.Dynamic;
+using System.Diagnostics;
 
 namespace MailDemon
 {
@@ -40,7 +41,11 @@ namespace MailDemon
         {
             foreach (MailListSubscription sub in subs)
             {
-                MimeMessage message = mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null).Sync();
+                MimeMessage message;
+                lock (mailCreator)
+                {
+                    message = mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null).Sync();
+                }
                 message.From.Clear();
                 message.To.Clear();
                 if (string.IsNullOrWhiteSpace(list.FromEmailName))
@@ -68,32 +73,46 @@ namespace MailDemon
 
             DateTime now = DateTime.UtcNow;
             int count = 0;
+            List<Task> pendingTasks = new List<Task>();
+            Stopwatch timer = Stopwatch.StartNew();
 
             using (var db = serviceProvider.GetService<MailDemonDatabase>())
             {
                 void callbackHandler(MailListSubscription _sub, string error)
                 {
-                    _sub.Result = error;
-                    _sub.ResultTimestamp = DateTime.UtcNow;
-                    db.Update(_sub);
-                    db.SaveChanges();
+                    lock (db)
+                    {
+                        _sub.Result = error;
+                        _sub.ResultTimestamp = DateTime.UtcNow;
+                        db.Update(_sub);
+                        db.SaveChanges();
+                        count++;
+                    }
                 }
 
-                // mark subs as pending
-                IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> pendingSubs = db.BeginBulkEmail(list, unsubscribeUrl, all);
-                foreach (KeyValuePair<string, IEnumerable<MailListSubscription>> sub in pendingSubs)
+                // use a separate database instance to do the query, that way we can update records in our other database instance
+                // preventing locking errors, especially with sqlite drivers
+                using (var dbBulk = serviceProvider.GetService<MailDemonDatabase>())
                 {
-                    now = DateTime.UtcNow;
-                    try
+                    IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> pendingSubs = dbBulk.BeginBulkEmail(list, unsubscribeUrl, all);
+                    foreach (KeyValuePair<string, IEnumerable<MailListSubscription>> sub in pendingSubs)
                     {
-                        await mailSender.SendMailAsync(sub.Key, GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler));
-                    }
-                    catch (Exception ex)
-                    {
-                        MailDemonLog.Error(ex);
+                        now = DateTime.UtcNow;
+                        try
+                        {
+                            Task task = mailSender.SendMailAsync(sub.Key, GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler));
+                            pendingTasks.Add(task);
+                        }
+                        catch (Exception ex)
+                        {
+                            MailDemonLog.Error(ex);
+                        }
                     }
                 }
-                MailDemonLog.Warn("Finished bulk send {0} messages for {1}", count, fullTemplateName);
+
+                await Task.WhenAll(pendingTasks);
+
+                MailDemonLog.Warn("Finished bulk send {0} messages for {1} in {2:0.00} seconds.", count, fullTemplateName, timer.Elapsed.TotalSeconds);
             }
         }
     }
