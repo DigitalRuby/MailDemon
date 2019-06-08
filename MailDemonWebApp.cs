@@ -109,6 +109,7 @@ namespace MailDemon
                 string migrationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
                 if (File.Exists(migrationPath))
                 {
+                    MailDemonLog.Warn("Migrating from old database {0}", migrationPath);
                     var tran = db.Database.BeginTransaction();
                     try
                     {
@@ -130,6 +131,7 @@ namespace MailDemon
                             db.SaveChanges();
                             tran.Commit();
                             tran = null;
+                            MailDemonLog.Warn("Migration success");
                         }
                         File.Delete(migrationPath);
                     }
