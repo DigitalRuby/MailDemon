@@ -545,7 +545,7 @@ namespace MailDemon
                 return NotFound();
             }
             string unsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{id}?token={{0}}";
-            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, all, id, unsubscribeUrl).ConfigureAwait(false).GetAwaiter();
+            bulkMailSender.SendBulkMail(list, mailCreator, mailSender, GetViewBagForTemplate(), all, id, unsubscribeUrl).ConfigureAwait(false).GetAwaiter();
             TempData["Message"] = Resources.SendStarted;
             return RedirectToAction(nameof(HomeController.EditTemplate), new { id });
         }

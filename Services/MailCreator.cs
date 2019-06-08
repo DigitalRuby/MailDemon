@@ -36,15 +36,18 @@ namespace MailDemon
     {
         private readonly IViewRenderService templateEngine;
 
-        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Func<string, string, string> htmlModifier)
+        private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject viewBag, bool allowDefault, Func<string, string, string> htmlModifier)
         {
-            extraInfo = (extraInfo ?? new ExpandoObject());
-            IDictionary<string, object> extraInfoDict = extraInfo as IDictionary<string, object>;
-            if (!extraInfoDict.ContainsKey("Layout"))
+            viewBag = (viewBag ?? new ExpandoObject());
+            if (!(viewBag is IDictionary<string, object> viewBagDictionary))
             {
-                extraInfoDict["Layout"] = "/Views/_LayoutMail.cshtml";
+                throw new ArgumentException($"Parameter {nameof(viewBag)} must implement IDictionary<string, object>");
             }
-            string html = await templateEngine.RenderViewToStringAsync(templateName, model, extraInfo);
+            if (!viewBagDictionary.ContainsKey("Layout"))
+            {
+                viewBagDictionary["Layout"] = "/Views/_LayoutMail.cshtml";
+            }
+            string html = await templateEngine.RenderViewToStringAsync(templateName, model, viewBag);
 
             if (html != null)
             {
@@ -78,7 +81,7 @@ namespace MailDemon
             else if (allowDefault)
             {
                 templateName = MailTemplate.GetTemplateName(templateName);
-                return await CreateMailInternalAsync(templateName + "Default", model, extraInfo, false, null);
+                return await CreateMailInternalAsync(templateName + "Default", model, viewBag, false, null);
             }
 
             throw new ArgumentException("No view found for name " + templateName);
