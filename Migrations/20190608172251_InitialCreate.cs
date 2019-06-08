@@ -44,15 +44,7 @@ namespace MailDemon.Migrations
                     ResultTimestamp = table.Column<DateTime>(nullable: false),
                     EmailAddress = table.Column<string>(nullable: true),
                     EmailAddressDomain = table.Column<string>(nullable: true),
-                    FieldsJson = table.Column<string>(nullable: true),
-                    FirstName = table.Column<string>(nullable: true),
-                    LastName = table.Column<string>(nullable: true),
-                    Company = table.Column<string>(nullable: true),
-                    Phone = table.Column<string>(nullable: true),
-                    Address = table.Column<string>(nullable: true),
-                    City = table.Column<string>(nullable: true),
-                    Region = table.Column<string>(nullable: true),
-                    Country = table.Column<string>(nullable: true)
+                    FieldsJson = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {

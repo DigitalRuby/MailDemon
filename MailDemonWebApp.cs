@@ -99,6 +99,48 @@ namespace MailDemon
             
         }
 
+        private void InitializeDB(IApplicationBuilder app)
+        {
+            using (var db = app.ApplicationServices.GetService<MailDemonDatabase>())
+            {
+                db.Initialize();
+
+                // migrate away from litedb
+                string migrationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
+                if (File.Exists(migrationPath))
+                {
+                    var tran = db.Database.BeginTransaction();
+                    try
+                    {
+                        using (FileStream fs = File.OpenRead(migrationPath))
+                        using (LiteDB.LiteDatabase oldDb = new LiteDB.LiteDatabase(fs))
+                        {
+                            foreach (MailList list in oldDb.GetCollection<MailList>().FindAll())
+                            {
+                                db.Lists.Add(list);
+                            }
+                            foreach (MailTemplate template in oldDb.GetCollection<MailTemplate>().FindAll())
+                            {
+                                db.Templates.Add(template);
+                            }
+                            foreach (MailListSubscription sub in oldDb.GetCollection<MailListSubscription>().FindAll())
+                            {
+                                db.Subscriptions.Add(sub);
+                            }
+                            db.SaveChanges();
+                            tran.Commit();
+                            tran = null;
+                        }
+                        File.Delete(migrationPath);
+                    }
+                    finally
+                    {
+                        tran?.Rollback();
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -314,10 +356,7 @@ namespace MailDemon
 
             if (enableWeb)
             {
-                using (var db = app.ApplicationServices.GetService<MailDemonDatabase>())
-                {
-                    db.Initialize();
-                }
+                InitializeDB(app);
                 app.UseStatusCodePagesWithReExecute("/Error/{0}");
                 if (env.IsDevelopment())
                 {

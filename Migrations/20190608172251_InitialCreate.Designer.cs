@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MailDemon.Migrations
 {
     [DbContext(typeof(MailDemonDatabase))]
-    [Migration("20190607221137_InitialCreate")]
+    [Migration("20190608172251_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -49,14 +49,6 @@ namespace MailDemon.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("Address");
-
-                    b.Property<string>("City");
-
-                    b.Property<string>("Company");
-
-                    b.Property<string>("Country");
-
                     b.Property<string>("EmailAddress");
 
                     b.Property<string>("EmailAddressDomain");
@@ -65,19 +57,11 @@ namespace MailDemon.Migrations
 
                     b.Property<string>("FieldsJson");
 
-                    b.Property<string>("FirstName");
-
                     b.Property<string>("IPAddress");
 
                     b.Property<string>("LanguageCode");
 
-                    b.Property<string>("LastName");
-
                     b.Property<string>("ListName");
-
-                    b.Property<string>("Phone");
-
-                    b.Property<string>("Region");
 
                     b.Property<string>("Result");
 
