@@ -72,7 +72,7 @@ namespace MailDemon
                                         {
                                             MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
                                             await client.SendAsync(message.Message, cancelToken).TimeoutAfter(30000);
-                                            MailDemonLog.Warn("Success message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
+                                            MailDemonLog.Debug("Success message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
                                         }
 
                                         // callback success
@@ -80,7 +80,7 @@ namespace MailDemon
                                     }
                                     catch (Exception exInner)
                                     {
-                                        MailDemonLog.Warn("Fail message to host {0}, from {1}, to {2} {3}", host, message.Message.From, message.Message.To, exInner);
+                                        MailDemonLog.Debug("Fail message to host {0}, from {1}, to {2} {3}", host, message.Message.From, message.Message.To, exInner);
 
                                         // TODO: Handle SmtpCommandException: Greylisted, please try again in 180 seconds
                                         // callback error
