@@ -85,13 +85,28 @@ namespace MailDemon
             }
         }
 
+        [NotMapped]
         public string FirstName { get => Field("FirstName"); set => SetField("FirstName", value); }
+
+        [NotMapped]
         public string LastName { get => Field("LastName"); set => SetField("LastName", value); }
+
+        [NotMapped]
         public string Company { get => Field("Company"); set => SetField("Company", value); }
+
+        [NotMapped]
         public string Phone { get => Field("Phone"); set => SetField("Phone", value); }
+
+        [NotMapped]
         public string Address { get => Field("Address"); set => SetField("Address", value); }
+
+        [NotMapped]
         public string City { get => Field("City"); set => SetField("City", value); }
+
+        [NotMapped]
         public string Region { get => Field("Region"); set => SetField("Region", value); }
+
+        [NotMapped]
         public string Country { get => Field("Country"); set => SetField("Country", value); }
 
         [NotMapped]

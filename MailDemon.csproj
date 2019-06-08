@@ -25,6 +25,7 @@
     <PackageReference Include="ARSoft.Tools.Net.Core" Version="2.3.0" />
     <PackageReference Include="DnsClient" Version="1.2.0" />
     <PackageReference Include="IPAddressRange" Version="3.2.0" />
+    <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="MailKit" Version="2.1.5.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
