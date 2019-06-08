@@ -10,11 +10,9 @@ namespace MailDemon
     public class BaseModel
     {
         [NotMapped]
-        [LiteDB.BsonIgnore]
         public string Message { get; set; }
 
         [NotMapped]
-        [LiteDB.BsonIgnore]
         public bool Error { get; set; }
     }
 

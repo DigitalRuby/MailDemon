@@ -10,7 +10,7 @@ Thanks to MimeKit and MailKit for their tremendous codebase.
 
 Mail Demon is great for sending notifications, announcements and even text messages. See <a href='http://smsemailgateway.com/'>SMS Email Gateway</a> for more information on text messages.
 
-## Project Setup Instructions:
+## Project Setup Instructions
 - Download code, open in Visual Studio or VS Code, set release configuration.
 - Update appsettings.json with your settings. I recommend an SSL certificate. Lets encrypt is a great option. Make sure to set the users to something other than the default.
 - Right click on project, select 'publish' option.
@@ -94,6 +94,9 @@ Mail Demon contains an integrated mail list management website and mail list sen
   - SubscribeWelcome (see SubscribeWelcomeDefault.cshtml). This is the welcome email to notify of the active subscription, along with an unsubscribe link.
 - Note that the MailDemon.db file contains all the lists, templates, subscribers, etc. Backup this file regularly!
 - You can also store your templates in the Views/Shared directory. Follow the same naming convention for a template name 
+
+## Database
+Mail Demon uses sqlite by default with entity framework. In the future, adding MySQL, SQL Server and Azure are desired.
 
 Enjoy!
 

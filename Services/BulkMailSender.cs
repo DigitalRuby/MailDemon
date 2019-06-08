@@ -67,43 +67,24 @@ namespace MailDemon
             DateTime now = DateTime.UtcNow;
             int count = 0;
 
-            using (var db = serviceProvider.GetService<IMailDemonDatabase>())
+            using (var db = serviceProvider.GetService<MailDemonDatabase>())
             {
                 void callbackHandler(MailListSubscription _sub, string error)
                 {
                     _sub.Result = error;
                     _sub.ResultTimestamp = DateTime.UtcNow;
                     db.Update(_sub);
+                    db.SaveChanges();
                 }
 
                 // mark subs as pending
-                IEnumerable<MailListSubscription> pendingSubs = db.Select<MailListSubscription>(s =>
-                    s.ListName == list.Name && s.SubscribedDate != default && s.UnsubscribedDate == default && (all || !string.IsNullOrWhiteSpace(s.Result)),
-                    (sub) =>
-                    {
-                        sub.MakePending(now, all);
-                        count++;
-                        return true;
-                    });
-                Dictionary<string, List<MailListSubscription>> subsByDomain = new Dictionary<string, List<MailListSubscription>>();
-                foreach (MailListSubscription sub in pendingSubs)
-                {
-                    string domain = sub.EmailAddressDomain;
-                    if (!subsByDomain.TryGetValue(domain, out List<MailListSubscription> subList))
-                    {
-                        subsByDomain[domain] = subList = new List<MailListSubscription>();
-                    }
-                    sub.MailList = list;
-                    sub.UnsubscribeUrl = string.Format(unsubscribeUrl, sub.UnsubscribeToken);
-                    subList.Add(sub);
-                }
-                pendingSubs = null;
-                foreach (KeyValuePair<string, List<MailListSubscription>> kv in subsByDomain)
+                IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> pendingSubs = db.BeginBulkEmail(list, unsubscribeUrl, all);
+                foreach (KeyValuePair<string, IEnumerable<MailListSubscription>> sub in pendingSubs)
                 {
                     now = DateTime.UtcNow;
                     try
                     {
-                        await mailSender.SendMailAsync(kv.Key, GetMessages(kv.Value, mailCreator, list, fullTemplateName, callbackHandler));
+                        await mailSender.SendMailAsync(sub.Key, GetMessages(sub.Value, mailCreator, list, fullTemplateName, callbackHandler));
                     }
                     catch (Exception ex)
                     {

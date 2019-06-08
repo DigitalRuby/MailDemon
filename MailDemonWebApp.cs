@@ -42,7 +42,7 @@ using Newtonsoft.Json;
 
 namespace MailDemon
 {
-    public class MailDemonWebApp : IStartup, IServiceProvider, IDisposable
+    public class MailDemonWebApp : IStartup, IServiceProvider, IAuthority, IDisposable
     {
         private IWebHost host;
         private IServiceProvider serviceProvider;
@@ -85,7 +85,7 @@ namespace MailDemon
         public string ServerUrl { get; private set; }
 
         /// <summary>
-        /// Scheme, host and optional port
+        /// Authority (base url)
         /// </summary>
         public string Authority { get; private set; }
 
@@ -266,8 +266,10 @@ namespace MailDemon
                 services.AddSingleton<IMailSender>((provider) => mailService);
                 services.AddSingleton<IBulkMailSender>((provider) => new BulkMailSender(provider));
                 services.AddSingleton<IViewRenderService, ViewRenderService>();
+                services.AddSingleton<IAuthority>(this);
                 services.AddTransient<IMailCreator, MailCreator>();
-                services.AddTransient<IMailDemonDatabase>((provider) => new MailDemonDatabaseLiteDB());
+                Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(Configuration);
+                services.AddTransient<MailDemonDatabase>((provider) => new MailDemonDatabase(dbOptions));
                 services.AddHostedService<SubscriptionCleanup>();
                 services.AddMvc((options) =>
                 {
@@ -312,6 +314,10 @@ namespace MailDemon
 
             if (enableWeb)
             {
+                using (var db = app.ApplicationServices.GetService<MailDemonDatabase>())
+                {
+                    db.Initialize();
+                }
                 app.UseStatusCodePagesWithReExecute("/Error/{0}");
                 if (env.IsDevelopment())
                 {
