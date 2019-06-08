@@ -21,13 +21,17 @@ namespace MailDemonTests
         public void Setup()
         {
             TearDown();
+            using (var db = new MailDemonDatabase())
+            {
+                db.Initialize();
+            }
             viewRenderer = new RazorRenderer(Path.Combine(Directory.GetCurrentDirectory(), "../../.."));
         }
 
         [TearDown]
         public void TearDown()
         {
-            MailDemonDatabaseLiteDB.DeleteDatabase(true);
+            MailDemonDatabase.DeleteDatabase(true);
         }
 
         [Test]
@@ -35,10 +39,11 @@ namespace MailDemonTests
         {
             MailTemplate template = new MailTemplate { Name = "test", Text = "<b>Hello World</b> @Model.FirstName" };
 
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
-                db.Insert<MailList>(new MailList { Name = "test" });
-                db.Insert<MailTemplate>(template);
+                db.Lists.Add(new MailList { Name = "test" });
+                db.Templates.Add(template);
+                db.SaveChanges();
             }
 
             string html = viewRenderer.RenderViewToStringAsync("test", model, isMainPage: false).Sync();
@@ -50,9 +55,10 @@ namespace MailDemonTests
             template.LastModified = DateTime.UtcNow;
             template.Dirty = true;
 
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
                 db.Update(template);
+                db.SaveChanges();
             }
 
             html = viewRenderer.RenderViewToStringAsync("test", model, isMainPage: false).Sync();

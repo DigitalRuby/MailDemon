@@ -32,12 +32,22 @@ namespace MailDemon
     [ResponseCache(NoStore = true)]
     public class HomeController : Controller
     {
-        private readonly IMailDemonDatabase db;
+        private readonly MailDemonDatabase db;
         private readonly IMailCreator mailCreator;
         private readonly IMailSender mailSender;
         private readonly IBulkMailSender bulkMailSender;
+        private readonly IAuthority authority;
 
         public bool RequireCaptcha { get; set;  } = true;
+
+        private ExpandoObject GetViewBagForTemplate()
+        {
+            dynamic viewBag = new ExpandoObject();
+            viewBag.Title = "Email";
+            viewBag.Layout = "/Views/_LayoutMail.cshtml";
+            viewBag.BaseUrl = authority.Authority;
+            return viewBag;
+        }
 
         private IEnumerable<MailToSend> GetMessages(MailListSubscription sub, MimeMessage message, MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
         {
@@ -56,7 +66,7 @@ namespace MailDemon
             MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
             MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
-            MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, reg.ViewBagObject as ExpandoObject, null);
+            MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, GetViewBagForTemplate(), null);
             await mailSender.SendMailAsync(toDomain, GetMessages(reg, message, fromAddress, toAddresses));
         }
 
@@ -66,12 +76,14 @@ namespace MailDemon
             db.Dispose();
         }
 
-        public HomeController(IMailDemonDatabase db, IMailCreator mailCreator, IMailSender mailSender, IBulkMailSender bulkMailSender)
+        public HomeController(MailDemonDatabase db,
+            IMailCreator mailCreator, IMailSender mailSender, IBulkMailSender bulkMailSender, IAuthority authority)
         {
             this.db = db;
             this.mailCreator = mailCreator ?? throw new ArgumentNullException(nameof(mailCreator));
             this.mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
             this.bulkMailSender = bulkMailSender;
+            this.authority = authority;
         }
 
         [AllowAnonymous]
@@ -105,7 +117,7 @@ namespace MailDemon
                 return NotFound();
             }
             MailListSubscription model = (string.IsNullOrWhiteSpace(result) ? new MailListSubscription() : JsonConvert.DeserializeObject<MailListSubscription>(result));
-            model.MailList = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            model.MailList = db.Lists.FirstOrDefault(l => l.Name == id);
             if (model.MailList == null)
             {
                 return NotFound();
@@ -131,8 +143,7 @@ namespace MailDemon
                 error = await MailDemonWebApp.Instance.Recaptcha.Verify(captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString());
             }
             MailListSubscription model = new MailListSubscription { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
-            string email = null;
-            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
             if (list == null)
             {
                 return NotFound();
@@ -143,6 +154,7 @@ namespace MailDemon
             {
                 model.TemplateName = formFields["TemplateName"];
             }
+            string email = null;
             foreach (KeyValuePair<string, string> field in formFields)
             {
                 if (field.Key.StartsWith("ff_"))
@@ -166,7 +178,7 @@ namespace MailDemon
                         if (value.TryParseEmailAddress(out _))
                         {
                             email = (email ?? value);
-                            model.Fields[name] = value;
+                            model.EmailAddress = email;
                         }
                         else
                         {
@@ -179,6 +191,7 @@ namespace MailDemon
                     }
                 }
             }
+            model.EmailAddressDomain = model.GetDomainFromEmailAddress();
             TempData["result"] = JsonConvert.SerializeObject(model);
             if (model.Error || email == null)
             {
@@ -225,7 +238,7 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
             if (list == null)
             {
                 return NotFound();
@@ -341,13 +354,13 @@ namespace MailDemon
 
         public IActionResult Lists()
         {
-            return View(db.Select<MailList>().OrderBy(l => l.Name));
+            return View(db.Lists.OrderBy(l => l.Name).ToArray());
         }
 
         public IActionResult EditList(string id)
         {
 
-            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault() ?? new MailList();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == id) ?? new MailList();
             return View(new MailListModel { Value = list, Message = TempData["Message"] as string});
         }
 
@@ -377,12 +390,20 @@ namespace MailDemon
                 {
                     throw new ArgumentException(Resources.NameInvalidChars);
                 }
-                MailList existingList = db.Select<MailList>(l => l.Name == model.Value.Name).FirstOrDefault();
+                MailList existingList = db.Lists.FirstOrDefault(l => l.Name == model.Value.Name);
                 if (existingList != null && (existingList.Name != model.Value.Name || model.Value.Id == 0))
                 {
                     throw new ArgumentException(Resources.NameCannotChange);
                 }
-                db.Upsert(model.Value);
+                if (model.Value.Id == 0)
+                {
+                    db.Lists.Add(model.Value);
+                }
+                else
+                {
+                    db.Update(model.Value);
+                }
+                db.SaveChanges();
                 TempData["Message"] = Resources.Success;
                 return RedirectToAction(nameof(EditList), new { id = model.Value.Name });
             }
@@ -399,12 +420,12 @@ namespace MailDemon
         {
             try
             {
-                MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+                MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
                 if (list != null)
                 {
-                    db.Delete<MailListSubscription>(r => r.ListName == id);
-                    db.Delete<MailTemplate>(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator));
-                    db.Delete<MailList>(list.Id);
+                    db.Subscriptions.RemoveRange(db.Subscriptions.Where(r => r.ListName == id));
+                    db.Templates.RemoveRange(db.Templates.Where(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator)));
+                    db.Lists.Remove(list);
                 }
             }
             catch (Exception ex)
@@ -417,7 +438,7 @@ namespace MailDemon
         public IActionResult Templates(string id)
         {
             List<MailTemplateBase> templates = new List<MailTemplateBase>();
-            foreach (MailTemplate template in db.Select<MailTemplate>(t => string.IsNullOrWhiteSpace(id) || t.Name.StartsWith(id + MailTemplate.FullNameSeparator)))
+            foreach (MailTemplate template in db.Templates.Where(t => string.IsNullOrWhiteSpace(id) || t.Name.StartsWith(id + MailTemplate.FullNameSeparator)))
             {
                 templates.Add(new MailTemplateBase { Id = template.Id, LastModified = template.LastModified, Name = template.Name });
             }
@@ -426,7 +447,7 @@ namespace MailDemon
 
         public IActionResult EditTemplate(string id)
         {
-            MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault() ?? new MailTemplate { Text = "<!-- Subject: ReplaceWithYourSubject -->\r\n" };
+            MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == id) ?? new MailTemplate { Text = "<!-- Subject: ReplaceWithYourSubject -->\r\n" };
             if (template.Id == 0 && string.IsNullOrWhiteSpace(template.Name) && id.IndexOf(MailTemplate.FullNameSeparator) < 0)
             {
                 template.Name = id + MailTemplate.FullNameSeparator;
@@ -461,13 +482,21 @@ namespace MailDemon
                 {
                     throw new ArgumentException(Resources.TemplateNameInvalidChars.FormatHtml(MailTemplate.FullNameSeparator));
                 }
-                if (db.Select<MailList>().FirstOrDefault(l => l.Name == listName) == null)
+                if (db.Lists.FirstOrDefault(l => l.Name == listName) == null)
                 {
                     throw new ArgumentException(string.Format(Resources.ListNotFound, listName));
                 }
                 model.Value.LastModified = DateTime.UtcNow;
                 model.Value.Dirty = true;
-                db.Upsert(model.Value);
+                if (model.Value.Id == 0)
+                {
+                    db.Templates.Add(model.Value);
+                }
+                else
+                {
+                    db.Update(model.Value);
+                }
+                db.SaveChanges();
                 TempData["Message"] = Resources.Success;
                 return RedirectToAction(nameof(EditTemplate), new { id = model.Value.Name });
             }
@@ -484,10 +513,11 @@ namespace MailDemon
         {
             try
             {
-                MailTemplate template = db.Select<MailTemplate>(t => t.Name == id).FirstOrDefault();
+                MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == id);
                 if (template != null)
                 {
-                    db.Delete<MailTemplate>(template.Id);
+                    db.Templates.Remove(template);
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -505,7 +535,7 @@ namespace MailDemon
                 return NotFound();
             }
             string listName = MailTemplate.GetListName(id);
-            MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == listName);
             if (list == null)
             {
                 return NotFound();
@@ -536,7 +566,7 @@ namespace MailDemon
                 return NotFound();
             }
             string listName = MailTemplate.GetListName(id);
-            MailList list = db.Select<MailList>(l => l.Name == listName).FirstOrDefault();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == listName);
             if (list == null)
             {
                 return NotFound();
@@ -550,7 +580,7 @@ namespace MailDemon
                 FirstName = "Bob",
                 LastName = "Smith",
                 Company = "Fake Company",
-                ListName = "Default",
+                ListName = list.Name,
                 SubscribedDate = DateTime.UtcNow,
                 SubscribeToken = Guid.NewGuid().ToString("N"),
                 Expires = DateTime.MinValue,
@@ -558,8 +588,7 @@ namespace MailDemon
                 UnsubscribeToken = unsubscribeToken,
                 UnsubscribeUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{nameof(Unsubscribe)}/{list.Name}?token={unsubscribeToken}"
             };
-            ViewBag.Layout = "/Views/_LayoutMail.cshtml";
-            MimeMessage msg = await mailCreator.CreateMailAsync(id, tempReg, new ExpandoObject(), (_html, subject) =>
+            MimeMessage msg = await mailCreator.CreateMailAsync(id, tempReg, GetViewBagForTemplate(), (_html, subject) =>
             {
                 return _html.Replace("<body>", "<body><div style='padding: 10px; width: 100%; background-color: #2A2A2A; border-bottom: 1px solid #444444;'>SUBJECT: " + System.Web.HttpUtility.HtmlEncode(subject) + "</div>");
             });
@@ -575,12 +604,12 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            MailList list = db.Select<MailList>(l => l.Name == id).FirstOrDefault();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
             if (list == null)
             {
                 return NotFound();
             }
-            ICollection<MailListSubscription> subscribers = db.Select<MailListSubscription>(s => s.ListName == id).ToList();
+            ICollection<MailListSubscription> subscribers = db.Subscriptions.Where(s => s.ListName == id).Take(1000).ToList();
             ViewBag.ListName = id;
             return View(subscribers);
         }
@@ -590,9 +619,25 @@ namespace MailDemon
         {
             if (action == "delete" && subId != null)
             {
-                db.Delete<MailListSubscription>(subId.Value);
+                MailListSubscription sub = db.Subscriptions.FirstOrDefault(s => s.Id == subId);
+                if (sub != null)
+                {
+                    db.Subscriptions.Remove(sub);
+                    db.SaveChanges();
+                }
             }
             return RedirectToAction(nameof(Subscribers), new { id });
         }
+    }
+
+    /// <summary>
+    /// Authority (base url)
+    /// </summary>
+    public interface IAuthority
+    {
+        /// <summary>
+        /// Authority
+        /// </summary>
+        string Authority { get; }
     }
 }

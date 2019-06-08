@@ -19,9 +19,10 @@ namespace MailDemon
             do
             {
                 DateTime dt = DateTime.UtcNow;
-                using (IMailDemonDatabase db = serviceProvider.GetService<IMailDemonDatabase>())
+                using (MailDemonDatabase db = serviceProvider.GetService<MailDemonDatabase>())
                 {
-                    db.Delete<MailListSubscription>(r => r.Expires <= dt && r.UnsubscribeToken == null);
+                    db.Subscriptions.RemoveRange(db.Subscriptions.Where(r => r.Expires <= dt && r.UnsubscribeToken == null));
+                    db.SaveChanges();
                 }
             }
             while (!(await stoppingToken.WaitHandle.WaitOneAsync(loopTimeSpan, stoppingToken)));

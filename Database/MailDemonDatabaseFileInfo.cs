@@ -55,9 +55,9 @@ namespace MailDemon
                 }
                 else
                 {
-                    using (var db = serviceProvider.GetService<IMailDemonDatabase>())
+                    using (var db = serviceProvider.GetService<MailDemonDatabase>())
                     {
-                        MailTemplate template = db.Select<MailTemplate>(t => t.Name == fileNameNoExtension).FirstOrDefault();
+                        MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
                         if (template == null)
                         {
                             return default;
@@ -89,14 +89,9 @@ namespace MailDemon
                 contents = File.ReadAllBytes(fullPath);
                 return;
             }
-            using (var db = serviceProvider.GetService<IMailDemonDatabase>())
+            using (var db = serviceProvider.GetService<MailDemonDatabase>())
             {
-                MailTemplate template = null;
-                db.Select<MailTemplate>(t => t.Name == fileNameNoExtension, (foundTemplate) =>
-                {
-                    template = foundTemplate;
-                    return false;
-                });
+                MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
 
                 // views from db get layout default forced if no layout specified
                 if (template != null && template.Text != null)

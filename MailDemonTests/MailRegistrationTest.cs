@@ -21,7 +21,7 @@ using MailKit.Net.Smtp;
 
 namespace MailDemonTests
 {
-    public class MailRegistrationTest : ITempDataProvider, IMailCreator, IMailSender
+    public class MailRegistrationTest : ITempDataProvider, IMailSender, IAuthority
     {
         private const string listName = "TestList";
         private const string scheme = "https";
@@ -29,54 +29,44 @@ namespace MailDemonTests
         private const string mailAddress = "testemail@testemaildomain.com";
         private const string fromAddress = "sender@mydomain.com";
         private const string fromName = "Test Sender";
-        private const string subject = "Mail Subject";
         private const string company = "Test Company";
         private const string fullAddress = "123 test st, state, country 99999";
         private const string website = "https://testwebsite.com";
+        private readonly string templateName = MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm);
+        private readonly string templateName2 = MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeWelcome);
+        private const string templateText = "<!-- Subject: Hello @Model.FirstName --> Body: Last Name @Model.LastName, Subscribe: @Model.SubscribeUrl, Unsubscribe: @Model.UnsubscribeUrl";
+        private const string templateText2 = "<!-- Subject: Hello2 @Model.FirstName --> Body2: Last Name @Model.LastName, Subscribe: @Model.SubscribeUrl, Unsubscribe: @Model.UnsubscribeUrl";
+        private const string authority = "http://localhostignore:5000";
 
-        private readonly HomeController homeController;
         private readonly HttpContext httpContext = new DefaultHttpContext();
         private readonly Dictionary<string, object> tempData = new Dictionary<string, object>();
-        private readonly Dictionary<string, int> createdMail = new Dictionary<string, int>();
-        private int sentMail;
-        private string templateName;
 
-        private void VerifyCreatedMail(string templateName, object model, string key, string value)
-        {
-            Assert.AreEqual(1, sentMail);
-            Assert.AreEqual(1, createdMail.Count);
-            KeyValuePair<string, int> mail = createdMail.First();
-            Assert.AreEqual(1, mail.Value);
-            ExpandoObject obj = new ExpandoObject();
-            ((IDictionary<string, object>)obj)[key] = value;
-            string fullText = GetMailCreationFullText(subject, templateName, model, obj);
-            Assert.IsTrue(Regex.IsMatch(mail.Key, $@"^{fullText}$", RegexOptions.IgnoreCase));
-            createdMail.Clear();
-            sentMail = 0;
-        }
-
-        private string GetMailCreationFullText(string subject, string templateName, object model, ExpandoObject extraInfo)
-        {
-            (extraInfo as IDictionary<string, object>).Remove(MailListSubscription.VarMailList);
-            string extraInfoText = string.Join(";", extraInfo.Select(x => x.Key + "=" + x.Value));
-            string fullText = (subject + ";" + templateName + ";" + (model?.ToString()) + ";" + extraInfoText);
-            return fullText;
-        }
+        private HomeController homeController;
+        private string expectedSubject;
+        private string expectedBody;
+        private int sentMailCount;
+        private MailCreator mailCreator;
 
         private void Cleanup()
         {
-            MailDemonDatabaseLiteDB.DeleteDatabase(true);
-            createdMail.Clear();
+            homeController?.Dispose();
+            homeController = null;
+            MailDemonDatabase.DeleteDatabase(true);
+            sentMailCount = 0;
+            mailCreator = null;
         }
 
         private string Subscribe()
         {
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
-                db.Insert<MailList>(new MailList { Name = listName, FromEmailAddress = fromAddress, FromEmailName = fromName,
+                db.Lists.Add(new MailList { Name = listName, FromEmailAddress = fromAddress, FromEmailName = fromName,
                     Company = company, PhysicalAddress = fullAddress, Website = website });
+                db.SaveChanges();
             }
 
+            expectedSubject = "Hello Bob";
+            expectedBody = "<!-- Subject: Hello Bob --> Body: Last Name Smith, Subscribe: https://testdomain.com/SubscribeWelcome/TestList?token={subscribe-token}, Unsubscribe: ";
             homeController.SubscribeInitialPost(listName, new Dictionary<string, string>
             {
                 { "ff_firstName", "Bob" },
@@ -87,9 +77,9 @@ namespace MailDemonTests
 
             // check database for registration
             MailListSubscription reg = null;
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
-                reg = db.Select<MailListSubscription>().FirstOrDefault();
+                reg = db.Subscriptions.FirstOrDefault();
                 Assert.NotNull(reg);
                 Assert.AreEqual("Bob", reg.Fields["firstName"]);
                 Assert.AreEqual("Smith", reg.Fields["lastName"]);
@@ -104,22 +94,20 @@ namespace MailDemonTests
 
             // verify the subscribe confirm has no errors
             homeController.SubscribeConfirm(listName);
-
-            // verify we sent the right confirmation email
-            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeConfirm), reg, MailListSubscription.VarSubscribeUrl,
-                $@"{scheme}://{domainName}/{nameof(HomeController.SubscribeWelcome)}/TestList\?token=.{{16,}}");
+            Assert.AreEqual(1, sentMailCount);
+            sentMailCount = 0;
 
             // perform the final subscribe action
+            expectedSubject = "Hello2 Bob";
+            expectedBody = "<!-- Subject: Hello2 Bob --> Body2: Last Name Smith, Subscribe: https://testdomain.com/SubscribeWelcome/TestList?token={subscribe-token}, Unsubscribe: https://testdomain.com/Unsubscribe/TestList?token={unsubscribe-token}";
             homeController.SubscribeWelcome(listName, reg.SubscribeToken).Sync();
-
-            // verify we sent the right welcome mail
-            VerifyCreatedMail(MailTemplate.GetFullTemplateName(listName, MailTemplate.NameSubscribeWelcome), reg, MailListSubscription.VarUnsubscribeUrl,
-                $@"{scheme}://{domainName}/{nameof(HomeController.Unsubscribe)}/TestList\?token=.{{16,}}");
+            Assert.AreEqual(1, sentMailCount);
+            sentMailCount = 0;
 
             // validate there is an unsubscribe in the db
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
-                reg = db.Select<MailListSubscription>().FirstOrDefault();
+                reg = db.Subscriptions.FirstOrDefault();
                 Assert.AreEqual(listName, reg.ListName);
                 Assert.AreEqual("127.0.0.1", reg.IPAddress);
                 Assert.IsNotNull(reg.UnsubscribeToken);
@@ -137,25 +125,55 @@ namespace MailDemonTests
             homeController.Unsubscribe(listName, unsubscribeToken);
 
             // validate that we are unsubscribed
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
-                MailListSubscription reg = db.Select<MailListSubscription>().FirstOrDefault();
+                MailListSubscription reg = db.Subscriptions.FirstOrDefault();
                 Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
             }
-        }
-
-        public MailRegistrationTest()
-        {
-             homeController = new HomeController(new MailDemonDatabaseLiteDB(), this, this, null);
         }
 
         [SetUp]
         public void Setup()
         {
             Cleanup();
-            MailDemonDatabaseLiteDB.DatabaseOptions = "Journal=false; Flush=true;";
-            homeController.RequireCaptcha = false;
-            homeController.TempData = new TempDataDictionary(httpContext, this);
+            using (var db = new MailDemonDatabase())
+            {
+                db.Initialize();
+                MailList list = new MailList
+                {
+                    Name = listName,
+                    Company = company,
+                    PhysicalAddress = fullAddress,
+                    Title = listName + " title",
+                    FromEmailAddress = fromAddress,
+                    FromEmailName = fromName,
+                    Website = website
+                };
+                MailTemplate template = new MailTemplate
+                {
+                    Name = templateName,
+                    LastModified = DateTime.UtcNow,
+                    Text = templateText,
+                    Title = "confirm"
+                };
+                MailTemplate template2 = new MailTemplate
+                {
+                    Name = templateName2,
+                    LastModified = DateTime.UtcNow,
+                    Text = templateText2,
+                    Title = "welcome"
+                };
+                db.Lists.Add(list);
+                db.Templates.Add(template);
+                db.Templates.Add(template2);
+                db.SaveChanges();
+            }
+            mailCreator = new MailCreator(new RazorRenderer(AppDomain.CurrentDomain.BaseDirectory)) { IgnoreElements = authority };
+            homeController = new HomeController(new MailDemonDatabase(), mailCreator, this, null, this)
+            {
+                RequireCaptcha = false,
+                TempData = new TempDataDictionary(httpContext, this)
+            };
             homeController.ControllerContext.HttpContext = httpContext;
             httpContext.Request.Headers["User-Agent"] = "Test";
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
@@ -167,7 +185,6 @@ namespace MailDemonTests
         public void TearDown()
         {
             Cleanup();
-            homeController.Dispose();
         }
 
         [Test]
@@ -188,9 +205,9 @@ namespace MailDemonTests
             }).Sync();
 
             // check database for registration not exist
-            using (var db = new MailDemonDatabaseLiteDB())
+            using (var db = new MailDemonDatabase())
             {
-                Assert.AreEqual(0, db.Select<MailListSubscription>().Count());
+                Assert.AreEqual(0, db.Subscriptions.Count());
             }
         }
 
@@ -204,24 +221,9 @@ namespace MailDemonTests
             
         }
 
-        Task<MimeMessage> IMailCreator.CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier)
+        string IAuthority.Authority
         {
-            string fullText = GetMailCreationFullText(subject, templateName, model, extraInfo);
-            this.templateName = templateName;
-            if (!createdMail.TryGetValue(fullText, out int count))
-            {
-                count = 0;
-            }
-            createdMail[fullText] = ++count;
-            MimeMessage msg = new MimeMessage
-            {
-                Body = (new BodyBuilder
-                {
-                    HtmlBody = "<html><body>Mail Body: " + templateName + "</body></html>"
-                }).ToMessageBody(),
-                Subject = subject
-            };
-            return Task.FromResult(msg);
+            get { return authority; }
         }
 
         Task IMailSender.SendMailAsync(string toDomain, IEnumerable<MailToSend> messages)
@@ -229,10 +231,11 @@ namespace MailDemonTests
             MailToSend mail = messages.FirstOrDefault();
             MimeMessage message = mail?.Message;
             Assert.NotNull(message);
-            Assert.AreEqual(subject, message.Subject);
-            Assert.AreEqual("<html><body>Mail Body: " + templateName + "</body></html>", message.HtmlBody);
+            string expectedBodyReplaced = expectedBody.Replace("{subscribe-token}", mail.Subscription.SubscribeToken).Replace("{unsubscribe-token}", mail.Subscription.UnsubscribeToken);
+            Assert.AreEqual(expectedSubject, message.Subject);
+            Assert.IsTrue(message.HtmlBody.IndexOf(expectedBodyReplaced) >= 0);
             mail.Callback?.Invoke(mail.Subscription, string.Empty);
-            sentMail++;
+            sentMailCount++;
             return Task.CompletedTask;
         }
     }

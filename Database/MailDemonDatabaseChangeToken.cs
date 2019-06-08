@@ -28,19 +28,17 @@ namespace MailDemon
         {
             get
             {
-                using (var db = serviceProvider.GetService<IMailDemonDatabase>())
+                using (var db = serviceProvider.GetService<MailDemonDatabase>())
                 {
                     bool changed = false;
-                    db.Select<MailTemplate>(l => l.Name == fileNameNoExtension, (t) =>
+                    MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
+                    if (template != null && template.Dirty)
                     {
-                        if (t.Dirty)
-                        {
-                            changed = true;
-                            t.Dirty = false;
-                            return true;
-                        }
-                        return false;
-                    });
+                        changed = true;
+                        template.Dirty = false;
+                        db.Update(template);
+                        db.SaveChanges();
+                    }
                     return changed;
                 }
             }

@@ -38,6 +38,7 @@ namespace MailDemon
 
         private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject extraInfo, bool allowDefault, Func<string, string, string> htmlModifier)
         {
+            extraInfo = (extraInfo ?? new ExpandoObject());
             IDictionary<string, object> extraInfoDict = extraInfo as IDictionary<string, object>;
             if (!extraInfoDict.ContainsKey("Layout"))
             {
@@ -57,7 +58,7 @@ namespace MailDemon
                     subjectText = Regex.Replace(subjectText, "[\r\n ]+", " ");
 
                     html = (htmlModifier == null ? html : htmlModifier.Invoke(html, subjectText));
-                    html = PreMailer.Net.PreMailer.MoveCssInline(html, true).Html;
+                    html = PreMailer.Net.PreMailer.MoveCssInline(html, true, IgnoreElements).Html;
 
                     BodyBuilder builder = new BodyBuilder
                     {
@@ -97,5 +98,10 @@ namespace MailDemon
         {
             return CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
         }
+
+        /// <summary>
+        /// Elements to avoid doing external requests on
+        /// </summary>
+        public string IgnoreElements { get; set; }
     }
 }
