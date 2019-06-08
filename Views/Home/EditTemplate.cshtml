@@ -28,7 +28,7 @@
         @if (Model.Value.Id != 0)
         {
             <button class="submit-button" name="action" value="send" style="margin-left: 20px;" onclick="return confirm('! Confirm Send !');">@MailDemon.Resources.Send</button>
-            <div style="float: left; padding-left: 10px;"><span style="position: absolute;"><input type="checkbox" name="All" id="All" value="@Model.All"@(Model.All ? " checked=\"checked\"" : string.Empty) /></span><label style="position: relative; top: 1px; left: 22px; width: 200px; display: inline-block;">@MailDemon.Resources.SendToAll</label></div>
+            <div style="float: left; padding-left: 10px; top: -2px; position: relative;"><span style="position: absolute;"><input type="checkbox" name="All" id="All" value="@Model.All"@(Model.All ? " checked=\"checked\"" : string.Empty) /></span><label style="position: relative; top: 1px; left: 22px; width: 200px; display: inline-block;">@MailDemon.Resources.SendToAll</label></div>
             <button class="delete-button" name="action" value="delete" onclick="return confirm('! Confirm Deletion !');">@MailDemon.Resources.Delete</button>
         }
     </div>
