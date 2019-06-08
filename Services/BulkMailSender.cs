@@ -112,7 +112,7 @@ namespace MailDemon
 
                 await Task.WhenAll(pendingTasks);
 
-                MailDemonLog.Warn("Finished bulk send {0} messages for {1} in {2:0.00} seconds.", count, fullTemplateName, timer.Elapsed.TotalSeconds);
+                MailDemonLog.Warn("Finished bulk send for {0}, {1} messages in {2:0.00} seconds.", fullTemplateName, count, timer.Elapsed.TotalSeconds);
             }
         }
     }
