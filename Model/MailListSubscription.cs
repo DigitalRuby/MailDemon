@@ -67,11 +67,14 @@ namespace MailDemon
         public string Result { get; set; }
         public DateTime ResultTimestamp { get; set; }
         public string EmailAddress { get; set; }
+
+        [JsonIgnore]
         public string EmailAddressDomain { get; set; }
 
         [NotMapped]
         public IDictionary<string, object> Fields { get; } = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
+        [JsonIgnore]
         public string FieldsJson
         {
             get { return JsonConvert.SerializeObject(Fields); }
