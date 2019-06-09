@@ -49,7 +49,7 @@ namespace MailDemon
                 }
             }
             result = MailDemonExtensionMethods.Utf8EncodingNoByteMarker.GetString(ms.GetBuffer().AsSpan(0, (int)ms.Length));
-            MailDemonLog.Debug("CLIENT: " + result);
+            MailDemonLog.Debug("CLIENT: {0}", result);
             return result;
         }
 
@@ -353,7 +353,7 @@ namespace MailDemon
                             }
                             else
                             {
-                                MailDemonLog.Warn("Ignoring client command: " + line);
+                                MailDemonLog.Warn("Ignoring client command: {0}", line);
                             }
                         }
                         else
