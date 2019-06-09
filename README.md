@@ -18,7 +18,7 @@ Mail Demon is great for sending notifications, announcements and even text messa
 - If you don't want to install .NET core, set your publish profile to "self contained".
 - FTP or copy files to your server.
 - For Windows, use Firedaemon and set the command to run your .dll or .exe from your publish step.
-- For Linux setup a service:
+- For Linux setup a service (put binaries in /opt/MailDemon):
 
 ```
 sudo nano /lib/systemd/system/MailDemon.service
@@ -27,8 +27,8 @@ Description=Mail Demon Service
 After=network.target
 
 [Service]
-WorkingDirectory=/root/MailDemon
-ExecStart=/usr/bin/dotnet /root/MailDemon/MailDemon.dll
+WorkingDirectory=/opt/MailDemon
+ExecStart=/usr/bin/dotnet /opt/MailDemon/MailDemon.dll
 Restart=on-failure
 
 [Install]
