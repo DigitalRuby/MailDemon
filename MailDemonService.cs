@@ -149,27 +149,37 @@ namespace MailDemon
             server = new TcpListenerActive(IPAddress.Any, port);
             server.Start(maxConnectionCount);
             cancelToken.Register(Dispose);
-            while (server != null && server.Active)
+            try
             {
-                try
+                while (server != null && server.Active)
                 {
-                    await ProcessConnection();
-                }
-                catch (ObjectDisposedException)
-                {
-                    // happens on shutdown
-                }
-                catch (Exception ex)
-                {
-                    MailDemonLog.Error(ex);
+                    try
+                    {
+                        await ProcessConnection();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // happens on shutdown
+                    }
+                    catch (Exception ex)
+                    {
+                        MailDemonLog.Error(ex);
+                    }
                 }
             }
+            catch (Exception ex2)
+            {
+                MailDemonLog.Error(ex2);
+            }
+
+            MailDemonLog.Warn("SMTP server is shutdown");
         }
 
         public void Dispose()
         {
             try
             {
+                MailDemonLog.Warn("Disposing SMTP server");
                 server?.Dispose();
             }
             catch

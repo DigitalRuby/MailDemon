@@ -214,182 +214,179 @@ namespace MailDemon
 
         private async Task HandleClientConnectionAsync(TcpClient tcpClient)
         {
-            using (tcpClient)
+            string ipAddress = (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString();
+            MailDemonUser authenticatedUser = null;
+            X509Certificate2 sslCert = null;
+            bool helo = false;
+
+            try
             {
-                string ipAddress = (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString();
-                MailDemonUser authenticatedUser = null;
-                X509Certificate2 sslCert = null;
-                bool helo = false;
+                tcpClient.ReceiveTimeout = tcpClient.SendTimeout = streamTimeoutMilliseconds;
 
-                try
+                MailDemonLog.Info("Connection from {0}", ipAddress);
+
+                // immediately drop if client is blocked
+                if (CheckBlocked(ipAddress))
                 {
-                    tcpClient.ReceiveTimeout = tcpClient.SendTimeout = streamTimeoutMilliseconds;
+                    MailDemonLog.Warn("Blocked {0}", ipAddress);
+                    return;
+                }
 
-                    MailDemonLog.Info("Connection from {0}", ipAddress);
+                using (NetworkStream clientStream = tcpClient.GetStream())
+                {
+                    // create comm streams
+                    SslStream sslStream = null;
+                    clientStream.ReadTimeout = clientStream.WriteTimeout = streamTimeoutMilliseconds;
+                    Stream reader = clientStream;
+                    StreamWriter writer = new StreamWriter(clientStream, MailDemonExtensionMethods.Utf8EncodingNoByteMarker) { AutoFlush = true, NewLine = "\r\n" };
 
-                    // immediately drop if client is blocked
-                    if (CheckBlocked(ipAddress))
+                    if (port == 465 || port == 587)
                     {
-                        MailDemonLog.Warn("Blocked {0}", ipAddress);
-                        return;
+                        sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
+                        Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, false, sslCert);
+                        if (tls == null)
+                        {
+                            throw new IOException("Failed to start TLS, ssl certificate failed to load");
+                        }
+                        sslStream = tls.Item1;
+                        reader = tls.Item2;
+                        writer = tls.Item3;
                     }
 
-                    using (NetworkStream clientStream = tcpClient.GetStream())
-                    {
-                        // create comm streams
-                        SslStream sslStream = null;
-                        clientStream.ReadTimeout = clientStream.WriteTimeout = streamTimeoutMilliseconds;
-                        Stream reader = clientStream;
-                        StreamWriter writer = new StreamWriter(clientStream, MailDemonExtensionMethods.Utf8EncodingNoByteMarker) { AutoFlush = true, NewLine = "\r\n" };
+                    MailDemonLog.Info("Connection accepted from {0}", ipAddress);
 
-                        if (port == 465 || port == 587)
+                    // send greeting
+                    await writer.WriteLineAsync($"220 {Domain} {greeting}");
+                    IPEndPoint endPoint = tcpClient.Client.RemoteEndPoint as IPEndPoint;
+
+                    while (true)
+                    {
+                        string line = await ReadLineAsync(reader);
+
+                        // these commands are allowed before HELO
+                        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("QUIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
-                            Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, false, sslCert);
-                            if (tls == null)
+                            break;
+                        }
+                        else if (line.StartsWith("EHLO", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await HandleEhlo(writer, line, sslStream, sslCert, endPoint);
+                            helo = true;
+                        }
+                        else if (line.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (sslStream != null)
                             {
-                                throw new IOException("Failed to start TLS, ssl certificate failed to load");
+                                await writer.WriteLineAsync("503 TLS already initiated");
                             }
-                            sslStream = tls.Item1;
-                            reader = tls.Item2;
-                            writer = tls.Item3;
+                            else
+                            {
+                                sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
+                                Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
+                                if (tls == null)
+                                {
+                                    await writer.WriteLineAsync("503 Failed to start TLS");
+                                }
+                                else
+                                {
+                                    sslStream = tls.Item1;
+                                    reader = tls.Item2;
+                                    writer = tls.Item3;
+                                }
+                            }
+                        }
+                        else if (line.StartsWith("HELO", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await HandleHelo(writer, line, endPoint);
+                            helo = true;
+                        }
+                        else if (!helo)
+                        {
+                            throw new InvalidOperationException("Client did not send greeting before line " + line);
                         }
 
-                        MailDemonLog.Info("Connection accepted from {0}", ipAddress);
-
-                        // send greeting
-                        await writer.WriteLineAsync($"220 {Domain} {greeting}");
-                        IPEndPoint endPoint = tcpClient.Client.RemoteEndPoint as IPEndPoint;
-
-                        while (true)
+                        // these commands may only appear after HELO/EHLO
+                        else if (line.StartsWith("RSET", StringComparison.OrdinalIgnoreCase))
                         {
-                            string line = await ReadLineAsync(reader);
+                            await writer.WriteLineAsync($"250 2.0.0 Resetting");
+                            authenticatedUser = null;
+                        }
+                        else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
+                        {
+                            authenticatedUser = await AuthenticatePlain(reader, writer, line);
+                            if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
+                            {
+                                IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.UserName, remoteEndPoint.Address.ToString());
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("Authentication failed");
+                            }
+                        }
+                        else if (line.StartsWith("AUTH LOGIN", StringComparison.OrdinalIgnoreCase))
+                        {
+                            authenticatedUser = await AuthenticateLogin(reader, writer, line);
+                            if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
+                            {
+                                IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.UserName, remoteEndPoint.Address.ToString());
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("Authentication failed");
+                            }
+                        }
 
-                            // these commands are allowed before HELO
-                            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("QUIT", StringComparison.OrdinalIgnoreCase))
+                        // if authenticated, only valid line is MAIL FROM
+                        // TODO: consider changing this
+                        else if (authenticatedUser != null)
+                        {
+                            if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
                             {
-                                break;
-                            }
-                            else if (line.StartsWith("EHLO", StringComparison.OrdinalIgnoreCase))
-                            {
-                                await HandleEhlo(writer, line, sslStream, sslCert, endPoint);
-                                helo = true;
-                            }
-                            else if (line.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (sslStream != null)
+                                try
                                 {
-                                    await writer.WriteLineAsync("503 TLS already initiated");
+                                    await SendMail(authenticatedUser, reader, writer, line, endPoint, null);
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
-                                    Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
-                                    if (tls == null)
-                                    {
-                                        await writer.WriteLineAsync("503 Failed to start TLS");
-                                    }
-                                    else
-                                    {
-                                        sslStream = tls.Item1;
-                                        reader = tls.Item2;
-                                        writer = tls.Item3;
-                                    }
-                                }
-                            }
-                            else if (line.StartsWith("HELO", StringComparison.OrdinalIgnoreCase))
-                            {
-                                await HandleHelo(writer, line, endPoint);
-                                helo = true;
-                            }
-                            else if (!helo)
-                            {
-                                throw new InvalidOperationException("Client did not send greeting before line " + line);
-                            }
-
-                            // these commands may only appear after HELO/EHLO
-                            else if (line.StartsWith("RSET", StringComparison.OrdinalIgnoreCase))
-                            {
-                                await writer.WriteLineAsync($"250 2.0.0 Resetting");
-                                authenticatedUser = null;
-                            }
-                            else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
-                            {
-                                authenticatedUser = await AuthenticatePlain(reader, writer, line);
-                                if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
-                                {
-                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.UserName, remoteEndPoint.Address.ToString());
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException("Authentication failed");
-                                }
-                            }
-                            else if (line.StartsWith("AUTH LOGIN", StringComparison.OrdinalIgnoreCase))
-                            {
-                                authenticatedUser = await AuthenticateLogin(reader, writer, line);
-                                if (authenticatedUser.Authenticated && tcpClient.Client.RemoteEndPoint is IPEndPoint remoteEndPoint)
-                                {
-                                    IPBan.IPBanPlugin.IPBanLoginSucceeded("SMTP", authenticatedUser.UserName, remoteEndPoint.Address.ToString());
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException("Authentication failed");
-                                }
-                            }
-
-                            // if authenticated, only valid line is MAIL FROM
-                            // TODO: consider changing this
-                            else if (authenticatedUser != null)
-                            {
-                                if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    try
-                                    {
-                                        await SendMail(authenticatedUser, reader, writer, line, endPoint, null);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        throw new ApplicationException("Error sending mail from " + endPoint, ex);
-                                    }
-                                }
-                                else
-                                {
-                                    MailDemonLog.Warn("Ignoring client command: " + line);
+                                    throw new ApplicationException("Error sending mail from " + endPoint, ex);
                                 }
                             }
                             else
                             {
-                                if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
+                                MailDemonLog.Warn("Ignoring client command: " + line);
+                            }
+                        }
+                        else
+                        {
+                            if (line.StartsWith("MAIL FROM:<", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // non-authenticated user, forward message on if possible, check settings
+                                try
                                 {
-                                    // non-authenticated user, forward message on if possible, check settings
-                                    try
-                                    {
-                                        await ReceiveMail(reader, writer, line, endPoint);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        throw new ApplicationException("Error receiving mail from " + endPoint, ex);
-                                    }
+                                    await ReceiveMail(reader, writer, line, endPoint);
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    throw new InvalidOperationException("Invalid message: " + line + ", not authenticated");
+                                    throw new ApplicationException("Error receiving mail from " + endPoint, ex);
                                 }
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("Invalid message: " + line + ", not authenticated");
                             }
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    IncrementFailure(ipAddress, authenticatedUser?.UserName);
-                    MailDemonLog.Error(ex);
-                }
-                finally
-                {
-                    sslCert?.Dispose();
-                    MailDemonLog.Info("{0} disconnected", ipAddress);
-                }
+            }
+            catch (Exception ex)
+            {
+                IncrementFailure(ipAddress, authenticatedUser?.UserName);
+                MailDemonLog.Error(ex);
+            }
+            finally
+            {
+                sslCert?.Dispose();
+                MailDemonLog.Info("{0} disconnected", ipAddress);
             }
         }
     }
