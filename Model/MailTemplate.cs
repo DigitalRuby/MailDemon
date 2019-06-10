@@ -145,6 +145,6 @@ namespace MailDemon
         /// <summary>
         /// Whether to send to all or just error state subscribers
         /// </summary>
-        public bool All { get; set; } = true;
+        public bool All { get; set; }
     }
 }
