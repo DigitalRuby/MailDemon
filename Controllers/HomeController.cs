@@ -658,7 +658,7 @@ namespace MailDemon
                 {
                     return NotFound();
                 }
-                ICollection<MailListSubscription> subscribers = db.Subscriptions.Where(s => s.ListName == id).Take(1000).ToList();
+                ICollection<MailListSubscription> subscribers = db.Subscriptions.Where(s => s.ListName == id).OrderByDescending(s => s.Result).ThenByDescending(s => s.Id).Take(1000).ToList();
                 ViewBag.ListName = id;
                 return View(subscribers);
             }
