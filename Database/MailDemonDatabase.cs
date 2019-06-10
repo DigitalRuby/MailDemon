@@ -50,11 +50,12 @@ namespace MailDemon
         {
             try
             {
-                Database.Migrate();
                 if (Database.ProviderName.IndexOf("sqlite", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     SQLitePCL.Batteries.Init();
                 }
+                Database.EnsureCreated();
+                Database.Migrate();
             }
             catch (Exception ex)
             {
