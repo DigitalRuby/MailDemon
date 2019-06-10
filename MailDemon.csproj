@@ -8,6 +8,7 @@
     <DebugType>portable</DebugType>
     <LangVersion>latest</LangVersion>
     <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
+    <CopyRefAssembliesToPublishDirectory>true</CopyRefAssembliesToPublishDirectory>
     <UserSecretsId>260449cd-e9da-47d5-9caa-f590f8b032df</UserSecretsId>
   </PropertyGroup>
 

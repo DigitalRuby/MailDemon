@@ -54,7 +54,6 @@ namespace MailDemon
                 {
                     SQLitePCL.Batteries.Init();
                 }
-                Database.EnsureCreated();
                 Database.Migrate();
             }
             catch (Exception ex)
