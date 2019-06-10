@@ -59,7 +59,7 @@ namespace MailDemon
                             {
                                 if (!DisableSending)
                                 {
-                                    await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.StartTlsWhenAvailable, cancellationToken: cancelToken).TimeoutAfter(30000);
+                                    await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.Auto, cancellationToken: cancelToken).TimeoutAfter(30000);
                                 }
                                 connected = true;
                                 foreach (MailToSend message in messages)

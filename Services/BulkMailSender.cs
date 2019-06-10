@@ -80,7 +80,8 @@ namespace MailDemon
             MailDemonLog.Warn("Started bulk send for {0}", fullTemplateName);
 
             DateTime now = DateTime.UtcNow;
-            int count = 0;
+            int successCount = 0;
+            int failCount = 0;
             List<Task> pendingTasks = new List<Task>();
             Stopwatch timer = Stopwatch.StartNew();
 
@@ -97,7 +98,14 @@ namespace MailDemon
                         _sub.ResultTimestamp = DateTime.UtcNow;
                         db.Update(_sub);
                         db.SaveChanges();
-                        count++;
+                        if (string.IsNullOrWhiteSpace(error))
+                        {
+                            successCount++;
+                        }
+                        else
+                        {
+                            failCount++;
+                        }
                     }
                 }
 
@@ -123,7 +131,7 @@ namespace MailDemon
 
                 await Task.WhenAll(pendingTasks);
 
-                MailDemonLog.Warn("Finished bulk send for {0}, {1} messages in {2:0.00} seconds.", fullTemplateName, count, timer.Elapsed.TotalSeconds);
+                MailDemonLog.Warn("Finished bulk send for {0}, {1} messages succeeded, {2} messages failed in {3:0.00} seconds.", fullTemplateName, successCount, failCount, timer.Elapsed.TotalSeconds);
             }
         }
     }
