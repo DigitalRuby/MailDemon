@@ -73,6 +73,7 @@ namespace MailDemon
                 foundReg.UnsubscribedDate = default;
                 foundReg.UnsubscribeToken = Guid.NewGuid().ToString("N");
                 foundReg.MailList = db.Lists.FirstOrDefault(l => l.Name == listName);
+                foundReg.Result = "New";
                 db.SaveChanges();
             }
             return reg;
