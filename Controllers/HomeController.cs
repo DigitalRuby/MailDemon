@@ -29,7 +29,7 @@ using Microsoft.Extensions.Caching.Memory;
 namespace MailDemon
 {
     [Authorize]
-    [ResponseCache(NoStore = true)]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public class HomeController : Controller
     {
         private readonly IMailDemonDatabaseProvider dbProvider;
