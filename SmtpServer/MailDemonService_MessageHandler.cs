@@ -218,6 +218,7 @@ namespace MailDemon
             MailDemonUser authenticatedUser = null;
             X509Certificate2 sslCert = null;
             bool helo = false;
+            await Task.Yield();
 
             try
             {
@@ -240,17 +241,26 @@ namespace MailDemon
                     Stream reader = clientStream;
                     StreamWriter writer = new StreamWriter(clientStream, MailDemonExtensionMethods.Utf8EncodingNoByteMarker) { AutoFlush = true, NewLine = "\r\n" };
 
-                    if (port == 465 || port == 587)
+                    async Task StartSSL()
                     {
-                        sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
-                        Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, false, sslCert);
+                        sslCert = await MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword);
+                        Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
                         if (tls == null)
                         {
+                            await writer.WriteLineAsync("503 Failed to start TLS");
                             throw new IOException("Failed to start TLS, ssl certificate failed to load");
                         }
-                        sslStream = tls.Item1;
-                        reader = tls.Item2;
-                        writer = tls.Item3;
+                        else
+                        {
+                            sslStream = tls.Item1;
+                            reader = tls.Item2;
+                            writer = tls.Item3;
+                        }
+                    }
+
+                    if (port == 465 || port == 587)
+                    {
+                        await StartSSL();
                     }
 
                     MailDemonLog.Info("Connection accepted from {0}", ipAddress);
@@ -281,18 +291,7 @@ namespace MailDemon
                             }
                             else
                             {
-                                sslCert = (sslCert ?? MailDemonExtensionMethods.LoadSslCertificate(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword));
-                                Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
-                                if (tls == null)
-                                {
-                                    await writer.WriteLineAsync("503 Failed to start TLS");
-                                }
-                                else
-                                {
-                                    sslStream = tls.Item1;
-                                    reader = tls.Item2;
-                                    writer = tls.Item3;
-                                }
+                                await StartSSL();
                             }
                         }
                         else if (line.StartsWith("HELO", StringComparison.OrdinalIgnoreCase))
