@@ -220,7 +220,7 @@ namespace MailDemon
         /// <param name="privateKeyFile">Private key file</param>
         /// <param name="password">Password</param>
         /// <returns>X509Certificate2 or null if error</returns>
-        public static X509Certificate2 LoadSslCertificate(string publicKeyFile, string privateKeyFile, SecureString password)
+        public static async Task<X509Certificate2> LoadSslCertificate(string publicKeyFile, string privateKeyFile, SecureString password)
         {
             Exception error = null;
             if (!string.IsNullOrWhiteSpace(publicKeyFile))
@@ -229,11 +229,11 @@ namespace MailDemon
                 {
                     try
                     {
-                        byte[] bytes = File.ReadAllBytes(publicKeyFile);
+                        byte[] bytes = await File.ReadAllBytesAsync(publicKeyFile);
                         X509Certificate2 newSslCertificate = (password == null ? new X509Certificate2(bytes) : new X509Certificate2(bytes, password));
                         if (!newSslCertificate.HasPrivateKey && !string.IsNullOrWhiteSpace(privateKeyFile))
                         {
-                            newSslCertificate = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(File.ReadAllText(privateKeyFile)));
+                            newSslCertificate = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(await File.ReadAllTextAsync(privateKeyFile)));
                         }
                         MailDemonLog.Info("Loaded ssl certificate {0}", newSslCertificate);
                         return newSslCertificate;

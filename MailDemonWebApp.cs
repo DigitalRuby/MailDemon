@@ -216,7 +216,7 @@ namespace MailDemon
                         {
                             sslOpt.ServerCertificateSelector = (ctx, name) =>
                             {
-                                return MailDemonExtensionMethods.LoadSslCertificate(certPathWeb, certPathPrivateWeb, certPasswordWeb);
+                                return MailDemonExtensionMethods.LoadSslCertificate(certPathWeb, certPathPrivateWeb, certPasswordWeb).Sync();
                             };
                         });
                     });
