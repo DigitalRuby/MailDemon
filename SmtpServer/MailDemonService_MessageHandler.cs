@@ -16,7 +16,7 @@ namespace MailDemon
         {
             using (TcpClient tcpClient = await server.AcceptTcpClientAsync())
             {
-                await HandleClientConnectionAsync(tcpClient);
+                HandleClientConnectionAsync(tcpClient).ConfigureAwait(false).GetAwaiter();
             }
         }
 
