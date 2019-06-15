@@ -53,6 +53,7 @@ namespace MailDemon
             } */
 
             WebClient client = new WebClient();
+            response = (response ?? string.Empty);
             string jsonReceived = await client.DownloadStringTaskAsync(string.Format(RecaptchaSettings.url, SecretKey, response, remoteip));
             JToken token = JToken.Parse(jsonReceived);
             string actualAction = token.Value<string>("action");
