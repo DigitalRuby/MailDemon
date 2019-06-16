@@ -59,7 +59,7 @@ namespace MailDemon
             string actualAction = token.Value<string>("action");
             bool success = token.Value<bool>("success");
             float? score = token.Value<float?>("score");
-            if (success && actualAction == action && score != null && score.Value > 0.8f)
+            if (success && actualAction == action && score != null && score.Value >= 0.5f)
             {
                 return null;
             }

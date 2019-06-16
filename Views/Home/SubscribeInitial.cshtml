@@ -25,7 +25,7 @@
 
     @Html.HiddenFor(m => m.TemplateName)
     <br />
-    <input type="submit" id="subscriptionSubmit" name="subscriptionSubmit" value="Subscribe" onclick="this.disabled = true; captchaSubmitForm(1); return false;" />
+    <input type="submit" id="subscriptionSubmit" name="subscriptionSubmit" value="Subscribe" onclick="this.value = 'Please Wait…'; this.disabled = true; captchaSubmitForm(1); return false;" />
     <input type="hidden" id="captcha" name="captcha" value="" />
 
     await Html.RenderPartialAsync("Recaptcha", new { Action = nameof(MailDemon.HomeController.SubscribeInitial), Form = "subscribeForm" });
