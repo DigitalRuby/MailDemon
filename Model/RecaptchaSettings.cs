@@ -42,8 +42,9 @@ namespace MailDemon
         /// <param name="response">Response</param>
         /// <param name="action">Action</param>
         /// <param name="remoteip">Remote ip</param>
+        /// <param name="formFields">Form fields</param>
         /// <returns>String error or null if success in verify</returns>
-        public async Task<string> Verify(string url, string response, string action, string remoteip)
+        public async Task<string> Verify(string url, string response, string action, string remoteip, Dictionary<string, string> formFields)
         {
             /* {
                 "success": true|false,
@@ -77,9 +78,14 @@ namespace MailDemon
                     errorCodes.Length--;
                 }
             }
-            MailDemonLog.Warn("Catpcha failed, url: {0}, success: {1}, score: {2}, action: {3} actual action: {4}, error-codes: {5}",
-                url, success, score, action, actualAction, errorCodes);
+            MailDemonLog.Warn("Catpcha failed, url: {0}, success: {1}, score: {2}, action: {3} actual action: {4}, error-codes: {5}, form: {6}",
+                url, success, score, action, actualAction, errorCodes, DictionaryToString(formFields));
             return "Unknown Error";
+        }
+
+        private static string DictionaryToString<TKey, TValue>(IDictionary<TKey, TValue> dictionary)
+        {
+            return "{" + string.Join(",", dictionary.Select(kv => kv.Key + "=" + kv.Value).ToArray()) + "}";
         }
     }
 }

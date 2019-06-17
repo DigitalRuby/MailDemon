@@ -299,11 +299,10 @@ namespace MailDemon
                 services.Configure<GzipCompressionProviderOptions>(options => options.Level = System.IO.Compression.CompressionLevel.Optimal);
                 services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
                 {
-                    o.AccessDeniedPath = "/";
+                    o.AccessDeniedPath = "/MailDemonLogin";
                     o.LoginPath = "/MailDemonLogin";
                     o.LogoutPath = "/MailDemonLogin";
                     o.Cookie.HttpOnly = true;
-                    o.ExpireTimeSpan = TimeSpan.FromDays(30.0);
                 });
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
