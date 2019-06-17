@@ -20,15 +20,19 @@ namespace MailDemon
         /// <param name="address">Full email address</param>
         /// <param name="forwardAddress">Forward address</param>
         /// <param name="authenticated">Whether the user is authenticated</param>
-        public MailDemonUser(string name, string displayName, string password, string address, string forwardAddress, bool authenticated)
+        /// <param name="validateUserNameAndPassword">True to validate user name and password, false otherwise</param>
+        public MailDemonUser(string name, string displayName, string password, string address, string forwardAddress, bool authenticated, bool validateUserNameAndPassword = true)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (validateUserNameAndPassword)
             {
-                throw new ArgumentException("Name must not be null or empty", nameof(name));
-            }
-            if (string.IsNullOrWhiteSpace(password))
-            {
-                throw new ArgumentException("Password must not be null or empty", nameof(password));
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    throw new ArgumentException("Name must not be null or empty", nameof(name));
+                }
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    throw new ArgumentException("Password must not be null or empty", nameof(password));
+                }
             }
             UserName = name.Trim();
             DisplayName = (string.IsNullOrWhiteSpace(displayName) ? UserName : displayName);

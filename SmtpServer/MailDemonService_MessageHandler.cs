@@ -176,7 +176,7 @@ namespace MailDemon
             // fail
             MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
-            return new MailDemonUser(userName, userName, password, userName, null, false);
+            return new MailDemonUser(userName, userName, password, userName, null, false, false);
         }
 
         private async Task<MailDemonUser> AuthenticateLogin(Stream reader, StreamWriter writer, string line)
@@ -207,7 +207,7 @@ namespace MailDemon
             // fail
             MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
-            return new MailDemonUser(userName, userName, password, userName, null, false);
+            return new MailDemonUser(userName, userName, password, userName, null, false, false);
         }
 
         private async Task HandleClientConnectionAsync(TcpClient tcpClient)
