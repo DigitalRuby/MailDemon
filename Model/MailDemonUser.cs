@@ -34,9 +34,9 @@ namespace MailDemon
                     throw new ArgumentException("Password must not be null or empty", nameof(password));
                 }
             }
-            UserName = name.Trim();
+            UserName = (name ?? string.Empty).Trim();
             DisplayName = (string.IsNullOrWhiteSpace(displayName) ? UserName : displayName);
-            Password = password.ToSecureString();
+            Password = (password ?? string.Empty).ToSecureString();
             if (!string.IsNullOrWhiteSpace(forwardAddress))
             {
                 ForwardAddress = new MailboxAddress(forwardAddress);

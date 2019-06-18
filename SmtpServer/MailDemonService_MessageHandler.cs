@@ -299,6 +299,14 @@ namespace MailDemon
                                 await HandleHelo(writer, line, endPoint);
                                 helo = true;
                             }
+                            else if (line.StartsWith("NOOP", StringComparison.OrdinalIgnoreCase))
+                            {
+                                await writer.WriteLineAsync("220 OK");
+                            }
+                            else if (line.StartsWith("HELP", StringComparison.OrdinalIgnoreCase))
+                            {
+                                await writer.WriteLineAsync("220 OK Please use EHLO command");
+                            }
                             else if (!helo)
                             {
                                 throw new InvalidOperationException("Client did not send greeting before line " + line);
