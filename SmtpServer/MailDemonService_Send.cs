@@ -67,7 +67,7 @@ namespace MailDemon
                                     if (dkimSigner != null)
                                     {
                                         message.Message.Prepare(EncodingConstraint.SevenBit);
-                                        message.Message.Sign(dkimSigner, headersToSign);
+                                        dkimSigner.Sign(message.Message, headersToSign);
                                     }
                                     try
                                     {
