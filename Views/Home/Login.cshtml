@@ -13,8 +13,9 @@
         <div class="error-message">@Model.Message</div><br />
     }
     @MailDemon.Resources.Login<br />
-    @Html.LabelFor(m => m.UserName) @Html.EditorFor(m => m.UserName)<br />
-    @Html.LabelFor(m => m.Password) @Html.PasswordFor(m => m.Password, new { @class = "text-box single-line" })<br />
+    @Html.LabelFor(m => m.UserName) @Html.EditorFor(m => m.UserName, new { @class = "text-box single-line" })<br />
+    @Html.LabelFor(m => m.Password) @Html.PasswordFor(m => m.Password, new { @class = "text-box single-line" })<br /><br/>
+    <span>Remember Me?</span> @Html.CheckBoxFor(m => m.RememberMe)<br />
     @Html.HiddenFor(m => m.ReturnUrl)
     <br />
     <button name="action" value="login" class="inline-button">@MailDemon.Resources.Login</button>

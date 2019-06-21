@@ -348,7 +348,12 @@ namespace MailDemon
             {
                 var claims = new[] { new Claim(ClaimTypes.Name, login.UserName), new Claim(ClaimTypes.Role, "Administrator") };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), new AuthenticationProperties
+                {
+                    ExpiresUtc = (login.RememberMe ? DateTime.UtcNow.AddDays(30.0) : DateTime.UtcNow.AddHours(1.0)),
+                    IsPersistent = login.RememberMe,
+                    IssuedUtc = DateTime.UtcNow
+                });
                 IPBan.IPBanPlugin.IPBanLoginSucceeded("HTTPS", login.UserName, HttpContext.GetRemoteIPAddress().ToString());
                 if (string.IsNullOrWhiteSpace(login.ReturnUrl))
                 {

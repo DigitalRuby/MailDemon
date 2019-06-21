@@ -165,6 +165,17 @@ form
     width: 100%;
 }
 
+input[type=checkbox]
+{
+    position: relative;
+    top: 2px;
+}
+
+label
+{
+    padding-bottom: 4px;
+}
+
 .inline-form
 {
     width: auto;
