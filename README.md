@@ -22,6 +22,9 @@ Mail Demon is great for sending notifications, announcements and even text messa
 
 ```
 sudo nano /lib/systemd/system/MailDemon.service
+```
+
+```
 [Unit]
 Description=Mail Demon Service
 After=network.target
