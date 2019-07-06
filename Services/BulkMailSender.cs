@@ -133,6 +133,8 @@ namespace MailDemon
 
                 MailDemonLog.Warn("Finished bulk send for {0}, {1} messages succeeded, {2} messages failed in {3:0.00} seconds.", fullTemplateName, successCount, failCount, timer.Elapsed.TotalSeconds);
             }
+
+            GC.Collect();
         }
     }
 }
