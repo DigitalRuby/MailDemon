@@ -144,10 +144,15 @@ namespace MailDemon
             throw new InvalidOperationException($"SPF validation failed for host '{entry.HostName}', address domain '{fromAddressDomain}'");
         }
 
-        private async Task ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
+        private async Task<bool> ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
         {
             IPHostEntry entry = await Dns.GetHostEntryAsync(endPoint.Address);
-            using (MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint))
+            MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint);
+            if (result == null)
+            {
+                return false;
+            }
+            try
             {
                 string subject;
                 MimeMessage msg;
@@ -160,7 +165,7 @@ namespace MailDemon
                 if (subject.Equals("unsubscribe", StringComparison.OrdinalIgnoreCase))
                 {
                     UnsubscribeHandler?.Invoke(result.From.Address, subject, msg.HtmlBody);
-                    return;
+                    return true;
                 }
 
                 // mail demon doesn't have an inbox yet, only forwarding, so see if any of the to addresses can be forwarded
@@ -205,11 +210,16 @@ namespace MailDemon
                                 prepMsg.Cc.Clear();
                                 prepMsg.Bcc.Clear();
                             }).GetAwaiter();
-                            return; // only forward to the first valid address
+                            return true; // only forward to the first valid address
                         }
                     }
                 }
             }
+            finally
+            {
+                result.Dispose();
+            }
+            return true;
         }
     }
 }
