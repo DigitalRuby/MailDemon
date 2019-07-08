@@ -23,7 +23,24 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
+        private readonly string sslCertificateFile;
+        private readonly string sslCertificatePrivateKeyFile;
+        private readonly SecureString sslCertificatePassword;
         private readonly Dictionary<string, Regex> ignoreCertificateErrorsRegex = new Dictionary<string, Regex>(StringComparer.OrdinalIgnoreCase); // domain,regex
+
+        private void TestSslCertificate()
+        {
+            MailDemonLog.Info("Testing ssl certificate file {0}, private key file {1}", sslCertificateFile, sslCertificatePrivateKeyFile);
+            X509Certificate2 sslCert = CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword).Sync();
+            if (sslCert == null)
+            {
+                MailDemonLog.Error("SSL certificate failed to load or is not setup in config!");
+            }
+            else
+            {
+                MailDemonLog.Warn("SSL certificate loaded succesfully!");
+            }
+        }
 
         private async Task<Tuple<SslStream, Stream, StreamWriter>> StartTls
         (
