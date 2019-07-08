@@ -13,7 +13,8 @@ namespace MailDemon
 {
     public class CertificateCache
     {
-        private Dictionary<string, X509Certificate2> certCache = new Dictionary<string, X509Certificate2>();
+        private readonly SemaphoreSlim locker = new SemaphoreSlim(1, 1);
+        private readonly Dictionary<string, X509Certificate2> certCache = new Dictionary<string, X509Certificate2>();
 
         public CertificateCache(IConfiguration config)
         {
@@ -23,16 +24,14 @@ namespace MailDemon
         public async Task<X509Certificate2> LoadSslCertificateAsync(string publicKeyFile, string privateKeyFile, SecureString password)
         {
             string hash = (publicKeyFile ?? string.Empty) + "_" + (privateKeyFile ?? string.Empty);
-            X509Certificate2 cert;
-            lock (certCache)
+            X509Certificate2 cert = null;
+            await locker.WaitAsync();
+            try
             {
                 certCache.TryGetValue(hash, out cert);
-            }
-            if (cert != null)
-            {
-                if (cert.NotAfter <= DateTime.Now.Add(TimeSpan.FromDays(1.0)))
+                if (cert != null)
                 {
-                    lock (certCache)
+                    if (cert.NotAfter <= DateTime.Now.Add(TimeSpan.FromDays(1.0)))
                     {
                         certCache.Remove(hash);
                         X509Certificate2 toDispose = cert;
@@ -47,18 +46,19 @@ namespace MailDemon
                             catch
                             {
                             }
-                        });
+                        }).GetAwaiter();
                         cert = null;
                     }
                 }
-            }
-            if (cert == null)
-            {
-                cert = await MailDemonExtensionMethods.LoadSslCertificateAsync(publicKeyFile, privateKeyFile, password);
-                lock (certCache)
+                if (cert == null)
                 {
+                    cert = await MailDemonExtensionMethods.LoadSslCertificateAsync(publicKeyFile, privateKeyFile, password);
                     certCache[hash] = cert;
                 }
+            }
+            finally
+            {
+                locker.Release();
             }
             return cert;
         }
