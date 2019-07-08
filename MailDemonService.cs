@@ -121,12 +121,6 @@ namespace MailDemon
                     MailDemonLog.Error(ex);
                 }
             }
-            sslCertificateFile = rootSection["sslCertificateFile"];
-            sslCertificatePrivateKeyFile = rootSection["sslCertificatePrivateKeyFile"];
-            if (!string.IsNullOrWhiteSpace(sslCertificateFile))
-            {
-                sslCertificatePassword = (rootSection["sslCertificatePassword"] ?? string.Empty).ToSecureString();
-            }
             IConfigurationSection ignoreRegexSection = rootSection.GetSection("ignoreCertificateErrorsRegex");
             if (ignoreRegexSection != null)
             {
@@ -145,7 +139,6 @@ namespace MailDemon
         {
             Dispose();
             this.cancelToken = cancelToken;
-            TestSslCertificate();
             server = new TcpListenerActive(IPAddress.Any, port);
             server.Start(maxConnectionCount);
             cancelToken.Register(Dispose);

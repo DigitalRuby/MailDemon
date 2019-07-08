@@ -86,6 +86,7 @@ namespace MailDemon
                 configBuilder.AddJsonFile("appsettings.json");
             }
             IConfigurationRoot config = configBuilder.Build();
+            CertificateCache cache = new CertificateCache(config); // singleton
 
             // start mail server
             mailService = new MailDemonService(args, config);

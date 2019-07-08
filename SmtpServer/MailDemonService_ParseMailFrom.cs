@@ -43,7 +43,7 @@ namespace MailDemon
 
             if (fromUser != null && !fromUser.MailAddress.Address.Equals(fromAddress))
             {
-                await writer.WriteLineAsync($"500 invalid command");
+                await writer.WriteLineAsync($"500 invalid command - bad from address");
                 await writer.FlushAsync();
                 throw new InvalidOperationException($"Invalid from address - bad from address '{fromAddress}'");
             }
@@ -55,6 +55,11 @@ namespace MailDemon
 
             // read to addresses
             line = await ReadLineAsync(reader);
+            if (line.Equals("QUIT", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
             Dictionary<string, IEnumerable<MailboxAddress>> toAddressesByDomain = new Dictionary<string, IEnumerable<MailboxAddress>>(StringComparer.OrdinalIgnoreCase);
             while (line.StartsWith("RCPT TO:<", StringComparison.OrdinalIgnoreCase))
             {
@@ -95,7 +100,7 @@ namespace MailDemon
             // if no to addresses, fail
             if (toAddressesByDomain.Count == 0)
             {
-                await writer.WriteLineAsync($"500 invalid command");
+                await writer.WriteLineAsync($"500 invalid command - no to address");
                 await writer.FlushAsync();
                 throw new InvalidOperationException("Invalid message: " + line);
             }
