@@ -130,7 +130,8 @@ namespace MailDemon
             await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
             await writer.WriteLineAsync($"250-BINARYMIME");
             await writer.WriteLineAsync($"250-CHUNKING");
-            if (CertificateCache.Instance.HasCertificate && sslStream == null && port != 465 && port != 587)
+            if (CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword) != null &&
+                sslStream == null && port != 465 && port != 587)
             {
                 await writer.WriteLineAsync($"250-STARTTLS");
             }
@@ -240,8 +241,8 @@ namespace MailDemon
 
                 async Task StartSSL()
                 {
-                    sslCert = await CertificateCache.Instance.GetOrCreateCertificateAsync();
-                    Tuple<SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
+                    sslCert = await CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword);
+                    Tuple <SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
                     if (tls == null)
                     {
                         await writer.WriteLineAsync("503 Failed to start TLS");
@@ -394,7 +395,6 @@ namespace MailDemon
             }
             finally
             {
-                CertificateCache.Instance.ReleaseCertificate(sslCert);
                 sslStream?.Dispose();
                 clientStream?.Dispose();
                 tcpClient?.Dispose();
