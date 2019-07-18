@@ -297,6 +297,11 @@ namespace MailDemon
             {
                 return NotFound();
             }
+            int pos = id.IndexOf('@');
+            if (pos >= 0)
+            {
+                id = id.Substring(0, pos);
+            }
 
             // stupid bing/outlook email preview
             string userAgent = Request.Headers["User-Agent"].ToString();
