@@ -1,5 +1,11 @@
 ﻿@model MailDemon.MailListSubscription
 
+@{ 
+    IDictionary<string, object> recaptcha = new System.Dynamic.ExpandoObject();
+    recaptcha["Action"] = nameof(MailDemon.HomeController.SubscribeInitial);
+    recaptcha["Form"] = "subscribeForm";
+}
+
 <h2>@string.Format(MailDemon.Resources.SubscribeText, Model.MailList.Title)</h2>
 
 @using (Html.BeginForm(FormMethod.Post, new { id = "subscribeForm" }))
@@ -28,6 +34,6 @@
     <input type="submit" id="subscriptionSubmit" name="subscriptionSubmit" value="Subscribe" onclick="this.value = 'Please Wait…'; this.disabled = true; captchaSubmitForm(1); return false;" />
     <input type="hidden" id="captcha" name="captcha" value="" />
 
-    await Html.RenderPartialAsync("Recaptcha", new { Action = nameof(MailDemon.HomeController.SubscribeInitial), Form = "subscribeForm" });
+    await Html.RenderPartialAsync("Recaptcha", recaptcha);
 }
 
