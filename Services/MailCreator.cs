@@ -102,7 +102,14 @@ namespace MailDemon
         /// <inheritdoc />
         public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier)
         {
-            return CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
+            try
+            {
+                return CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Failed to create template " + templateName, ex);
+            }
         }
 
         /// <summary>
