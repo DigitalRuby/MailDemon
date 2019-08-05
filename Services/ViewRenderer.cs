@@ -103,17 +103,24 @@ namespace MailDemon
             {
                 throw new ArgumentNullException(nameof(tempDataProvider));
             }
-            var viewContext = new ViewContext
-            (
-                actionContext,
-                view,
-                viewDictionary,
-                new TempDataDictionary(actionContext.HttpContext, tempDataProvider),
-                sw,
-                new HtmlHelperOptions()
-            );
-            await view.RenderAsync(viewContext);
-            return sw.ToString();
+            try
+            {
+                var viewContext = new ViewContext
+                (
+                    actionContext,
+                    view,
+                    viewDictionary,
+                    new TempDataDictionary(actionContext.HttpContext, tempDataProvider),
+                    sw,
+                    new HtmlHelperOptions()
+                );
+                await view.RenderAsync(viewContext);
+                return sw.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Failed to render view", ex);
+            }
         }
 
         public ViewRenderService(IRazorViewEngine viewEngine, IHttpContextAccessor httpContextAccessor, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider) :
