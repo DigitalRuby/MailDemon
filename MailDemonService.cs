@@ -65,6 +65,7 @@ namespace MailDemon
         private readonly int maxConnectionCount = 128;
         private readonly MailboxAddress globalForwardAddress;
         private readonly int maxFailuresPerIPAddress = 3;
+        private readonly HashSet<string> whiteListIP;
         private readonly TimeSpan failureLockoutTimespan = TimeSpan.FromDays(1.0);
         private readonly IPAddress ip;
         private readonly int port = 25;
@@ -83,6 +84,7 @@ namespace MailDemon
             ip = (string.IsNullOrWhiteSpace(rootSection["ip"]) ? IPAddress.Any : IPAddress.Parse(rootSection["ip"]));
             port = rootSection.GetValue("port", port);
             maxFailuresPerIPAddress = rootSection.GetValue("maxFailuresPerIPAddress", maxFailuresPerIPAddress);
+            whiteListIP = rootSection.GetValue("whitelistIP", string.Empty).ToString().Split(',').ToHashSet();
             maxConnectionCount = rootSection.GetValue("maxConnectionCount", maxConnectionCount);
             maxMessageSize = rootSection.GetValue("maxMessageSize", maxMessageSize);
             globalForwardAddress = rootSection.GetValue("globalForwardAddress", globalForwardAddress);
@@ -196,15 +198,18 @@ namespace MailDemon
 
         private void IncrementFailure(string ipAddress, string userName)
         {
-            string key = "RateLimit_" + ipAddress;
-            CacheEntry entry = cache.GetOrCreate(key, (i) =>
+            if (!whiteListIP.Contains(ipAddress))
             {
-                i.AbsoluteExpirationRelativeToNow = failureLockoutTimespan;
-                i.Size = (key.Length * 2) + 16; // 12 bytes for C# object plus 4 bytes int
+                string key = "RateLimit_" + ipAddress;
+                CacheEntry entry = cache.GetOrCreate(key, (i) =>
+                {
+                    i.AbsoluteExpirationRelativeToNow = failureLockoutTimespan;
+                    i.Size = (key.Length * 2) + 16; // 12 bytes for C# object plus 4 bytes int
                 return new CacheEntry();
-            });
-            Interlocked.Increment(ref entry.Count);
-            IPBan.IPBanPlugin.IPBanLoginFailed("SMTP", userName, ipAddress);
+                });
+                Interlocked.Increment(ref entry.Count);
+                IPBan.IPBanPlugin.IPBanLoginFailed("SMTP", userName, ipAddress);
+            }
         }
     }
 }
