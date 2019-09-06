@@ -10,6 +10,9 @@ Thanks to MimeKit and MailKit for their tremendous codebase.
 
 Mail Demon is great for sending notifications, announcements and even text messages. See <a href='http://smsemailgateway.com/'>SMS Email Gateway</a> for more information on text messages.
 
+## IPBan Integration
+Mail Demon is integrated with IPBan - https://github.com/DigitalRuby/IPBan. If you have installed IPBan on your Linux or Windows box, then Mail Demon will send failed login attempts fomr SMTP or the mail list login to IPBan via a custom log file, blocking those attackers that exceed the failed login threshold for IPBan.
+
 ## Project Setup Instructions
 - Download code, open in Visual Studio or VS Code, set release configuration.
 - Update appsettings.json with your settings. I recommend an SSL certificate. Lets encrypt is a great option. Make sure to set the users to something other than the default.
