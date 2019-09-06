@@ -6,12 +6,12 @@ Mail Demon requires .NET core 2.2+ installed, or you can build a stand-alone exe
 
 Make sure to set appsettings.json to your required parameters before attempting to use.
 
-Thanks to MimeKit and MailKit for their tremendous codebase.
+Thanks to <a href='https://github.com/jstedfast/MimeKit'>MimeKit</a> and <a href='https://github.com/jstedfast/MailKit'>MailKit</a> for their tremendous codebase.
 
 Mail Demon is great for sending notifications, announcements and even text messages. See <a href='http://smsemailgateway.com/'>SMS Email Gateway</a> for more information on text messages.
 
 ## IPBan Integration
-Mail Demon is integrated with IPBan - https://github.com/DigitalRuby/IPBan. If you have installed IPBan on your Linux or Windows box, then Mail Demon will send failed login attempts from SMTP or the mail list login to IPBan via a custom log file, blocking those attackers that exceed the failed login threshold for IPBan.
+Mail Demon is integrated with <a href='https://github.com/DigitalRuby/IPBan'>IPBan</a>. If you have installed IPBan on your Linux or Windows box, then Mail Demon will send failed login attempts from SMTP or the mail list login to IPBan via a custom log file, blocking those attackers that exceed the failed login threshold for IPBan.
 
 ## Project Setup Instructions
 - Download code, open in Visual Studio or VS Code, set release configuration.
