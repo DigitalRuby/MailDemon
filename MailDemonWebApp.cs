@@ -38,6 +38,7 @@ using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Hosting;
 
 #endregion Imports
 
@@ -107,7 +108,7 @@ namespace MailDemon
                 db.Initialize();
 
                 // migrate away from litedb
-                string migrationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.db");
+                string migrationPath = Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.db");
                 if (File.Exists(migrationPath))
                 {
                     MailDemonLog.Warn("Migrating from old database {0}", migrationPath);
@@ -316,18 +317,16 @@ namespace MailDemon
                 Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(Configuration);
                 services.AddTransient<MailDemonDatabase>((provider) => new MailDemonDatabase(dbOptions));
                 services.AddHostedService<SubscriptionCleanup>();
-                services.AddDataProtection().SetApplicationName(GetType().Name).PersistKeysToFileSystem(new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory));
-                services.AddMvc((options) =>
+                services.AddDataProtection().SetApplicationName(GetType().Name).PersistKeysToFileSystem(new System.IO.DirectoryInfo(Directory.GetCurrentDirectory()));
+                services.AddMvc(options =>
                 {
-
-                }).SetCompatibilityVersion(CompatibilityVersion.Latest).AddJsonOptions(options =>
-                {
-                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                    options.EnableEndpointRouting = false;
                 });
-                services.Configure<RazorViewEngineOptions>(opts =>
+                services.AddRazorPages().AddRazorRuntimeCompilation(options =>
                 {
-                    opts.AllowRecompilingViewsOnFileChange = true;
-                    opts.FileProviders.Add(new MailDemonDatabaseFileProvider(this, RootDirectory));
+                    options.FileProviders.Clear();
+                    options.FileProviders.Add(new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")));
+                    options.FileProviders.Add(new MailDemonDatabaseFileProvider(serviceProvider, AppContext.BaseDirectory));
                 });
                 services.AddAntiforgery(options =>
                 {
@@ -342,9 +341,9 @@ namespace MailDemon
 
         void IStartup.Configure(IApplicationBuilder app)
         {
-            IHostingEnvironment env = app.ApplicationServices.GetService<IHostingEnvironment>();
+            IWebHostEnvironment env = app.ApplicationServices.GetService<IWebHostEnvironment>();
             ILoggerFactory loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
-            IApplicationLifetime lifetime = app.ApplicationServices.GetService<IApplicationLifetime>();
+            IHostApplicationLifetime lifetime = app.ApplicationServices.GetService<IHostApplicationLifetime>();
             loggerFactory.AddProvider(new MailDemonLogProvider());
             bool enableWeb = bool.Parse(Configuration.GetSection("mailDemonWeb")["enable"]);
             IServerAddressesFeature serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();

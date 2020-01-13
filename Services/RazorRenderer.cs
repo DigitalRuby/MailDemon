@@ -6,13 +6,15 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ObjectPool;
 
@@ -23,16 +25,25 @@ namespace MailDemon
     /// <summary>
     /// Renders razor pages with the absolute minimum setup of MVC, easy to use in console application, does not require any other classes or setup.
     /// </summary>
-    public class RazorRenderer : IViewRenderService, ILoggerFactory, ILogger
+    public class RazorRenderer : IViewRenderService, ILoggerFactory, ILogger, IWebHostEnvironment
     {
         private readonly string rootPath;
+        private readonly Assembly entryAssembly;
         private readonly ServiceCollection services;
         private readonly ServiceProvider serviceProvider;
         private readonly ViewRenderService viewRenderer;
 
-        public RazorRenderer(string rootPath)
+        IFileProvider IWebHostEnvironment.WebRootFileProvider { get; set; }
+        string IWebHostEnvironment.WebRootPath { get; set; }
+        string IHostEnvironment.ApplicationName { get; set; }
+        IFileProvider IHostEnvironment.ContentRootFileProvider { get; set; }
+        string IHostEnvironment.ContentRootPath { get; set; }
+        string IHostEnvironment.EnvironmentName { get; set; }
+
+        public RazorRenderer(string rootPath, Assembly entryAssembly)
         {
             this.rootPath = rootPath;
+            this.entryAssembly = entryAssembly ?? Assembly.GetExecutingAssembly();
             services = new ServiceCollection();
             ConfigureDefaultServices(services);
             Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(null);
@@ -43,25 +54,25 @@ namespace MailDemon
 
         private void ConfigureDefaultServices(IServiceCollection services)
         {
-            var environment = new HostingEnvironment
-            {
-                WebRootFileProvider = new PhysicalFileProvider(rootPath),
-                ApplicationName = typeof(RazorRenderer).Assembly.GetName().Name,
-                ContentRootPath = rootPath,
-                WebRootPath = rootPath,
-                EnvironmentName = "DEVELOPMENT",
-                ContentRootFileProvider = new PhysicalFileProvider(rootPath)
-            };
-            services.AddSingleton<IHostingEnvironment>(environment);
-            services.Configure<RazorViewEngineOptions>(options =>
+            IWebHostEnvironment webEnv = this as IWebHostEnvironment;
+            webEnv.EnvironmentName = "Production";
+            webEnv.ApplicationName = entryAssembly.GetName().Name;
+            webEnv.ContentRootPath = rootPath;
+            webEnv.ContentRootFileProvider = new PhysicalFileProvider(webEnv.ContentRootPath);
+            webEnv.WebRootFileProvider = webEnv.ContentRootFileProvider;
+            webEnv.WebRootPath = webEnv.ContentRootPath;
+            services.AddSingleton<IWebHostEnvironment>(this);
+            services.AddSingleton<IHostEnvironment>(this);
+            services.AddRazorPages().AddRazorRuntimeCompilation(options =>
             {
                 options.FileProviders.Clear();
                 options.FileProviders.Add(new MailDemonDatabaseFileProvider(serviceProvider, rootPath));
             });
             services.AddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
             services.AddSingleton<ILoggerFactory>(this);
-            var diagnosticSource = new DiagnosticListener(environment.ApplicationName);
+            var diagnosticSource = new DiagnosticListener(webEnv.ApplicationName);
             services.AddSingleton<DiagnosticSource>(diagnosticSource);
+            services.AddSingleton(diagnosticSource);
             services.AddMvc();
         }
 
@@ -88,7 +99,7 @@ namespace MailDemon
 
         IDisposable ILogger.BeginScope<TState>(TState state)
         {
-            throw new NotImplementedException();
+            return this;
         }
 
         ILogger ILoggerFactory.CreateLogger(string categoryName)

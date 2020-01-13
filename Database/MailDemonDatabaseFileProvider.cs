@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,36 @@ namespace MailDemon
 {
     public class MailDemonDatabaseFileProvider : IFileProvider
     {
+        private class PhysicalDirectoryContents : IDirectoryContents
+        {
+            private readonly IServiceProvider serviceProvider;
+            private readonly string dir;
+
+            public PhysicalDirectoryContents(IServiceProvider serviceProvider, string dir)
+            {
+                this.serviceProvider = serviceProvider;
+                this.dir = dir;
+            }
+
+            public bool Exists => Directory.Exists(dir);
+
+            public IEnumerator<IFileInfo> GetEnumerator()
+            {
+                foreach (string file in Directory.EnumerateFiles(dir, "*.cshtml"))
+                {
+                    yield return new MailDemonDatabaseFileInfo(serviceProvider, dir, Path.GetFileName(file));
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                foreach (string file in Directory.EnumerateFiles(dir, "*.cshtml"))
+                {
+                    yield return new MailDemonDatabaseFileInfo(serviceProvider, dir, Path.GetFileName(file));
+                }
+            }
+        }
+
         private readonly IServiceProvider serviceProvider;
         private readonly string rootPath;
 
@@ -22,7 +53,7 @@ namespace MailDemon
 
         public IDirectoryContents GetDirectoryContents(string subPath)
         {
-            return null;
+            return new PhysicalDirectoryContents(serviceProvider, rootPath);
         }
 
         public IFileInfo GetFileInfo(string subPath)

@@ -25,8 +25,8 @@ namespace MailDemon
         {
             if (Database.ProviderName.IndexOf("sqlite", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                Database.ExecuteSqlCommand("PRAGMA auto_vacuum = INCREMENTAL;");
-                Database.ExecuteSqlCommand("PRAGMA journal_mode = WAL;");
+                Database.ExecuteSqlRaw("PRAGMA auto_vacuum = INCREMENTAL;");
+                Database.ExecuteSqlRaw("PRAGMA journal_mode = WAL;");
             }
         }
 
@@ -115,7 +115,7 @@ namespace MailDemon
         {
             if (confirm)
             {
-                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.sqlite");
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.sqlite");
                 if (File.Exists(path))
                 {
                     File.Delete(path);
@@ -153,7 +153,7 @@ namespace MailDemon
                 default:
                     if (string.IsNullOrWhiteSpace(connectionString))
                     {
-                        connectionString = "Data Source=" + Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MailDemon.sqlite");
+                        connectionString = "Data Source=" + Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.sqlite");
                     }
                     options.UseSqlite(connectionString);
                     break;
@@ -167,7 +167,7 @@ namespace MailDemon
 
         MailDemonDatabase IDesignTimeDbContextFactory<MailDemonDatabase>.CreateDbContext(string[] args)
         {
-            string jsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+            string jsonPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
             if (!File.Exists(jsonPath))
             {
                 jsonPath = Path.Combine(Path.GetTempPath(), "appsettings.json");

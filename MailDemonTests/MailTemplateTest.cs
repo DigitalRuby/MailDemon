@@ -7,6 +7,7 @@ using System.IO;
 using NUnit.Framework;
 
 using MailDemon;
+using System.Reflection;
 
 #endregion Imports
 
@@ -25,7 +26,8 @@ namespace MailDemonTests
             {
                 db.Initialize();
             }
-            viewRenderer = new RazorRenderer(Path.Combine(Directory.GetCurrentDirectory(), "../../.."));
+            viewRenderer = new RazorRenderer(Directory.GetCurrentDirectory(),
+                Assembly.GetExecutingAssembly());
         }
 
         [TearDown]

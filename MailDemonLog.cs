@@ -108,7 +108,7 @@ namespace MailDemon
                 }
                 if (factory == null || factory.Configuration.AllTargets.Count == 0)
                 {
-                    string nlogConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "nlog.config");
+                    string nlogConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "nlog.config");
                     if (!File.Exists(nlogConfigPath))
                     {
                         Console.WriteLine("Creating default nlog.config file");

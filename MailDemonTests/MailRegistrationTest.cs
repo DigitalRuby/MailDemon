@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Http;
 using MimeKit;
 using MailKit.Net.Smtp;
+using System.Reflection;
 
 #endregion Imports
 
@@ -170,7 +171,7 @@ namespace MailDemonTests
                 db.Templates.Add(template2);
                 db.SaveChanges();
             }
-            mailCreator = new MailCreator(new RazorRenderer(AppDomain.CurrentDomain.BaseDirectory)) { IgnoreElements = authority };
+            mailCreator = new MailCreator(new RazorRenderer(Directory.GetCurrentDirectory(), Assembly.GetExecutingAssembly())) { IgnoreElements = authority };
             homeController = new HomeController(this, mailCreator, this, null, this)
             {
                 RequireCaptcha = false,
