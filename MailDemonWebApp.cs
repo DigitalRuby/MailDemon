@@ -320,7 +320,7 @@ namespace MailDemon
                 services.AddDataProtection().SetApplicationName(GetType().Name).PersistKeysToFileSystem(new System.IO.DirectoryInfo(Directory.GetCurrentDirectory()));
                 services.AddMvc(options =>
                 {
-                    options.EnableEndpointRouting = false;
+                    options.EnableEndpointRouting = true;
                 });
                 services.AddRazorPages().AddRazorRuntimeCompilation(options =>
                 {
@@ -391,18 +391,20 @@ namespace MailDemon
                             new string[] { "Accept-Encoding" };
                     }
                 });
-                app.UseAuthentication();
-                app.UseResponseCompression();
-                app.UseResponseCaching();
-                app.UseMiddleware<RateLimitMiddleware>();
-                app.UseMvc(routes =>
-                {
-                    routes.MapRoute("home", "/{action=Index}/{id?}", new { controller = "Home" });
-                });
-                // confusingly and strangely, WTF Microsoft, the UseCookiePolicy must come AFTER app.UseMvc for TempData to work.
-                // this is not documented anywhere that I could find
                 app.UseCookiePolicy(new CookiePolicyOptions
                 {
+                });
+                app.UseResponseCompression();
+                app.UseResponseCaching();
+                app.UseRouting();
+                app.UseAuthentication();
+                app.UseAuthorization();
+                app.UseMiddleware<RateLimitMiddleware>();
+                app.UseEndpoints(routes =>
+                {
+                    routes.MapControllers();
+                    routes.MapRazorPages();
+                    routes.MapControllerRoute("home", "/{action=Index}/{id?}", new { controller = "Home" });
                 });
             }
             ServerUrl = ServerUrl.Trim('/', '?');
