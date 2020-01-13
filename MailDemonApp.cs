@@ -77,7 +77,8 @@ namespace MailDemon
             // read config
             string rootDir = Directory.GetCurrentDirectory();
             IConfigurationBuilder configBuilder = new ConfigurationBuilder().SetBasePath(rootDir);
-            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" &&
+                File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Development.json")))
             {
                 configBuilder.AddJsonFile(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Development.json"));
             }
