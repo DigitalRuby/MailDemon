@@ -111,18 +111,18 @@ namespace MailDemon
         {
             if (all)
             {
-                db.Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1}", DateTime.UtcNow, list.Name);
+                db.Database.ExecuteSqlRaw("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1}", DateTime.UtcNow, list.Name);
             }
             else
             {
-                db.Database.ExecuteSqlCommand("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result <> ''", DateTime.UtcNow, list.Name);
+                db.Database.ExecuteSqlRaw("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result <> ''", DateTime.UtcNow, list.Name);
             }
             List<MailListSubscription> subs = new List<MailListSubscription>();
             string domain = null;
             foreach (MailListSubscription sub in db.Subscriptions.Where(s => s.ListName == list.Name && s.Result == "Pending")
                 .OrderBy(s => s.EmailAddressDomain))
             {
-                if (sub.EmailAddressDomain != domain)
+                if (domain is null || sub.EmailAddressDomain != domain)
                 {
                     if (subs.Count != 0)
                     {

@@ -111,6 +111,7 @@ namespace MailDemon
 
                 // use a separate database instance to do the query, that way we can update records in our other database instance
                 // preventing locking errors, especially with sqlite drivers
+                MailDemonLog.Warn("Begin bulk send");
                 using (var dbBulk = serviceProvider.GetService<MailDemonDatabase>())
                 {
                     IEnumerable<KeyValuePair<string, List<MailListSubscription>>> pendingSubs = dbBulk.BeginBulkEmail(list, unsubscribeUrl, all);
