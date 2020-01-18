@@ -93,7 +93,12 @@ namespace MailDemon
                             }
                             catch (Exception ex)
                             {
+                                // all messages fail for this domain
                                 MailDemonLog.Error(host + " (" + toDomain + ")", ex);
+                                foreach (MailToSend message in messages)
+                                {
+                                    message.Callback?.Invoke(message.Subscription, ex.Message);
+                                }
                             }
                             finally
                             {
