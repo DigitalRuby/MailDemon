@@ -115,7 +115,7 @@ namespace MailDemon
                         object pemObject = pemReader.ReadObject();
                         AsymmetricKeyParameter privateKey = ((AsymmetricCipherKeyPair)pemObject).Private;
                         dkimSigner = new DkimSigner(privateKey, Domain, dkimSelector);
-                        MailDemonLog.Info("Loaded dkim file at {0}", dkimFile);
+                        MailDemonLog.Warn("Loaded dkim file at {0}", dkimFile);
                     }
                 }
                 catch (Exception ex)
