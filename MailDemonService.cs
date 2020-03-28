@@ -109,14 +109,12 @@ namespace MailDemon
             {
                 try
                 {
-                    using (StringReader stringReader = new StringReader(File.ReadAllText(dkimFile)))
-                    {
-                        PemReader pemReader = new PemReader(stringReader);
-                        object pemObject = pemReader.ReadObject();
-                        AsymmetricKeyParameter privateKey = ((AsymmetricCipherKeyPair)pemObject).Private;
-                        dkimSigner = new DkimSigner(privateKey, Domain, dkimSelector);
-                        MailDemonLog.Warn("Loaded dkim file at {0}", dkimFile);
-                    }
+                    using StringReader stringReader = new StringReader(File.ReadAllText(dkimFile));
+                    PemReader pemReader = new PemReader(stringReader);
+                    object pemObject = pemReader.ReadObject();
+                    AsymmetricKeyParameter privateKey = ((AsymmetricCipherKeyPair)pemObject).Private;
+                    dkimSigner = new DkimSigner(privateKey, Domain, dkimSelector);
+                    MailDemonLog.Warn("Loaded dkim file at {0}", dkimFile);
                 }
                 catch (Exception ex)
                 {

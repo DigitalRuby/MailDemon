@@ -55,15 +55,13 @@ namespace MailDemon
                 }
                 else
                 {
-                    using (var db = serviceProvider.GetService<MailDemonDatabase>())
+                    using var db = serviceProvider.GetService<MailDemonDatabase>();
+                    MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
+                    if (template == null)
                     {
-                        MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
-                        if (template == null)
-                        {
-                            return default;
-                        }
-                        return template.LastModified;
+                        return default;
                     }
+                    return template.LastModified;
                 }
             }
         }
@@ -89,15 +87,13 @@ namespace MailDemon
                 contents = File.ReadAllBytes(fullPath);
                 return;
             }
-            using (var db = serviceProvider.GetService<MailDemonDatabase>())
-            {
-                MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
+            using var db = serviceProvider.GetService<MailDemonDatabase>();
+            MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
 
-                // views from db get layout default forced if no layout specified
-                if (template != null && template.Text != null)
-                {
-                    contents = System.Text.Encoding.UTF8.GetBytes(template.Text);
-                }
+            // views from db get layout default forced if no layout specified
+            if (template != null && template.Text != null)
+            {
+                contents = System.Text.Encoding.UTF8.GetBytes(template.Text);
             }
         }
     }

@@ -103,44 +103,42 @@ namespace MailDemon
 
         private void InitializeDB(IApplicationBuilder app)
         {
-            using (var db = app.ApplicationServices.GetService<MailDemonDatabase>())
-            {
-                db.Initialize();
+            using var db = app.ApplicationServices.GetService<MailDemonDatabase>();
+            db.Initialize();
 
-                // migrate away from litedb
-                string migrationPath = Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.db");
-                if (File.Exists(migrationPath))
+            // migrate away from litedb
+            string migrationPath = Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.db");
+            if (File.Exists(migrationPath))
+            {
+                MailDemonLog.Warn("Migrating from old database {0}", migrationPath);
+                var tran = db.Database.BeginTransaction();
+                try
                 {
-                    MailDemonLog.Warn("Migrating from old database {0}", migrationPath);
-                    var tran = db.Database.BeginTransaction();
-                    try
+                    using (FileStream fs = File.OpenRead(migrationPath))
+                    using (LiteDB.LiteDatabase oldDb = new LiteDB.LiteDatabase(fs))
                     {
-                        using (FileStream fs = File.OpenRead(migrationPath))
-                        using (LiteDB.LiteDatabase oldDb = new LiteDB.LiteDatabase(fs))
+                        foreach (MailList list in oldDb.GetCollection<MailList>().FindAll())
                         {
-                            foreach (MailList list in oldDb.GetCollection<MailList>().FindAll())
-                            {
-                                db.Lists.Add(list);
-                            }
-                            foreach (MailTemplate template in oldDb.GetCollection<MailTemplate>().FindAll())
-                            {
-                                db.Templates.Add(template);
-                            }
-                            foreach (MailListSubscription sub in oldDb.GetCollection<MailListSubscription>().FindAll())
-                            {
-                                db.Subscriptions.Add(sub);
-                            }
-                            db.SaveChanges();
-                            tran.Commit();
-                            tran = null;
-                            MailDemonLog.Warn("Migration success");
+                            db.Lists.Add(list);
                         }
-                        File.Delete(migrationPath);
+                        foreach (MailTemplate template in oldDb.GetCollection<MailTemplate>().FindAll())
+                        {
+                            db.Templates.Add(template);
+                        }
+                        foreach (MailListSubscription sub in oldDb.GetCollection<MailListSubscription>().FindAll())
+                        {
+                            db.Subscriptions.Add(sub);
+                        }
+                        db.SaveChanges();
+                        tran.Commit();
+                        tran = null;
+                        MailDemonLog.Warn("Migration success");
                     }
-                    finally
-                    {
-                        tran?.Rollback();
-                    }
+                    File.Delete(migrationPath);
+                }
+                finally
+                {
+                    tran?.Rollback();
                 }
             }
         }

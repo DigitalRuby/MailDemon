@@ -30,7 +30,7 @@ namespace MailDemon
         /// <inheritdoc />
         public async Task SendMailAsync(string toDomain, IEnumerable<MailToSend> messages)
         {
-            using (SmtpClient client = new SmtpClient()
+            using SmtpClient client = new SmtpClient()
             {
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
@@ -38,99 +38,97 @@ namespace MailDemon
                         ignoreCertificateErrorsRegex.TryGetValue("*", out _) ||
                         (ignoreCertificateErrorsRegex.TryGetValue(toDomain, out Regex regex)) && regex.IsMatch(certificate.Subject));
                 }
-            })
+            };
+            IPHostEntry ip = null;
+            LookupClient lookup = new LookupClient();
+            MailDemonLog.Debug("QueryAsync mx for domain {0}", toDomain);
+            IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
+            bool connected = false;
+            foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
             {
-                IPHostEntry ip = null;
-                LookupClient lookup = new LookupClient();
-                MailDemonLog.Debug("QueryAsync mx for domain {0}", toDomain);
-                IDnsQueryResponse result = await lookup.QueryAsync(toDomain, QueryType.MX, cancellationToken: cancelToken);
-                bool connected = false;
-                foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
+                // attempt to send, if fail, try next address
+                try
                 {
-                    // attempt to send, if fail, try next address
-                    try
+                    MailDemonLog.Debug("GetHostEntryAsync for exchange {0}", record.Exchange);
+                    ip = await Dns.GetHostEntryAsync(record.Exchange);
+                    foreach (IPAddress ipAddress in ip.AddressList)
                     {
-                        MailDemonLog.Debug("GetHostEntryAsync for exchange {0}", record.Exchange);
-                        ip = await Dns.GetHostEntryAsync(record.Exchange);
-                        foreach (IPAddress ipAddress in ip.AddressList)
+                        string host = ip.HostName;
+                        try
                         {
-                            string host = ip.HostName;
-                            try
+                            if (!DisableSending)
                             {
-                                if (!DisableSending)
-                                {
-                                    await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.Auto, cancellationToken: cancelToken).TimeoutAfter(30000);
-                                }
-                                connected = true;
-                                foreach (MailToSend message in messages)
-                                {
-                                    if (dkimSigner != null)
-                                    {
-                                        message.Message.Prepare(EncodingConstraint.SevenBit);
-                                        dkimSigner.Sign(message.Message, headersToSign);
-                                    }
-                                    try
-                                    {
-                                        if (!DisableSending)
-                                        {
-                                            MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
-                                            await client.SendAsync(message.Message, cancelToken).TimeoutAfter(30000);
-                                            MailDemonLog.Debug("Success message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
-                                        }
-
-                                        // callback success
-                                        message.Callback?.Invoke(message.Subscription, string.Empty);
-                                    }
-                                    catch (Exception exInner)
-                                    {
-                                        MailDemonLog.Debug("Fail message to host {0}, from {1}, to {2} {3}", host, message.Message.From, message.Message.To, exInner);
-
-                                        // TODO: Handle SmtpCommandException: Greylisted, please try again in 180 seconds
-                                        // callback error
-                                        message.Callback?.Invoke(message.Subscription, exInner.Message);
-                                    }
-                                }
+                                await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.Auto, cancellationToken: cancelToken).TimeoutAfter(30000);
                             }
-                            catch (Exception ex)
+                            connected = true;
+                            foreach (MailToSend message in messages)
                             {
-                                // all messages fail for this domain
-                                MailDemonLog.Error(host + " (" + toDomain + ")", ex);
-                                foreach (MailToSend message in messages)
+                                if (dkimSigner != null)
                                 {
-                                    message.Callback?.Invoke(message.Subscription, ex.Message);
+                                    message.Message.Prepare(EncodingConstraint.SevenBit);
+                                    dkimSigner.Sign(message.Message, headersToSign);
                                 }
-                            }
-                            finally
-                            {
                                 try
                                 {
-                                    await client.DisconnectAsync(true, cancelToken);
+                                    if (!DisableSending)
+                                    {
+                                        MailDemonLog.Debug("Sending message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
+                                        await client.SendAsync(message.Message, cancelToken).TimeoutAfter(30000);
+                                        MailDemonLog.Debug("Success message to host {0}, from {1}, to {2}", host, message.Message.From, message.Message.To);
+                                    }
+
+                                    // callback success
+                                    message.Callback?.Invoke(message.Subscription, string.Empty);
                                 }
-                                catch
+                                catch (Exception exInner)
                                 {
+                                    MailDemonLog.Debug("Fail message to host {0}, from {1}, to {2} {3}", host, message.Message.From, message.Message.To, exInner);
+
+                                    // TODO: Handle SmtpCommandException: Greylisted, please try again in 180 seconds
+                                    // callback error
+                                    message.Callback?.Invoke(message.Subscription, exInner.Message);
                                 }
-                            }
-                            if (connected)
-                            {
-                                // we successfuly got a mail server, don't loop more ips
-                                break;
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            // all messages fail for this domain
+                            MailDemonLog.Error(host + " (" + toDomain + ")", ex);
+                            foreach (MailToSend message in messages)
+                            {
+                                message.Callback?.Invoke(message.Subscription, ex.Message);
+                            }
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                await client.DisconnectAsync(true, cancelToken);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                        if (connected)
+                        {
+                            // we successfuly got a mail server, don't loop more ips
+                            break;
+                        }
                     }
-                    catch (InvalidOperationException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        // dns error, move on to next mail server
-                        MailDemonLog.Error(toDomain, ex);
-                    }
-                    if (connected)
-                    {
-                        // we successfuly got a mail server, don't loop more dns entries
-                        break;
-                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // dns error, move on to next mail server
+                    MailDemonLog.Error(toDomain, ex);
+                }
+                if (connected)
+                {
+                    // we successfuly got a mail server, don't loop more dns entries
+                    break;
                 }
             }
         }
@@ -211,11 +209,9 @@ namespace MailDemon
         {
             try
             {
-                using (Stream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
-                {
-                    MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
-                    await SendMailAsync(toDomain, EnumerateMessages(message, toDomain, from, toAddresses, prepMessage));
-                }
+                using Stream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+                MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
+                await SendMailAsync(toDomain, EnumerateMessages(message, toDomain, from, toAddresses, prepMessage));
             }
             catch (Exception ex)
             {

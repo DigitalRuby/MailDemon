@@ -57,10 +57,8 @@ namespace IPBan
             {
                 eventLog = new EventLog("Application", Environment.MachineName, "IPBanCustom");
             }
-            using (Process p = Process.GetCurrentProcess())
-            {
-                ProcessName = p.ProcessName;
-            }
+            using Process p = Process.GetCurrentProcess();
+            ProcessName = p.ProcessName;
         }
 
         /// <summary>

@@ -67,35 +67,31 @@ namespace MailDemon
 
         public static async Task TimeoutAfter(this Task task, int milliseconds)
         {
-            using (CancellationTokenSource timeoutCancellationTokenSource = new CancellationTokenSource())
+            using CancellationTokenSource timeoutCancellationTokenSource = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(milliseconds, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
             {
-                var completedTask = await Task.WhenAny(task, Task.Delay(milliseconds, timeoutCancellationTokenSource.Token));
-                if (completedTask == task)
-                {
-                    timeoutCancellationTokenSource.Cancel();
-                    await task; // Very important in order to propagate exceptions
-                }
-                else
-                {
-                    throw new TimeoutException("The operation has timed out.");
-                }
+                timeoutCancellationTokenSource.Cancel();
+                await task; // Very important in order to propagate exceptions
+            }
+            else
+            {
+                throw new TimeoutException("The operation has timed out.");
             }
         }
 
         public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, int milliseconds)
         {
-            using (CancellationTokenSource timeoutCancellationTokenSource = new CancellationTokenSource())
+            using CancellationTokenSource timeoutCancellationTokenSource = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(milliseconds, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
             {
-                var completedTask = await Task.WhenAny(task, Task.Delay(milliseconds, timeoutCancellationTokenSource.Token));
-                if (completedTask == task)
-                {
-                    timeoutCancellationTokenSource.Cancel();
-                    return await task; // Very important in order to propagate exceptions
-                }
-                else
-                {
-                    throw new TimeoutException("The operation has timed out.");
-                }
+                timeoutCancellationTokenSource.Cancel();
+                return await task; // Very important in order to propagate exceptions
+            }
+            else
+            {
+                throw new TimeoutException("The operation has timed out.");
             }
         }
 

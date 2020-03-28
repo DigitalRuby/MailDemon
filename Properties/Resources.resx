@@ -293,4 +293,10 @@
   <data name="TemplateInstructions" xml:space="preserve">
     <value>Save first, then test, then send</value>
   </data>
+  <data name="SubscribeExpired" xml:space="preserve">
+    <value>Subscription Link Expired</value>
+  </data>
+  <data name="SubscribeExpiredDetails" xml:space="preserve">
+    <value>The subscription link has expired, please try re-subscribing from the original link</value>
+  </data>
 </root>

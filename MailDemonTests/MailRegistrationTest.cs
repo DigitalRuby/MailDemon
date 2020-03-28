@@ -127,11 +127,9 @@ namespace MailDemonTests
             homeController.Unsubscribe(listName, unsubscribeToken);
 
             // validate that we are unsubscribed
-            using (var db = dbProvider.GetDatabase())
-            {
-                MailListSubscription reg = db.Subscriptions.FirstOrDefault();
-                Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
-            }
+            using var db = dbProvider.GetDatabase();
+            MailListSubscription reg = db.Subscriptions.FirstOrDefault();
+            Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
         }
 
         [SetUp]
@@ -208,10 +206,8 @@ namespace MailDemonTests
             }).Sync();
 
             // check database for registration not exist
-            using (var db = dbProvider.GetDatabase())
-            {
-                Assert.AreEqual(0, db.Subscriptions.Count());
-            }
+            using var db = dbProvider.GetDatabase();
+            Assert.AreEqual(0, db.Subscriptions.Count());
         }
 
         IDictionary<string, object> ITempDataProvider.LoadTempData(HttpContext context)

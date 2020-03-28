@@ -247,7 +247,7 @@ namespace MailDemon
             }
             if (list == null)
             {
-                return NotFound();
+                return View("SubscribeExpired");
             }
 
             // the link will be sent via email
@@ -377,10 +377,8 @@ namespace MailDemon
 
         public IActionResult Lists()
         {
-            using (MailDemonDatabase db = dbProvider.GetDatabase())
-            {
-                return View(db.Lists.OrderBy(l => l.Name).ToArray());
-            }
+            using MailDemonDatabase db = dbProvider.GetDatabase();
+            return View(db.Lists.OrderBy(l => l.Name).ToArray());
         }
 
         public IActionResult EditList(string id)
@@ -453,16 +451,14 @@ namespace MailDemon
         {
             try
             {
-                using (MailDemonDatabase db = dbProvider.GetDatabase())
+                using MailDemonDatabase db = dbProvider.GetDatabase();
+                MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
+                if (list != null)
                 {
-                    MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
-                    if (list != null)
-                    {
-                        db.Subscriptions.RemoveRange(db.Subscriptions.Where(r => r.ListName == id));
-                        db.Templates.RemoveRange(db.Templates.Where(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator)));
-                        db.Lists.Remove(list);
-                        db.SaveChanges();
-                    }
+                    db.Subscriptions.RemoveRange(db.Subscriptions.Where(r => r.ListName == id));
+                    db.Templates.RemoveRange(db.Templates.Where(t => t.Name.StartsWith(list.Name + MailTemplate.FullNameSeparator)));
+                    db.Lists.Remove(list);
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -560,14 +556,12 @@ namespace MailDemon
         {
             try
             {
-                using (MailDemonDatabase db = dbProvider.GetDatabase())
+                using MailDemonDatabase db = dbProvider.GetDatabase();
+                MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == id);
+                if (template != null)
                 {
-                    MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == id);
-                    if (template != null)
-                    {
-                        db.Templates.Remove(template);
-                        db.SaveChanges();
-                    }
+                    db.Templates.Remove(template);
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -662,17 +656,15 @@ namespace MailDemon
             {
                 return NotFound();
             }
-            using (MailDemonDatabase db = dbProvider.GetDatabase())
+            using MailDemonDatabase db = dbProvider.GetDatabase();
+            MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
+            if (list == null)
             {
-                MailList list = db.Lists.FirstOrDefault(l => l.Name == id);
-                if (list == null)
-                {
-                    return NotFound();
-                }
-                ICollection<MailListSubscription> subscribers = db.Subscriptions.Where(s => s.ListName == id).OrderByDescending(s => s.Result).ThenByDescending(s => s.Id).Take(1000).ToList();
-                ViewBag.ListName = id;
-                return View(subscribers);
+                return NotFound();
             }
+            ICollection<MailListSubscription> subscribers = db.Subscriptions.Where(s => s.ListName == id).OrderByDescending(s => s.Result).ThenByDescending(s => s.Id).Take(1000).ToList();
+            ViewBag.ListName = id;
+            return View(subscribers);
         }
 
         [HttpPost]
@@ -680,14 +672,12 @@ namespace MailDemon
         {
             if (action == "delete" && subId != null)
             {
-                using (MailDemonDatabase db = dbProvider.GetDatabase())
+                using MailDemonDatabase db = dbProvider.GetDatabase();
+                MailListSubscription sub = db.Subscriptions.FirstOrDefault(s => s.Id == subId);
+                if (sub != null)
                 {
-                    MailListSubscription sub = db.Subscriptions.FirstOrDefault(s => s.Id == subId);
-                    if (sub != null)
-                    {
-                        db.Subscriptions.Remove(sub);
-                        db.SaveChanges();
-                    }
+                    db.Subscriptions.Remove(sub);
+                    db.SaveChanges();
                 }
             }
             return RedirectToAction(nameof(Subscribers), new { id });
