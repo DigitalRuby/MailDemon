@@ -278,7 +278,7 @@ namespace MailDemon
             }
             if (reg == null)
             {
-                return NotFound();
+                return View("SubscribeExpired");
             }
 
             // temp property does not go in db
