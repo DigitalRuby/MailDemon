@@ -65,7 +65,7 @@ namespace MailDemon
         {
             MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
             string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
-            MailboxAddress[] toAddresses = new MailboxAddress[] { new MailboxAddress(reg.EmailAddress) };
+            MailboxAddress[] toAddresses = new MailboxAddress[] { MailboxAddress.Parse(reg.EmailAddress) };
             MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, GetViewBagForTemplate(), null);
             await mailSender.SendMailAsync(toDomain, GetMessages(reg, message, fromAddress, toAddresses));
         }

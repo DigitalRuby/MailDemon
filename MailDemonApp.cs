@@ -45,7 +45,7 @@ namespace MailDemon
             msg.From.Add(demon.Users.First().MailAddress);
             foreach (string toAddress in to.Split(',', ';'))
             {
-                msg.To.Add(new MailboxAddress(toAddress));
+                msg.To.Add(MailboxAddress.Parse(toAddress));
             }
             msg.Subject = "Test Subject";
             BodyBuilder bodyBuilder = new BodyBuilder();

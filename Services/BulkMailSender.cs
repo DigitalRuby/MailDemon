@@ -58,13 +58,13 @@ namespace MailDemon
                 message.To.Clear();
                 if (string.IsNullOrWhiteSpace(list.FromEmailName))
                 {
-                    message.From.Add(new MailboxAddress(list.FromEmailAddress));
+                    message.From.Add(MailboxAddress.Parse(list.FromEmailAddress));
                 }
                 else
                 {
                     message.From.Add(new MailboxAddress(list.FromEmailName, list.FromEmailAddress));
                 }
-                message.To.Add(new MailboxAddress(sub.EmailAddress));
+                message.To.Add(MailboxAddress.Parse(sub.EmailAddress));
                 yield return new MailToSend { Subscription = sub, Message = message, Callback = callback };
             }
         }

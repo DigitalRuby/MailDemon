@@ -39,7 +39,7 @@ namespace MailDemon
             Password = (password ?? string.Empty).ToSecureString();
             if (!string.IsNullOrWhiteSpace(forwardAddress))
             {
-                ForwardAddress = new MailboxAddress(forwardAddress);
+                ForwardAddress = MailboxAddress.Parse(forwardAddress);
             }
             Authenticated = authenticated;
             MailAddress = new MailboxAddress(DisplayName, address);

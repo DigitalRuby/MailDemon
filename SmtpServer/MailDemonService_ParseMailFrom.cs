@@ -113,7 +113,7 @@ namespace MailDemon
                     await writer.FlushAsync();
                     throw new InvalidOperationException("Invalid message: " + line);
                 }
-                await writer.WriteLineAsync($"354");
+                await writer.WriteLineAsync($"354 ok");
                 string tempFile = Path.GetTempFileName();
                 int totalCount = 0;
                 try
@@ -195,7 +195,7 @@ namespace MailDemon
                     return new MailFromResult
                     {
                         BackingFile = tempFile,
-                        From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
+                        From = (fromUser == null ? MailboxAddress.Parse(fromAddress) : fromUser.MailAddress),
                         ToAddresses = toAddressesByDomain
                     };
                 }
@@ -257,7 +257,7 @@ namespace MailDemon
                         return new MailFromResult
                         {
                             BackingFile = tempFile,
-                            From = (fromUser == null ? new MailboxAddress(fromAddress) : fromUser.MailAddress),
+                            From = (fromUser == null ? MailboxAddress.Parse(fromAddress) : fromUser.MailAddress),
                             ToAddresses = toAddressesByDomain
                         };
                     }
