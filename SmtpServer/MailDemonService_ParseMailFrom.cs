@@ -114,6 +114,7 @@ namespace MailDemon
                     throw new InvalidOperationException("Invalid message: " + line);
                 }
                 await writer.WriteLineAsync($"354 ok");
+                await writer.FlushAsync();
                 string tempFile = Path.GetTempFileName();
                 int totalCount = 0;
                 try
