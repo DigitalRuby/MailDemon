@@ -54,12 +54,14 @@ namespace MailDemon
             if (sslCertificate == null)
             {
                 await writer.WriteLineAsync("501 Syntax error (no parameters allowed)");
+                await writer.FlushAsync();
                 return null;
             }
             else if (sendReadyCommand)
             {
                 // upgrade to ssl
                 await writer.WriteLineAsync($"220 Ready to start TLS");
+                await writer.FlushAsync();
             }
 
             // create ssl stream and ensure encryption is required

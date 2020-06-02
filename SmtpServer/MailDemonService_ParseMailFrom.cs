@@ -52,6 +52,7 @@ namespace MailDemon
             string binaryMimeOk = (binaryMime ? " and BINARYMIME" : string.Empty);
             string fromUserName = (fromUser == null ? fromAddress : fromUser.UserName);
             await writer.WriteLineAsync($"250 2.1.0 sender {fromUserName}{binaryMimeOk} OK");
+            await writer.FlushAsync();
 
             // read to addresses
             line = await ReadLineAsync(reader);
@@ -94,6 +95,7 @@ namespace MailDemon
 
                 // denote success for recipient
                 await writer.WriteLineAsync($"250 2.1.0 recipient {toAddress} OK");
+                await writer.FlushAsync();
                 line = await ReadLineAsync(reader);
             }
 
@@ -178,6 +180,7 @@ namespace MailDemon
                             if (totalCount > maxMessageSize)
                             {
                                 await writer.WriteLineAsync("552 message too large");
+                                await writer.FlushAsync();
                                 throw new InvalidOperationException("Invalid message: " + line);
                             }
                             tempFileWriter.WriteByte((byte)b);
@@ -193,6 +196,7 @@ namespace MailDemon
                         }
                     }
                     await writer.WriteLineAsync($"250 2.5.0 OK");
+                    await writer.FlushAsync();
                     return new MailFromResult
                     {
                         BackingFile = tempFile,
@@ -230,6 +234,7 @@ namespace MailDemon
                                 NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out int size))
                             {
                                 await writer.WriteLineAsync($"500 invalid command");
+                                await writer.FlushAsync();
                                 throw new InvalidOperationException("Invalid message: " + line);
                             }
                             last = line.Contains("LAST", StringComparison.OrdinalIgnoreCase);
@@ -237,16 +242,19 @@ namespace MailDemon
                             if (totalBytes > maxMessageSize)
                             {
                                 await writer.WriteLineAsync("552 message too large");
+                                await writer.FlushAsync();
                                 throw new InvalidOperationException("Invalid message: " + line);
                             }
                             await ReadWriteAsync(reader, stream, size);
                             if (last)
                             {
                                 await writer.WriteLineAsync($"250 2.5.0 total {totalBytes} bytes received message OK");
+                                await writer.FlushAsync();
                             }
                             else
                             {
                                 await writer.WriteLineAsync($"250 2.0.0 {size} bytes received OK");
+                                await writer.FlushAsync();
                             }
                         }
                         while (!last && !cancelToken.IsCancellationRequested && (line = await ReadLineAsync(reader)) != null);

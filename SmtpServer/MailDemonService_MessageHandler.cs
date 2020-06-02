@@ -136,19 +136,22 @@ namespace MailDemon
                 await writer.WriteLineAsync($"250-STARTTLS");
             }
             await writer.WriteLineAsync($"250 SMTPUTF8");
+            await writer.FlushAsync();
         }
 
         private async Task HandleHelo(StreamWriter writer, string line, IPEndPoint endPoint)
         {
             string clientDomain = await ValidateGreeting("HELO", line, endPoint);
             await writer.WriteLineAsync($"220 {Domain} Hello {clientDomain}");
+            await writer.FlushAsync();
         }
 
         private async Task<MailDemonUser> AuthenticatePlain(Stream reader, StreamWriter writer, string line)
         {
             if (line == "AUTH PLAIN")
             {
-                await writer.WriteLineAsync($"334");
+                await writer.WriteLineAsync($"334 ok");
+                await writer.FlushAsync();
                 line = await ReadLineAsync(reader) ?? string.Empty;
             }
             else
@@ -170,6 +173,7 @@ namespace MailDemon
                 {
                     MailDemonLog.Info("User {0} authenticated", user.UserName);
                     await writer.WriteLineAsync($"235 2.7.0 Accepted");
+                    await writer.FlushAsync();
                     return user;
                 }
             }
@@ -177,6 +181,7 @@ namespace MailDemon
             // fail
             MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
+            await writer.FlushAsync();
             return new MailDemonUser(userName, userName, password, userName, null, false, false);
         }
 
@@ -184,8 +189,10 @@ namespace MailDemon
         {
             MailDemonUser foundUser = null;
             await writer.WriteLineAsync("334 VXNlcm5hbWU6"); // user
+            await writer.FlushAsync();
             string userName = await ReadLineAsync(reader) ?? string.Empty;
             await writer.WriteLineAsync("334 UGFzc3dvcmQ6"); // pwd
+            await writer.FlushAsync();
             string password = await ReadLineAsync(reader) ?? string.Empty;
             userName = Encoding.UTF8.GetString(Convert.FromBase64String(userName)).Trim();
             password = Encoding.UTF8.GetString(Convert.FromBase64String(password));
@@ -202,12 +209,14 @@ namespace MailDemon
             {
                 MailDemonLog.Info("User {0} authenticated", foundUser.UserName);
                 await writer.WriteLineAsync($"235 2.7.0 Accepted");
+                await writer.FlushAsync();
                 return foundUser;
             }
 
             // fail
             MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
+            await writer.FlushAsync();
             return new MailDemonUser(userName, userName, password, userName, null, false, false);
         }
 
@@ -246,6 +255,7 @@ namespace MailDemon
                     if (tls == null)
                     {
                         await writer.WriteLineAsync("503 Failed to start TLS");
+                        await writer.FlushAsync();
                         throw new IOException("Failed to start TLS, ssl certificate failed to load");
                     }
                     else
@@ -265,6 +275,7 @@ namespace MailDemon
 
                 // send greeting
                 await writer.WriteLineAsync($"220 {Domain} {greeting}");
+                await writer.FlushAsync();
                 IPEndPoint endPoint = tcpClient.Client.RemoteEndPoint as IPEndPoint;
 
                 while (true)
@@ -275,6 +286,7 @@ namespace MailDemon
                     if (string.IsNullOrWhiteSpace(line) || line.StartsWith("QUIT", StringComparison.OrdinalIgnoreCase))
                     {
                         await writer.WriteLineAsync("221 session terminated");
+                        await writer.FlushAsync();
                         break;
                     }
                     else if (line.StartsWith("EHLO", StringComparison.OrdinalIgnoreCase))
@@ -287,6 +299,7 @@ namespace MailDemon
                         if (sslStream != null)
                         {
                             await writer.WriteLineAsync("503 TLS already initiated");
+                            await writer.FlushAsync();
                         }
                         else
                         {
@@ -301,10 +314,12 @@ namespace MailDemon
                     else if (line.StartsWith("NOOP", StringComparison.OrdinalIgnoreCase))
                     {
                         await writer.WriteLineAsync("220 OK");
+                        await writer.FlushAsync();
                     }
                     else if (line.StartsWith("HELP", StringComparison.OrdinalIgnoreCase))
                     {
                         await writer.WriteLineAsync("220 OK Please use EHLO command");
+                        await writer.FlushAsync();
                     }
                     else if (!helo)
                     {
@@ -315,6 +330,7 @@ namespace MailDemon
                     else if (line.StartsWith("RSET", StringComparison.OrdinalIgnoreCase))
                     {
                         await writer.WriteLineAsync($"250 2.0.0 Resetting");
+                        await writer.FlushAsync();
                         authenticatedUser = null;
                     }
                     else if (line.StartsWith("AUTH PLAIN", StringComparison.OrdinalIgnoreCase))
@@ -373,6 +389,7 @@ namespace MailDemon
                                 if (!result)
                                 {
                                     await writer.WriteLineAsync("221 session terminated");
+                                    await writer.FlushAsync();
                                     break;
                                 }
                             }

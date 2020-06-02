@@ -140,6 +140,7 @@ namespace MailDemon
             if (writer != null)
             {
                 await writer.WriteLineAsync($"500 invalid command - SPF records from mail domain '{fromAddressDomain}' do not match connection host '{entry.HostName}'");
+                await writer.FlushAsync();
             }
             throw new InvalidOperationException($"SPF validation failed for host '{entry.HostName}', address domain '{fromAddressDomain}'");
         }

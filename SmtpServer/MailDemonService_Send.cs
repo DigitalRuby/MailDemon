@@ -152,6 +152,7 @@ namespace MailDemon
             MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line, endPoint);
             SendMail(writer, result, endPoint, true, prepMessage).GetAwaiter();
             await writer.WriteLineAsync($"250 2.1.0 OK");
+            await writer.FlushAsync();
         }
 
         /// <summary>
