@@ -11,6 +11,7 @@
 *.debug.json
 *.development.json
 MailDemon.sqlite
+*.xml
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
