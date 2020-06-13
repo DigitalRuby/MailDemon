@@ -153,18 +153,24 @@ namespace MailDemon
             {
                 while (server != null && server.Active)
                 {
+                    TcpClient tcpClient = null;
                     try
                     {
-                        await ProcessConnection();
+                        // handle connection in background
+                        tcpClient = await server.AcceptTcpClientAsync();
                     }
                     catch (ObjectDisposedException)
                     {
-                        // happens on shutdown
+                        // ignore, happens on shutdown
                     }
                     catch (Exception ex)
                     {
-                        MailDemonLog.Error(ex);
+                        MailDemonLog.Error("Error connecting incoming socket", ex);
+                        continue;
                     }
+
+                    // process connection in background
+                    ProcessConnection(tcpClient).GetAwaiter();
                 }
             }
             catch (Exception ex2)
@@ -203,7 +209,7 @@ namespace MailDemon
                 {
                     i.AbsoluteExpirationRelativeToNow = failureLockoutTimespan;
                     i.Size = (key.Length * 2) + 16; // 12 bytes for C# object plus 4 bytes int
-                return new CacheEntry();
+                    return new CacheEntry();
                 });
                 Interlocked.Increment(ref entry.Count);
                 IPBan.IPBanPlugin.IPBanLoginFailed("SMTP", userName, ipAddress);

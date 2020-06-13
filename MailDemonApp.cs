@@ -100,13 +100,9 @@ namespace MailDemon
             if (args.Length > 0 && args[0].StartsWith("test", StringComparison.OrdinalIgnoreCase))
             {
                 mailService.DisableSending = true;
-                string file = args.Length > 2 ? args[3] : null;
-                if (file != null)
-                {
-                    TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
-                    TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
-                }
-
+                string file = args.Length > 3 ? args[3] : null;
+                TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
+                TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
                 args = new string[0];
             }
 

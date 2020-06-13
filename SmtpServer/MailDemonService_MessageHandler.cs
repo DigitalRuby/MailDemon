@@ -12,10 +12,30 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
-        private async Task ProcessConnection()
+        private async Task ProcessConnection(TcpClient tcpClient)
         {
-            TcpClient tcpClient = await server.AcceptTcpClientAsync();
-            HandleClientConnectionAsync(tcpClient).ConfigureAwait(false).GetAwaiter();
+            try
+            {
+                await HandleClientConnectionAsync(tcpClient);
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore, happens on shutdown
+            }
+            catch (Exception ex)
+            {
+                MailDemonLog.Error(ex, "Error from client connection {0}", tcpClient.Client.RemoteEndPoint);
+            }
+            finally
+            {
+                try
+                {
+                    tcpClient.Dispose();
+                }
+                catch
+                {
+                }
+            }
         }
 
         private async Task<string> ReadLineAsync(Stream reader)
@@ -130,8 +150,8 @@ namespace MailDemon
             await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
             await writer.WriteLineAsync($"250-BINARYMIME");
             await writer.WriteLineAsync($"250-CHUNKING");
-            if (CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword) != null &&
-                sslStream == null && port != 465 && port != 587)
+            var cert = await CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword);
+            if (cert != null && sslStream == null && port != 465 && port != 587)
             {
                 await writer.WriteLineAsync($"250-STARTTLS");
             }
@@ -222,6 +242,11 @@ namespace MailDemon
 
         private async Task HandleClientConnectionAsync(TcpClient tcpClient)
         {
+            if (tcpClient is null || tcpClient.Client is null || !tcpClient.Client.Connected)
+            {
+                return;
+            }
+
             string ipAddress = (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString();
             MailDemonUser authenticatedUser = null;
             NetworkStream clientStream = null;
@@ -414,7 +439,6 @@ namespace MailDemon
             {
                 sslStream?.Dispose();
                 clientStream?.Dispose();
-                tcpClient?.Dispose();
                 MailDemonLog.Info("{0} disconnected", ipAddress);
             }
         }
