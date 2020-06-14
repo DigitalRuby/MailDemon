@@ -240,6 +240,8 @@ namespace MailDemon
             return new MailDemonUser(userName, userName, password, userName, null, false, false);
         }
 
+        private static readonly TimeSpan sessionTimeout = TimeSpan.FromMinutes(5.0);
+
         private async Task HandleClientConnectionAsync(TcpClient tcpClient)
         {
             if (tcpClient is null || tcpClient.Client is null || !tcpClient.Client.Connected)
@@ -247,6 +249,7 @@ namespace MailDemon
                 return;
             }
 
+            DateTime start = DateTime.UtcNow;
             string ipAddress = (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString();
             MailDemonUser authenticatedUser = null;
             NetworkStream clientStream = null;
@@ -305,6 +308,11 @@ namespace MailDemon
 
                 while (true)
                 {
+                    if ((DateTime.UtcNow - start) > sessionTimeout)
+                    {
+                        throw new TimeoutException($"Session expired after {sessionTimeout.TotalMinutes:0.00} minutes");
+                    }
+
                     string line = await ReadLineAsync(reader);
 
                     // these commands are allowed before HELO
