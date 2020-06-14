@@ -16,14 +16,14 @@ namespace MailDemon
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            do
+            while (!stoppingToken.IsCancellationRequested)
             {
                 DateTime dt = DateTime.UtcNow;
                 using MailDemonDatabase db = serviceProvider.GetService<MailDemonDatabase>();
                 db.Subscriptions.RemoveRange(db.Subscriptions.Where(r => r.Expires <= dt && r.UnsubscribeToken == null));
                 await db.SaveChangesAsync();
+                await Task.Delay(loopTimeSpan, stoppingToken);
             }
-            while (!(await stoppingToken.WaitHandle.WaitOneAsync(loopTimeSpan, stoppingToken)));
         }
 
         public SubscriptionCleanup(IServiceProvider serviceProvider)
