@@ -13,6 +13,7 @@ using AngleSharp;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -64,12 +65,13 @@ namespace MailDemon
             webEnv.ContentRootFileProvider = new PhysicalFileProvider(webEnv.ContentRootPath);
             webEnv.WebRootFileProvider = webEnv.ContentRootFileProvider;
             webEnv.WebRootPath = webEnv.ContentRootPath;
+            services.AddMemoryCache();
             services.AddSingleton<IWebHostEnvironment>(this);
             services.AddSingleton<IHostEnvironment>(this);
             services.AddRazorPages().AddRazorRuntimeCompilation(options =>
             {
                 options.FileProviders.Clear();
-                options.FileProviders.Add(new MailDemonDatabaseFileProvider(this, rootPath));
+                options.FileProviders.Add(new MailDemonDatabaseFileProvider(this, null, rootPath));
             });
             services.AddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
             services.AddSingleton<ILoggerFactory>(this);

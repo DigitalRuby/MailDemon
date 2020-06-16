@@ -33,6 +33,7 @@ namespace MailDemon
     public class HomeController : Controller
     {
         private readonly IMailDemonDatabaseProvider dbProvider;
+        private readonly IMemoryCache memoryCache;
         private readonly IMailCreator mailCreator;
         private readonly IMailSender mailSender;
         private readonly IBulkMailSender bulkMailSender;
@@ -70,10 +71,15 @@ namespace MailDemon
             await mailSender.SendMailAsync(toDomain, GetMessages(reg, message, fromAddress, toAddresses));
         }
 
-        public HomeController(IMailDemonDatabaseProvider dbProvider, IMailCreator mailCreator, IMailSender mailSender,
-            IBulkMailSender bulkMailSender, IAuthority authority)
+        public HomeController(IMailDemonDatabaseProvider dbProvider,
+            IMemoryCache memoryCache,
+            IMailCreator mailCreator,
+            IMailSender mailSender,
+            IBulkMailSender bulkMailSender,
+            IAuthority authority)
         {
             this.dbProvider = dbProvider;
+            this.memoryCache = memoryCache;
             this.mailCreator = mailCreator ?? throw new ArgumentNullException(nameof(mailCreator));
             this.mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
             this.bulkMailSender = bulkMailSender;
@@ -499,6 +505,8 @@ namespace MailDemon
         [ActionName(nameof(EditTemplate))]
         public IActionResult EditTemplatePost(string id, MailTemplateModel model, string action)
         {
+            memoryCache?.Remove("Template_" + id);
+
             if (action == "delete")
             {
                 return EditTemplateDelete(id);

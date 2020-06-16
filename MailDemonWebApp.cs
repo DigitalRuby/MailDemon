@@ -321,9 +321,10 @@ namespace MailDemon
                 });
                 services.AddRazorPages().AddRazorRuntimeCompilation(options =>
                 {
+                    IMemoryCache memoryCache = serviceProvider.GetRequiredService<IMemoryCache>();
                     options.FileProviders.Clear();
-                    options.FileProviders.Add(new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")));
-                    options.FileProviders.Add(new MailDemonDatabaseFileProvider(this, AppContext.BaseDirectory));
+                    options.FileProviders.Add(new PhysicalFileProvider(Path.Combine(AppContext.BaseDirectory, "wwwroot")));
+                    options.FileProviders.Add(new MailDemonDatabaseFileProvider(this, memoryCache, AppContext.BaseDirectory));
                 });
                 services.AddAntiforgery(options =>
                 {

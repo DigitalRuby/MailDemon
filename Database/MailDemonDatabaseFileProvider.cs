@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
@@ -43,11 +43,14 @@ namespace MailDemon
         }
 
         private readonly IMailDemonDatabaseProvider dbProvider;
+        private readonly IMemoryCache memoryCache;
         private readonly string rootPath;
 
-        public MailDemonDatabaseFileProvider(IMailDemonDatabaseProvider dbProvider, string rootPath)
+        public MailDemonDatabaseFileProvider(IMailDemonDatabaseProvider dbProvider,
+            IMemoryCache memoryCache, string rootPath)
         {
             this.dbProvider = dbProvider;
+            this.memoryCache = memoryCache;
             this.rootPath = rootPath;
         }
 
@@ -69,7 +72,7 @@ namespace MailDemon
             {
                 return new MailDemonFileChangeToken(filter);
             }
-            return new MailDemonDatabaseChangeToken(dbProvider, filter);
+            return new MailDemonDatabaseChangeToken(dbProvider, memoryCache, filter);
         }
     }
 }

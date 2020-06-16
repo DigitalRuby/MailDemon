@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 
@@ -12,13 +12,14 @@ namespace MailDemon
     public class MailDemonDatabaseChangeToken : IChangeToken
     {
         private readonly IMailDemonDatabaseProvider dbProvider;
-        private readonly string viewPath;
+        private readonly IMemoryCache memoryCache;
         private readonly string fileNameNoExtension;
 
-        public MailDemonDatabaseChangeToken(IMailDemonDatabaseProvider dbProvider, string viewPath)
+        public MailDemonDatabaseChangeToken(IMailDemonDatabaseProvider dbProvider,
+            IMemoryCache memoryCache, string viewPath)
         {
             this.dbProvider = dbProvider;
-            this.viewPath = viewPath.Trim('/', '\\', '~');
+            this.memoryCache = memoryCache;
             this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
         }
 
@@ -30,7 +31,21 @@ namespace MailDemon
             {
                 using var db = dbProvider.GetDatabase();
                 bool changed = false;
-                MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
+                string key = "Template_" + fileNameNoExtension;
+                MailTemplate template;
+                if (memoryCache == null)
+                {
+                    template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
+                }
+                else
+                {
+                    template = memoryCache.GetOrCreate(key, entry =>
+                    {
+                        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7.0);
+                        entry.Size = 8192;
+                        return db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
+                    });
+                }
                 if (template != null && template.Dirty)
                 {
                     changed = true;
