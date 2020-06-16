@@ -107,7 +107,7 @@ namespace MailDemon
         /// <param name="unsubscribeUrl">Unsubscribe url</param>
         /// <param name="all">True to email all, false to only email error registrations (those that have not yet or failed to send)</param>
         /// <returns>Subscriptions to send to, grouped by domain</returns>
-        public static IEnumerable<KeyValuePair<string, List<MailListSubscription>>> BeginBulkEmail(this MailDemonDatabase db, MailList list, string unsubscribeUrl, bool all)
+        public static IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> GetBulkEmailSubscriptions(this MailDemonDatabase db, MailList list, string unsubscribeUrl, bool all)
         {
             if (all)
             {
@@ -126,7 +126,7 @@ namespace MailDemon
                 {
                     if (subs.Count != 0)
                     {
-                        yield return new KeyValuePair<string, List<MailListSubscription>>(domain, subs);
+                        yield return new KeyValuePair<string, IEnumerable<MailListSubscription>>(domain, subs);
                         subs = new List<MailListSubscription>();
                     }
                     domain = sub.EmailAddressDomain;
@@ -137,7 +137,7 @@ namespace MailDemon
             }
             if (subs.Count != 0)
             {
-                yield return new KeyValuePair<string, List<MailListSubscription>>(domain, subs);
+                yield return new KeyValuePair<string, IEnumerable<MailListSubscription>>(domain, subs);
             }
         }
     }

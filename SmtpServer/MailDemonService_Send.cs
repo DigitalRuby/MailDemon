@@ -28,7 +28,7 @@ namespace MailDemon
         public bool DisableSending { get; set; }
 
         /// <inheritdoc />
-        public async Task SendMailAsync(string toDomain, IEnumerable<MailToSend> messages)
+        public async Task SendMailAsync(string toDomain, IAsyncEnumerable<MailToSend> messages)
         {
             using SmtpClient client = new SmtpClient()
             {
@@ -61,7 +61,7 @@ namespace MailDemon
                                 await client.ConnectAsync(host, options: MailKit.Security.SecureSocketOptions.Auto, cancellationToken: cancelToken).TimeoutAfter(30000);
                             }
                             connected = true;
-                            foreach (MailToSend message in messages)
+                            await foreach (MailToSend message in messages)
                             {
                                 if (dkimSigner != null)
                                 {
@@ -94,7 +94,7 @@ namespace MailDemon
                         {
                             // all messages fail for this domain
                             MailDemonLog.Error(host + " (" + toDomain + ")", ex);
-                            foreach (MailToSend message in messages)
+                            await foreach (MailToSend message in messages)
                             {
                                 message.Callback?.Invoke(message.Subscription, ex.Message);
                             }
@@ -193,7 +193,8 @@ namespace MailDemon
             }
         }
 
-        private IEnumerable<MailToSend> EnumerateMessages(MimeMessage message, string toDomain, MailboxAddress from, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> prepMessage)
+        private async IAsyncEnumerable<MailToSend> EnumerateMessages(MimeMessage message, string toDomain,
+            MailboxAddress from, IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> prepMessage)
         {
             foreach (MailboxAddress toAddress in toAddresses)
             {
@@ -204,15 +205,18 @@ namespace MailDemon
                 prepMessage?.Invoke(message);
                 yield return new MailToSend { Message = message };
             }
+            await Task.Yield();
         }
 
-        private async Task SendMailInternal(StreamWriter writer, string fileName, MailboxAddress from, string toDomain, IEnumerable<MailboxAddress> toAddresses, IPEndPoint endPoint, Action<MimeMessage> prepMessage)
+        private async Task SendMailInternal(StreamWriter writer, string fileName, MailboxAddress from, string toDomain,
+            IEnumerable<MailboxAddress> toAddresses, IPEndPoint endPoint, Action<MimeMessage> prepMessage)
         {
             try
             {
                 using Stream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
                 MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
-                await SendMailAsync(toDomain, EnumerateMessages(message, toDomain, from, toAddresses, prepMessage));
+                IAsyncEnumerable<MailToSend> toSend = EnumerateMessages(message, toDomain, from, toAddresses, prepMessage);
+                await SendMailAsync(toDomain, toSend);
             }
             catch (Exception ex)
             {

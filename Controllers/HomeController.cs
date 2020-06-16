@@ -50,7 +50,8 @@ namespace MailDemon
             return viewBag;
         }
 
-        private IEnumerable<MailToSend> GetMessages(MailListSubscription sub, MimeMessage message, MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
+        private async IAsyncEnumerable<MailToSend> GetMessages(MailListSubscription sub, MimeMessage message,
+            MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
         {
             foreach (MailboxAddress toAddress in toAddresses)
             {
@@ -60,6 +61,7 @@ namespace MailDemon
                 message.To.Add(toAddress);
                 yield return new MailToSend { Subscription = sub, Message = message };
             }
+            await Task.Yield();
         }
 
         private async Task SendMailAsync(MailListSubscription reg, string fullTemplateName)

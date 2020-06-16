@@ -35,24 +35,20 @@ namespace MailDemon
     {
         private readonly IMailDemonDatabaseProvider dbProvider;
 
-        // TODO: Use async enumerator
-        private IEnumerable<MailToSend> GetMessages(List<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
+        private async IAsyncEnumerable<MailToSend> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
             ExpandoObject viewBag, string fullTemplateName, Action<MailListSubscription, string> callback)
         {
             foreach (MailListSubscription sub in subs)
             {
                 MimeMessage message;
-                lock (mailCreator)
+                try
                 {
-                    try
-                    {
-                        message = mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null).Sync();
-                    }
-                    catch (Exception ex)
-                    {
-                        MailDemonLog.Error(ex);
-                        continue;
-                    }
+                    message = await mailCreator.CreateMailAsync(fullTemplateName, sub, viewBag, null);
+                }
+                catch (Exception ex)
+                {
+                    MailDemonLog.Error(ex);
+                    continue;
                 }
                 message.From.Clear();
                 message.To.Clear();
@@ -114,13 +110,14 @@ namespace MailDemon
                 MailDemonLog.Warn("Begin bulk send");
                 using (var dbBulk = dbProvider.GetDatabase())
                 {
-                    IEnumerable<KeyValuePair<string, List<MailListSubscription>>> pendingSubs = dbBulk.BeginBulkEmail(list, unsubscribeUrl, all);
-                    foreach (KeyValuePair<string, List<MailListSubscription>> sub in pendingSubs)
+                    IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> pendingSubs = dbBulk.GetBulkEmailSubscriptions(list, unsubscribeUrl, all);
+                    foreach (KeyValuePair<string, IEnumerable<MailListSubscription>> sub in pendingSubs)
                     {
                         now = DateTime.UtcNow;
                         try
                         {
-                            Task task = mailSender.SendMailAsync(sub.Key, GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler));
+                            IAsyncEnumerable<MailToSend> messagesToSend = GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler);
+                            Task task = mailSender.SendMailAsync(sub.Key, messagesToSend);
                             pendingTasks.Add(task);
                         }
                         catch (Exception ex)

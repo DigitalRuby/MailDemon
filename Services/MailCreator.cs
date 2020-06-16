@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 using MailKit;
@@ -34,7 +35,10 @@ namespace MailDemon
     /// </summary>
     public class MailCreator : IMailCreator
     {
+        private readonly SemaphoreSlim locker = new SemaphoreSlim(1, 1);
         private readonly IViewRenderService templateEngine;
+        private readonly Regex subjectMatch = new Regex(@"\<!-- ?Subject: (?<subject>.*?) ?--\>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly Regex subjectReplacer = new Regex("[\r\n ]+", RegexOptions.Compiled);
 
         private async Task<MimeMessage> CreateMailInternalAsync(string templateName, object model, ExpandoObject viewBag, bool allowDefault, Func<string, string, string> htmlModifier)
         {
@@ -55,13 +59,13 @@ namespace MailDemon
             if (html != null)
             {
                 // find email subject
-                Match match = Regex.Match(html, @"\<!-- ?Subject: (?<subject>.*?) ?--\>", RegexOptions.IgnoreCase);
+                Match match = subjectMatch.Match(html);
                 if (match.Success)
                 {
                     string subjectText = match.Groups["subject"].Value.Trim();
 
                     // two or more spaces to one space in subject
-                    subjectText = Regex.Replace(subjectText, "[\r\n ]+", " ");
+                    subjectText = subjectReplacer.Replace(subjectText, " ");
 
                     html = (htmlModifier == null ? html : htmlModifier.Invoke(html, subjectText));
                     html = PreMailer.Net.PreMailer.MoveCssInline(html, true, IgnoreElements).Html;
@@ -100,15 +104,21 @@ namespace MailDemon
         }
 
         /// <inheritdoc />
-        public Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier)
+        public async Task<MimeMessage> CreateMailAsync(string templateName, object model, ExpandoObject extraInfo, Func<string, string, string> htmlModifier)
         {
+            await locker.WaitAsync();
             try
             {
-                return CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
+                MimeMessage msg = await CreateMailInternalAsync(templateName, model, extraInfo ?? new ExpandoObject(), true, htmlModifier);
+                return msg;
             }
             catch (Exception ex)
             {
                 throw new ApplicationException("Failed to create template " + templateName, ex);
+            }
+            finally
+            {
+                locker.Release();
             }
         }
 

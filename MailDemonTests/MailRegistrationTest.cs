@@ -226,9 +226,14 @@ namespace MailDemonTests
             get { return authority; }
         }
 
-        Task IMailSender.SendMailAsync(string toDomain, IEnumerable<MailToSend> messages)
+        async Task IMailSender.SendMailAsync(string toDomain, IAsyncEnumerable<MailToSend> messages)
         {
-            MailToSend mail = messages.FirstOrDefault();
+            MailToSend mail = null;
+            await foreach (MailToSend msg in messages)
+            {
+                mail = msg;
+                break;
+            }
             MimeMessage message = mail?.Message;
             Assert.NotNull(message);
             string expectedBodyReplaced = expectedBody.Replace("{subscribe-token}", mail.Subscription.SubscribeToken).Replace("{unsubscribe-token}", mail.Subscription.UnsubscribeToken);
@@ -236,7 +241,6 @@ namespace MailDemonTests
             Assert.IsTrue(message.HtmlBody.IndexOf(expectedBodyReplaced) >= 0);
             mail.Callback?.Invoke(mail.Subscription, string.Empty);
             sentMailCount++;
-            return Task.CompletedTask;
         }
 
         MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase(Microsoft.Extensions.Configuration.IConfiguration config)

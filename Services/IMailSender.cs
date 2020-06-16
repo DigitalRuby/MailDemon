@@ -39,6 +39,6 @@ namespace MailDemon
         /// <param name="toDomain">The domain to send to</param>
         /// <param name="messages">Messages to send - to address in each should be in toDomain</param>
         /// <returns>Task</returns>
-        Task SendMailAsync(string toDomain, IEnumerable<MailToSend> messages);
+        Task SendMailAsync(string toDomain, IAsyncEnumerable<MailToSend> messages);
     }
 }
