@@ -11,7 +11,7 @@ namespace MailDemon
 {
     public class SubscriptionCleanup : BackgroundService
     {
-        private readonly IServiceProvider serviceProvider;
+        private readonly IMailDemonDatabaseProvider dbProvider;
         private readonly TimeSpan loopTimeSpan = TimeSpan.FromMinutes(1.0);
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,16 +19,16 @@ namespace MailDemon
             while (!stoppingToken.IsCancellationRequested)
             {
                 DateTime dt = DateTime.UtcNow;
-                using MailDemonDatabase db = serviceProvider.GetService<MailDemonDatabase>();
+                using MailDemonDatabase db = dbProvider.GetDatabase();
                 db.Subscriptions.RemoveRange(db.Subscriptions.Where(r => r.Expires <= dt && r.UnsubscribeToken == null));
                 await db.SaveChangesAsync();
                 await Task.Delay(loopTimeSpan, stoppingToken);
             }
         }
 
-        public SubscriptionCleanup(IServiceProvider serviceProvider)
+        public SubscriptionCleanup(IMailDemonDatabaseProvider dbProvider)
         {
-            this.serviceProvider = serviceProvider;
+            this.dbProvider = dbProvider;
         }
     }
 }
