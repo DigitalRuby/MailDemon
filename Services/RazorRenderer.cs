@@ -51,7 +51,6 @@ namespace MailDemon
             this.entryAssembly = entryAssembly ?? Assembly.GetExecutingAssembly();
             services = new ServiceCollection();
             ConfigureDefaultServices(services);
-            Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(null);
             serviceProvider = services.BuildServiceProvider();
             viewRenderer = new ViewRenderService(rootPath, serviceProvider.GetRequiredService<IRazorViewEngine>(), null, null, serviceProvider);
         }
