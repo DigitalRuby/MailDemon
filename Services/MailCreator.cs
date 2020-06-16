@@ -30,7 +30,7 @@ namespace MailDemon
     }
 
     /// <summary>
-    /// Mail creator implementation with razor light engine
+    /// Mail creator implementation with razor engine. This class is thread safe.
     /// For the mail subject, use <!-- Subject: ... --> inside the body of the template
     /// </summary>
     public class MailCreator : IMailCreator
