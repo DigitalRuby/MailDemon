@@ -12,7 +12,7 @@ namespace MailDemon
 {
     public class MailDemonDatabaseFileInfo : IFileInfo
     {
-        private readonly IServiceProvider serviceProvider;
+        private readonly IMailDemonDatabaseProvider dbProvider;
         private readonly string rootPath;
         private readonly string fileName;
         private readonly string fileNameNoExtension;
@@ -20,9 +20,9 @@ namespace MailDemon
         private readonly string name;
         private byte[] contents;
 
-        public MailDemonDatabaseFileInfo(IServiceProvider serviceProvider, string rootPath, string viewPath)
+        public MailDemonDatabaseFileInfo(IMailDemonDatabaseProvider dbProvider, string rootPath, string viewPath)
         {
-            this.serviceProvider = serviceProvider;
+            this.dbProvider = dbProvider;
 
             // work-around bug in .NET core pathing with view start for custom rendered razor views
             if (viewPath.Equals("/_ViewStart.cshtml") || viewPath.Equals("_ViewStart.cshtml", StringComparison.OrdinalIgnoreCase))
@@ -55,7 +55,7 @@ namespace MailDemon
                 }
                 else
                 {
-                    using var db = serviceProvider.GetService<MailDemonDatabase>();
+                    using var db = dbProvider.GetDatabase();
                     MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
                     if (template == null)
                     {
@@ -87,7 +87,7 @@ namespace MailDemon
                 contents = File.ReadAllBytes(fullPath);
                 return;
             }
-            using var db = serviceProvider.GetService<MailDemonDatabase>();
+            using var db = dbProvider.GetDatabase();
             MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
 
             // views from db get layout default forced if no layout specified

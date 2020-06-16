@@ -9,8 +9,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
+using AngleSharp;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -25,8 +28,9 @@ namespace MailDemon
     /// <summary>
     /// Renders razor pages with the absolute minimum setup of MVC, easy to use in console application, does not require any other classes or setup.
     /// </summary>
-    public class RazorRenderer : IViewRenderService, ILoggerFactory, ILogger, IWebHostEnvironment
+    public class RazorRenderer : IViewRenderService, ILoggerFactory, ILogger, IWebHostEnvironment, IMailDemonDatabaseProvider
     {
+        private readonly Microsoft.Extensions.Configuration.IConfiguration configuration;
         private readonly string rootPath;
         private readonly Assembly entryAssembly;
         private readonly ServiceCollection services;
@@ -40,8 +44,9 @@ namespace MailDemon
         string IHostEnvironment.ContentRootPath { get; set; }
         string IHostEnvironment.EnvironmentName { get; set; }
 
-        public RazorRenderer(string rootPath, Assembly entryAssembly)
+        public RazorRenderer(Microsoft.Extensions.Configuration.IConfiguration configuration, string rootPath, Assembly entryAssembly)
         {
+            this.configuration = configuration;
             this.rootPath = rootPath;
             this.entryAssembly = entryAssembly ?? Assembly.GetExecutingAssembly();
             services = new ServiceCollection();
@@ -66,7 +71,7 @@ namespace MailDemon
             services.AddRazorPages().AddRazorRuntimeCompilation(options =>
             {
                 options.FileProviders.Clear();
-                options.FileProviders.Add(new MailDemonDatabaseFileProvider(serviceProvider, rootPath));
+                options.FileProviders.Add(new MailDemonDatabaseFileProvider(this, rootPath));
             });
             services.AddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
             services.AddSingleton<ILoggerFactory>(this);
@@ -114,6 +119,11 @@ namespace MailDemon
 
         void ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
+        }
+
+        public MailDemonDatabase GetDatabase(Microsoft.Extensions.Configuration.IConfiguration config = null)
+        {
+            return new MailDemonDatabase(configuration);
         }
     }
 }

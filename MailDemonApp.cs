@@ -127,6 +127,7 @@ namespace MailDemon
 
         public static Task Main(string[] args)
         {
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             MailDemonApp app = new MailDemonApp();
             return app.Run(args);
         }

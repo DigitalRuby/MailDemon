@@ -14,12 +14,12 @@ namespace MailDemon
     {
         private class PhysicalDirectoryContents : IDirectoryContents
         {
-            private readonly IServiceProvider serviceProvider;
+            private readonly IMailDemonDatabaseProvider dbProvider;
             private readonly string dir;
 
-            public PhysicalDirectoryContents(IServiceProvider serviceProvider, string dir)
+            public PhysicalDirectoryContents(IMailDemonDatabaseProvider dbProvider, string dir)
             {
-                this.serviceProvider = serviceProvider;
+                this.dbProvider = dbProvider;
                 this.dir = dir;
             }
 
@@ -29,7 +29,7 @@ namespace MailDemon
             {
                 foreach (string file in Directory.EnumerateFiles(dir, "*.cshtml"))
                 {
-                    yield return new MailDemonDatabaseFileInfo(serviceProvider, dir, Path.GetFileName(file));
+                    yield return new MailDemonDatabaseFileInfo(dbProvider, dir, Path.GetFileName(file));
                 }
             }
 
@@ -37,28 +37,28 @@ namespace MailDemon
             {
                 foreach (string file in Directory.EnumerateFiles(dir, "*.cshtml"))
                 {
-                    yield return new MailDemonDatabaseFileInfo(serviceProvider, dir, Path.GetFileName(file));
+                    yield return new MailDemonDatabaseFileInfo(dbProvider, dir, Path.GetFileName(file));
                 }
             }
         }
 
-        private readonly IServiceProvider serviceProvider;
+        private readonly IMailDemonDatabaseProvider dbProvider;
         private readonly string rootPath;
 
-        public MailDemonDatabaseFileProvider(IServiceProvider serviceProvider, string rootPath)
+        public MailDemonDatabaseFileProvider(IMailDemonDatabaseProvider dbProvider, string rootPath)
         {
-            this.serviceProvider = serviceProvider;
+            this.dbProvider = dbProvider;
             this.rootPath = rootPath;
         }
 
         public IDirectoryContents GetDirectoryContents(string subPath)
         {
-            return new PhysicalDirectoryContents(serviceProvider, rootPath);
+            return new PhysicalDirectoryContents(dbProvider, rootPath);
         }
 
         public IFileInfo GetFileInfo(string subPath)
         {
-            var result = new MailDemonDatabaseFileInfo(serviceProvider, rootPath, subPath);
+            var result = new MailDemonDatabaseFileInfo(dbProvider, rootPath, subPath);
             return result.Exists ? result as IFileInfo : new NotFoundFileInfo(subPath);
         }
 
@@ -69,7 +69,7 @@ namespace MailDemon
             {
                 return new MailDemonFileChangeToken(filter);
             }
-            return new MailDemonDatabaseChangeToken(serviceProvider, filter);
+            return new MailDemonDatabaseChangeToken(dbProvider, filter);
         }
     }
 }

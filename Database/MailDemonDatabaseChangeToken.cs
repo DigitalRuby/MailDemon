@@ -11,13 +11,13 @@ namespace MailDemon
 {
     public class MailDemonDatabaseChangeToken : IChangeToken
     {
-        private readonly IServiceProvider serviceProvider;
+        private readonly IMailDemonDatabaseProvider dbProvider;
         private readonly string viewPath;
         private readonly string fileNameNoExtension;
 
-        public MailDemonDatabaseChangeToken(IServiceProvider serviceProvider, string viewPath)
+        public MailDemonDatabaseChangeToken(IMailDemonDatabaseProvider dbProvider, string viewPath)
         {
-            this.serviceProvider = serviceProvider;
+            this.dbProvider = dbProvider;
             this.viewPath = viewPath.Trim('/', '\\', '~');
             this.fileNameNoExtension = Path.GetFileNameWithoutExtension(viewPath);
         }
@@ -28,7 +28,7 @@ namespace MailDemon
         {
             get
             {
-                using var db = serviceProvider.GetService<MailDemonDatabase>();
+                using var db = dbProvider.GetDatabase();
                 bool changed = false;
                 MailTemplate template = db.Templates.FirstOrDefault(t => t.Name == fileNameNoExtension);
                 if (template != null && template.Dirty)

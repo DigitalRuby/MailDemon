@@ -26,7 +26,7 @@ namespace MailDemonTests
             {
                 db.Initialize();
             }
-            viewRenderer = new RazorRenderer(Directory.GetCurrentDirectory(),
+            viewRenderer = new RazorRenderer(null, Directory.GetCurrentDirectory(),
                 Assembly.GetExecutingAssembly());
         }
 

@@ -169,7 +169,7 @@ namespace MailDemonTests
                 db.Templates.Add(template2);
                 db.SaveChanges();
             }
-            mailCreator = new MailCreator(new RazorRenderer(Directory.GetCurrentDirectory(), Assembly.GetExecutingAssembly())) { IgnoreElements = authority };
+            mailCreator = new MailCreator(new RazorRenderer(null, Directory.GetCurrentDirectory(), Assembly.GetExecutingAssembly())) { IgnoreElements = authority };
             homeController = new HomeController(this, mailCreator, this, null, this)
             {
                 RequireCaptcha = false,
@@ -238,7 +238,7 @@ namespace MailDemonTests
             return Task.CompletedTask;
         }
 
-        MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase()
+        MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase(Microsoft.Extensions.Configuration.IConfiguration config)
         {
             return new MailDemonDatabase();
         }

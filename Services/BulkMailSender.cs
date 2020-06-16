@@ -33,7 +33,7 @@ namespace MailDemon
 
     public class BulkMailSender : IBulkMailSender
     {
-        private readonly IServiceProvider serviceProvider;
+        private readonly IMailDemonDatabaseProvider dbProvider;
 
         // TODO: Use async enumerator
         private IEnumerable<MailToSend> GetMessages(List<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
@@ -69,9 +69,9 @@ namespace MailDemon
             }
         }
 
-        public BulkMailSender(IServiceProvider serviceProvider)
+        public BulkMailSender(IMailDemonDatabaseProvider dbProvider)
         {
-            this.serviceProvider = serviceProvider;
+            this.dbProvider = dbProvider;
         }
 
         public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, ExpandoObject viewBag,
@@ -85,7 +85,7 @@ namespace MailDemon
             List<Task> pendingTasks = new List<Task>();
             Stopwatch timer = Stopwatch.StartNew();
 
-            using (var db = serviceProvider.GetService<MailDemonDatabase>())
+            using (var db = dbProvider.GetDatabase())
             {
                 void callbackHandler(MailListSubscription _sub, string error)
                 {
@@ -112,7 +112,7 @@ namespace MailDemon
                 // use a separate database instance to do the query, that way we can update records in our other database instance
                 // preventing locking errors, especially with sqlite drivers
                 MailDemonLog.Warn("Begin bulk send");
-                using (var dbBulk = serviceProvider.GetService<MailDemonDatabase>())
+                using (var dbBulk = dbProvider.GetDatabase())
                 {
                     IEnumerable<KeyValuePair<string, List<MailListSubscription>>> pendingSubs = dbBulk.BeginBulkEmail(list, unsubscribeUrl, all);
                     foreach (KeyValuePair<string, List<MailListSubscription>> sub in pendingSubs)

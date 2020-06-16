@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace MailDemon.Migrations
@@ -12,6 +13,7 @@ namespace MailDemon.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(nullable: true),
                     Title = table.Column<string>(nullable: true),
@@ -31,7 +33,8 @@ namespace MailDemon.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Sqlite:Autoincrement", true)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
                     ListName = table.Column<string>(nullable: true),
                     LanguageCode = table.Column<string>(nullable: true),
                     IPAddress = table.Column<string>(nullable: true),
@@ -56,7 +59,8 @@ namespace MailDemon.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Sqlite:Autoincrement", true)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(nullable: true),
                     Title = table.Column<string>(nullable: true),
                     LastModified = table.Column<DateTime>(nullable: false),

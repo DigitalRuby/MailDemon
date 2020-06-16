@@ -71,7 +71,8 @@ namespace MailDemon
         /// <summary>
         /// Constructor
         /// </summary>
-        public MailDemonDatabase() : this(MailDemonDatabaseSetup.ConfigureDB(null))
+        /// <param name="config">Configuration</param>
+        public MailDemonDatabase(IConfiguration config = null) : this(MailDemonDatabaseSetup.ConfigureDB(config))
         {
         }
 
@@ -134,17 +135,12 @@ namespace MailDemon
 
         public static DbContextOptions<MailDemonDatabase> ConfigureDB(IConfiguration conf)
         {
-            string dbProvider;
-            string connectionString;
-            if (conf == null)
+            string dbProvider = conf?["DatabaseProvider"];
+            string connectionString = (dbProvider == null ? null : conf?.GetSection("ConnectionStrings")?[dbProvider]);
+            if (dbProvider == null || connectionString == null)
             {
                 dbProvider = "sqlite";
                 connectionString = null;
-            }
-            else
-            {
-                dbProvider = conf["DatabaseProvider"];
-                connectionString = conf.GetConnectionString(dbProvider);
             }
             DbContextOptionsBuilder<MailDemonDatabase> options = new DbContextOptionsBuilder<MailDemonDatabase>();
             switch (dbProvider?.ToLowerInvariant())
@@ -153,9 +149,13 @@ namespace MailDemon
                 default:
                     if (string.IsNullOrWhiteSpace(connectionString))
                     {
-                        connectionString = "Data Source=" + Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.sqlite");
+                        connectionString = "Data Source=" + Path.Combine(AppContext.BaseDirectory, "MailDemon.sqlite");
                     }
                     options.UseSqlite(connectionString);
+                    break;
+
+                case "sqlserver":
+                    options.UseSqlServer(connectionString);
                     break;
 
                 case "inmemory":
@@ -186,7 +186,8 @@ namespace MailDemon
         /// <summary>
         /// Get a database instance. Must dispose when done with.
         /// </summary>
+        /// <param name="config">Configuration</param>
         /// <returns>Database</returns>
-        MailDemonDatabase GetDatabase();
+        MailDemonDatabase GetDatabase(IConfiguration config = null);
     }
 }

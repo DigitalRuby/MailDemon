@@ -103,7 +103,7 @@ Mail Demon contains an integrated mail list management website and mail list sen
 - You can also store your templates in the Views/Shared directory. Follow the same naming convention for a template name 
 
 ## Database
-Mail Demon uses sqlite by default with entity framework. In the future, adding MySQL, SQL Server and Azure are desired. The default database name is 'MailDemon.sqlite'. Mail Demon used to use LiteDB, but I ran into data corruption and other strange exceptions, so if 'MailDemon.db' file exists when the application starts, it will be migrated into 'MailDemon.sqlite'.
+Mail Demon uses sqlite by default. In the appsettings.json file, you can set the DatabaseProvider element to `sqlserver` and set `ConnectionStrings:sqlserver` to your sql server connection string if desired.
 
 Enjoy!
 

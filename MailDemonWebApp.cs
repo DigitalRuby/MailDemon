@@ -103,7 +103,7 @@ namespace MailDemon
 
         private void InitializeDB(IApplicationBuilder app)
         {
-            using var db = app.ApplicationServices.GetService<MailDemonDatabase>();
+            using var db = new MailDemonDatabase(Configuration);
             db.Initialize();
 
             // migrate away from litedb
@@ -307,13 +307,12 @@ namespace MailDemon
                 services.AddResponseCaching();
                 services.AddHttpContextAccessor();
                 services.AddSingleton<IMailSender>((provider) => mailService);
-                services.AddSingleton<IBulkMailSender>((provider) => new BulkMailSender(provider));
                 services.AddSingleton<IViewRenderService, ViewRenderService>();
                 services.AddSingleton<IAuthority>(this);
                 services.AddSingleton<IMailDemonDatabaseProvider>(this);
+                services.AddSingleton<BulkMailSender>();
+                services.AddSingleton<IBulkMailSender>(provider => provider.GetRequiredService<BulkMailSender>());
                 services.AddTransient<IMailCreator, MailCreator>();
-                Microsoft.EntityFrameworkCore.DbContextOptions<MailDemonDatabase> dbOptions = MailDemonDatabaseSetup.ConfigureDB(Configuration);
-                services.AddTransient<MailDemonDatabase>((provider) => new MailDemonDatabase(dbOptions));
                 services.AddHostedService<SubscriptionCleanup>();
                 services.AddDataProtection().SetApplicationName(GetType().Name).PersistKeysToFileSystem(new System.IO.DirectoryInfo(Directory.GetCurrentDirectory()));
                 services.AddMvc(options =>
@@ -324,7 +323,7 @@ namespace MailDemon
                 {
                     options.FileProviders.Clear();
                     options.FileProviders.Add(new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")));
-                    options.FileProviders.Add(new MailDemonDatabaseFileProvider(serviceProvider, AppContext.BaseDirectory));
+                    options.FileProviders.Add(new MailDemonDatabaseFileProvider(this, AppContext.BaseDirectory));
                 });
                 services.AddAntiforgery(options =>
                 {
@@ -432,10 +431,11 @@ namespace MailDemon
         /// <summary>
         /// IMailDemonDatabaseProvider
         /// </summary>
+        /// <param name="config">Configuration</param>
         /// <returns>MailDemonDatabase</returns>
-        MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase()
+        MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase(IConfiguration config)
         {
-            return serviceProvider.GetService<MailDemonDatabase>();
+            return new MailDemonDatabase(config ?? Configuration);
         }
     }
 }
