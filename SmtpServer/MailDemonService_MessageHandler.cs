@@ -441,7 +441,7 @@ namespace MailDemon
             catch (Exception ex)
             {
                 IncrementFailure(ipAddress, authenticatedUser?.UserName);
-                MailDemonLog.Error(ex);
+                MailDemonLog.Error(ex, "{0} error", ipAddress);
             }
             finally
             {
