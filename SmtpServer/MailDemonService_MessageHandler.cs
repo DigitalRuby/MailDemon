@@ -440,8 +440,11 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                IncrementFailure(ipAddress, authenticatedUser?.UserName);
-                MailDemonLog.Error(ex, "{0} error", ipAddress);
+                if (!(ex is SocketException))
+                {
+                    IncrementFailure(ipAddress, authenticatedUser?.UserName);
+                    MailDemonLog.Error(ex, "{0} error", ipAddress);
+                }
             }
             finally
             {
