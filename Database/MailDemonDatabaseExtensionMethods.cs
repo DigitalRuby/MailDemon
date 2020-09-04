@@ -111,11 +111,11 @@ namespace MailDemon
         {
             if (all)
             {
-                db.Database.ExecuteSqlRaw("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1}", DateTime.UtcNow, list.Name);
+                db.Database.ExecuteSqlRaw("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND UnsubscribeDate = {2}", DateTime.UtcNow, list.Name, default(DateTime));
             }
             else
             {
-                db.Database.ExecuteSqlRaw("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result <> ''", DateTime.UtcNow, list.Name);
+                db.Database.ExecuteSqlRaw("UPDATE Subscriptions SET Result = 'Pending', ResultTimestamp = {0} WHERE ListName = {1} AND Result <> '' AND UnsubscribeDate = {2}", DateTime.UtcNow, list.Name, default(DateTime));
             }
             List<MailListSubscription> subs = new List<MailListSubscription>();
             string domain = null;
