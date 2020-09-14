@@ -152,6 +152,10 @@ namespace MailDemon
         private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint, Action<MimeMessage> prepMessage)
         {
             MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line, endPoint);
+
+            // TODO: We are kicking this off in the background, but it's difficult for the caller to get notification
+            // on the send result, consider some way to resolve this... we don't want to block the caller in the event
+            // that a destination mail server is slow or flaky...
             SendMail(writer, result, endPoint, true, prepMessage).GetAwaiter();
             await writer.WriteLineAsync($"250 2.1.0 OK");
             await writer.FlushAsync();

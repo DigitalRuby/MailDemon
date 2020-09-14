@@ -392,6 +392,8 @@ namespace MailDemon
                     }
 
                     // if authenticated, only valid line is MAIL FROM
+                    // TODO: The mail from address is ignored, we assume only can send as yourself who you authenticated as
+                    // consider error if from address doesn't match
                     // TODO: consider changing this
                     else if (authenticatedUser != null)
                     {
