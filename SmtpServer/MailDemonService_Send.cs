@@ -32,6 +32,8 @@ namespace MailDemon
         {
             using SmtpClient client = new SmtpClient()
             {
+                LocalDomain = Domain,
+                Timeout = 30000,
                 ServerCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
                     return (sslPolicyErrors == SslPolicyErrors.None ||
