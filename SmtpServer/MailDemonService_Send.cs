@@ -183,7 +183,7 @@ namespace MailDemon
         private async Task SendMail(MailDemonUser foundUser, Stream reader, StreamWriter writer,
             string line, IPEndPoint endPoint, bool synchronous)
         {
-            MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line, endPoint, true);
+            MailFromResult result = await ParseMailFrom(foundUser, reader, writer, line, endPoint);
             if (result is null)
             {
                 return;
@@ -191,8 +191,8 @@ namespace MailDemon
 
             try
             {
-                // wait for call to complete, exception will be propagated to the caller
-                await SendMail(result, true, null, true);
+                // wait for call to complete, exception will be propagated to the caller if synchronous
+                await SendMail(result, true, null, synchronous);
             }
             catch (Exception ex)
             {

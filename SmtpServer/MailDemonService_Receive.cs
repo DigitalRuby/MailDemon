@@ -148,7 +148,7 @@ namespace MailDemon
         private async Task<bool> ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
         {
             IPHostEntry entry = await Dns.GetHostEntryAsync(endPoint.Address);
-            MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint, true);
+            MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint);
             if (result is null)
             {
                 return false;

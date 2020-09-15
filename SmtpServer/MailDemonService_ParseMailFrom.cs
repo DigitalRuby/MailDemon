@@ -18,7 +18,7 @@ namespace MailDemon
     public partial class MailDemonService
     {
         private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, Stream reader,
-            StreamWriter writer, string line, IPEndPoint endPoint, bool single)
+            StreamWriter writer, string line, IPEndPoint endPoint)
         {
             string fromAddress = line.Substring(11);
             int pos = fromAddress.IndexOf('>');
@@ -26,7 +26,6 @@ namespace MailDemon
             {
                 fromAddress = fromAddress.Substring(0, pos);
             }
-            int toCount = 0;
 
             // if this is an anonymous user, ensure spf is a match
             if (fromUser == null || !fromUser.Authenticated)
@@ -93,14 +92,6 @@ namespace MailDemon
                         toAddressesByDomain[addressDomain] = addressList = new List<MailboxAddress>();
                     }
                     (addressList as List<MailboxAddress>).Add(toAddressMail);
-                    toCount++;
-
-                    if (single && toCount > 1)
-                    {
-                        await writer.WriteLineAsync("502 5.1.1 Only one recipient is supported");
-                        await writer.FlushAsync();
-                        throw new InvalidOperationException("Invalid recipient count: " + toCount);
-                    }
 
                     // denote success for recipient
                     await writer.WriteLineAsync($"250 2.1.0 recipient {toAddress} OK");
