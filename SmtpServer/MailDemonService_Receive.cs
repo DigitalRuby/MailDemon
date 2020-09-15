@@ -148,8 +148,8 @@ namespace MailDemon
         private async Task<bool> ReceiveMail(Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
         {
             IPHostEntry entry = await Dns.GetHostEntryAsync(endPoint.Address);
-            MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint);
-            if (result == null)
+            MailFromResult result = await ParseMailFrom(null, reader, writer, line, endPoint, true);
+            if (result is null)
             {
                 return false;
             }
@@ -205,12 +205,14 @@ namespace MailDemon
                             // forward the message on and clear the forward headers
                             MailDemonLog.Info("Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
                             result.BackingFile = null; // we took ownership of the file
-                            SendMail(writer, newResult, endPoint, true, (prepMsg) =>
+
+                            // send in background
+                            SendMail(newResult, true, prepMsg =>
                             {
                                 prepMsg.Subject = $"FW from {result.From}: {prepMsg.Subject}";
                                 prepMsg.Cc.Clear();
                                 prepMsg.Bcc.Clear();
-                            }).GetAwaiter();
+                            }, false).ConfigureAwait(false).GetAwaiter();
                             return true; // only forward to the first valid address
                         }
                     }

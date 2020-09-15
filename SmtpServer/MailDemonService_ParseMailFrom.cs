@@ -17,7 +17,8 @@ namespace MailDemon
 {
     public partial class MailDemonService
     {
-        private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, Stream reader, StreamWriter writer, string line, IPEndPoint endPoint)
+        private async Task<MailFromResult> ParseMailFrom(MailDemonUser fromUser, Stream reader,
+            StreamWriter writer, string line, IPEndPoint endPoint, bool single)
         {
             string fromAddress = line.Substring(11);
             int pos = fromAddress.IndexOf('>');
@@ -25,6 +26,7 @@ namespace MailDemon
             {
                 fromAddress = fromAddress.Substring(0, pos);
             }
+            int toCount = 0;
 
             // if this is an anonymous user, ensure spf is a match
             if (fromUser == null || !fromUser.Authenticated)
@@ -91,12 +93,26 @@ namespace MailDemon
                         toAddressesByDomain[addressDomain] = addressList = new List<MailboxAddress>();
                     }
                     (addressList as List<MailboxAddress>).Add(toAddressMail);
-                }
+                    toCount++;
 
-                // denote success for recipient
-                await writer.WriteLineAsync($"250 2.1.0 recipient {toAddress} OK");
-                await writer.FlushAsync();
-                line = await ReadLineAsync(reader);
+                    if (single && toCount > 1)
+                    {
+                        await writer.WriteLineAsync("502 5.1.1 Only one recipient is supported");
+                        await writer.FlushAsync();
+                        throw new InvalidOperationException("Invalid recipient count: " + toCount);
+                    }
+
+                    // denote success for recipient
+                    await writer.WriteLineAsync($"250 2.1.0 recipient {toAddress} OK");
+                    await writer.FlushAsync();
+                    line = await ReadLineAsync(reader);
+                }
+                else
+                {
+                    await writer.WriteLineAsync($"500 invalid command - bad to address '{toAddress}'");
+                    await writer.FlushAsync();
+                    throw new ArgumentException($"Invalid to address '{toAddress}'");
+                }
             }
 
             // if no to addresses, fail
@@ -115,6 +131,7 @@ namespace MailDemon
                     await writer.FlushAsync();
                     throw new InvalidOperationException("Invalid message: " + line);
                 }
+
                 await writer.WriteLineAsync($"354 ok");
                 await writer.FlushAsync();
                 string tempFile = Path.GetTempFileName();
@@ -195,13 +212,12 @@ namespace MailDemon
                             tempFileStream.SetLength(tempFileStream.Length - 5);
                         }
                     }
-                    await writer.WriteLineAsync($"250 2.5.0 OK");
-                    await writer.FlushAsync();
                     return new MailFromResult
                     {
                         BackingFile = tempFile,
                         From = (fromUser == null ? MailboxAddress.Parse(fromAddress) : fromUser.MailAddress),
-                        ToAddresses = toAddressesByDomain
+                        ToAddresses = toAddressesByDomain,
+                        SuccessLine = "250 2.5.0 OK"
                     };
                 }
                 catch
@@ -246,12 +262,7 @@ namespace MailDemon
                                 throw new InvalidOperationException("Invalid message: " + line);
                             }
                             await ReadWriteAsync(reader, stream, size);
-                            if (last)
-                            {
-                                await writer.WriteLineAsync($"250 2.5.0 total {totalBytes} bytes received message OK");
-                                await writer.FlushAsync();
-                            }
-                            else
+                            if (!last)
                             {
                                 await writer.WriteLineAsync($"250 2.0.0 {size} bytes received OK");
                                 await writer.FlushAsync();
@@ -267,7 +278,8 @@ namespace MailDemon
                         {
                             BackingFile = tempFile,
                             From = (fromUser == null ? MailboxAddress.Parse(fromAddress) : fromUser.MailAddress),
-                            ToAddresses = toAddressesByDomain
+                            ToAddresses = toAddressesByDomain,
+                            SuccessLine = $"250 2.5.0 total {totalBytes} bytes received message OK"
                         };
                     }
                     catch

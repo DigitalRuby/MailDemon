@@ -143,12 +143,22 @@ namespace MailDemon
         /// <summary>
         /// Get domain from an email address
         /// </summary>
-        /// <param name="text">Text</param>
+        /// <param name="emailAddress">Email address</param>
         /// <returns>Domain</returns>
         public static string GetDomainFromEmailAddress(this string emailAddress)
         {
             int pos = emailAddress.IndexOf('@');
             return emailAddress.Substring(++pos);
+        }
+
+        /// <summary>
+        /// Get domain from an email address
+        /// </summary>
+        /// <param name="emailAddress">Email address</param>
+        /// <returns>Domain</returns>
+        public static string GetDomain(this InternetAddress emailAddress)
+        {
+            return emailAddress.ToString().GetDomainFromEmailAddress();
         }
 
         /// <summary>

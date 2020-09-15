@@ -226,10 +226,10 @@ namespace MailDemonTests
             get { return authority; }
         }
 
-        async Task IMailSender.SendMailAsync(string toDomain, IAsyncEnumerable<MailToSend> messages)
+        Task IMailSender.SendMailAsync(IReadOnlyCollection<MailToSend> messages, bool synchronous)
         {
             MailToSend mail = null;
-            await foreach (MailToSend msg in messages)
+            foreach (MailToSend msg in messages)
             {
                 mail = msg;
                 break;
@@ -241,6 +241,8 @@ namespace MailDemonTests
             Assert.IsTrue(message.HtmlBody.IndexOf(expectedBodyReplaced) >= 0);
             mail.Callback?.Invoke(mail.Subscription, string.Empty);
             sentMailCount++;
+
+            return Task.CompletedTask;
         }
 
         MailDemonDatabase IMailDemonDatabaseProvider.GetDatabase(Microsoft.Extensions.Configuration.IConfiguration config)

@@ -42,7 +42,7 @@ namespace MailDemon
         {
             byte[] buf = new byte[1];
             byte b;
-            string result = string.Empty;
+            string result;
             MemoryStream ms = new MemoryStream();
             while (reader != null && await reader.ReadAsync(buf, 0, 1) == 1)
             {
@@ -401,7 +401,7 @@ namespace MailDemon
                         {
                             try
                             {
-                                await SendMail(authenticatedUser, reader, writer, line, endPoint, null);
+                                await SendMail(authenticatedUser, reader, writer, line, endPoint, true);
                             }
                             catch (Exception ex)
                             {

@@ -35,9 +35,10 @@ namespace MailDemon
     {
         private readonly IMailDemonDatabaseProvider dbProvider;
 
-        private async IAsyncEnumerable<MailToSend> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
+        private async Task<IReadOnlyCollection<MailToSend>> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
             ExpandoObject viewBag, string fullTemplateName, Action<MailListSubscription, string> callback)
         {
+            List<MailToSend> messages = new List<MailToSend>();
             foreach (MailListSubscription sub in subs)
             {
                 MimeMessage message;
@@ -61,8 +62,10 @@ namespace MailDemon
                     message.From.Add(new MailboxAddress(list.FromEmailName, list.FromEmailAddress));
                 }
                 message.To.Add(MailboxAddress.Parse(sub.EmailAddress));
-                yield return new MailToSend { Subscription = sub, Message = message, Callback = callback };
+                messages.Add(new MailToSend { Subscription = sub, Message = message, Callback = callback });
             }
+
+            return messages;
         }
 
         public BulkMailSender(IMailDemonDatabaseProvider dbProvider)
@@ -116,8 +119,8 @@ namespace MailDemon
                         now = DateTime.UtcNow;
                         try
                         {
-                            IAsyncEnumerable<MailToSend> messagesToSend = GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler);
-                            Task task = mailSender.SendMailAsync(sub.Key, messagesToSend);
+                            IReadOnlyCollection<MailToSend> messagesToSend = await GetMessages(sub.Value, mailCreator, list, viewBag, fullTemplateName, callbackHandler);
+                            Task task = mailSender.SendMailAsync(messagesToSend, false);
                             pendingTasks.Add(task);
                         }
                         catch (Exception ex)

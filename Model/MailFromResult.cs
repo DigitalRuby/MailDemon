@@ -28,6 +28,11 @@ namespace MailDemon
         public string BackingFile { get; set; }
 
         /// <summary>
+        /// Final line to denote success
+        /// </summary>
+        public string SuccessLine { get; set; }
+
+        /// <summary>
         /// Cleanup all resources, delete backing file if Stream is FileStream.
         /// </summary>
         public void Dispose()

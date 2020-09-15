@@ -50,27 +50,27 @@ namespace MailDemon
             return viewBag;
         }
 
-        private async IAsyncEnumerable<MailToSend> GetMessages(MailListSubscription sub, MimeMessage message,
+        private IReadOnlyCollection<MailToSend> GetMessages(MailListSubscription sub, MimeMessage message,
             MailboxAddress fromAddress, IEnumerable<MailboxAddress> toAddresses)
         {
+            List<MailToSend> messages = new List<MailToSend>();
             foreach (MailboxAddress toAddress in toAddresses)
             {
                 message.From.Clear();
                 message.To.Clear();
                 message.From.Add(fromAddress);
                 message.To.Add(toAddress);
-                yield return new MailToSend { Subscription = sub, Message = message };
+                messages.Add(new MailToSend { Subscription = sub, Message = message });
             }
-            await Task.Yield();
+            return messages;
         }
 
         private async Task SendMailAsync(MailListSubscription reg, string fullTemplateName)
         {
             MailboxAddress fromAddress = new MailboxAddress(reg.MailList.FromEmailName, reg.MailList.FromEmailAddress);
-            string toDomain = reg.EmailAddress.GetDomainFromEmailAddress();
             MailboxAddress[] toAddresses = new MailboxAddress[] { MailboxAddress.Parse(reg.EmailAddress) };
             MimeMessage message = await mailCreator.CreateMailAsync(fullTemplateName, reg, GetViewBagForTemplate(), null);
-            await mailSender.SendMailAsync(toDomain, GetMessages(reg, message, fromAddress, toAddresses));
+            await mailSender.SendMailAsync(GetMessages(reg, message, fromAddress, toAddresses), false);
         }
 
         public HomeController(IMailDemonDatabaseProvider dbProvider,

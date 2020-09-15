@@ -34,11 +34,11 @@ namespace MailDemon
     public interface IMailSender
     {
         /// <summary>
-        /// Send some email
+        /// Send many emails. All emails must be from the same domain.
         /// </summary>
-        /// <param name="toDomain">The domain to send to</param>
-        /// <param name="messages">Messages to send - to address in each should be in toDomain</param>
+        /// <param name="messages">Messages to send, should all be in the same domain</param>
+        /// <param name="synchronous">Whether to send synchronously, in which case exceptions will throw out</param>
         /// <returns>Task</returns>
-        Task SendMailAsync(string toDomain, IAsyncEnumerable<MailToSend> messages);
+        Task SendMailAsync(IReadOnlyCollection<MailToSend> messages, bool synchronous);
     }
 }
