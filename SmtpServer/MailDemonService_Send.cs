@@ -189,8 +189,9 @@ namespace MailDemon
                 return;
             }
             string origSuccessLine = result.SuccessLine;
+            int maxCount = (synchronous ? 2 : 1);
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < maxCount; i++)
             {
                 try
                 {
@@ -215,7 +216,7 @@ namespace MailDemon
                     {
                         result.SuccessLine = "455 Internal Error: " + ex.Message;
                     }
-                    if (i == 0)
+                    if (i == 0 && maxCount > 1)
                     {
                         // wait a bit and retry
                         await Task.Delay(10000);
