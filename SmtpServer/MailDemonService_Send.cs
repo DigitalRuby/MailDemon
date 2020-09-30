@@ -169,7 +169,7 @@ namespace MailDemon
         }
 
         /// <summary>
-        /// Send mail to one person, synchronously
+        /// Send mail to one person
         /// </summary>
         /// <param name="foundUser">Found user</param>
         /// <param name="reader">Reader</param>
@@ -188,18 +188,39 @@ namespace MailDemon
             {
                 return;
             }
+            string origSuccessLine = result.SuccessLine;
 
-            try
+            for (int i = 0; i < 2; i++)
             {
-                // wait for call to complete, exception will be propagated to the caller if synchronous
-                await SendMail(result, true, null, synchronous);
-            }
-            catch (Exception ex)
-            {
-                // denote failure to the caller
-                await writer.WriteLineAsync("455 Internal Error: " + ex.Message);
-                await writer.FlushAsync();
-                return; // don't try the 250 status code down below
+                try
+                {
+                    // wait for call to complete, exception will be propagated to the caller if synchronous
+                    result.SuccessLine = origSuccessLine;
+                    await SendMail(result, true, null, synchronous);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (ex is AggregateException aggEx)
+                    {
+                        ex = aggEx.InnerExceptions.FirstOrDefault();
+                    }
+
+                    // denote failure to the caller
+                    if (ex is SmtpCommandException smtpEx)
+                    {
+                        result.SuccessLine = (int)smtpEx.StatusCode + " " + ex.Message;
+                    }
+                    else
+                    {
+                        result.SuccessLine = "455 Internal Error: " + ex.Message;
+                    }
+                    if (i == 0)
+                    {
+                        // wait a bit and retry
+                        await Task.Delay(10000);
+                    }
+                }
             }
 
             // denote to caller that we have sent the message successfully
@@ -230,7 +251,14 @@ namespace MailDemon
                     tasks.Add(task);
                     count++;
                 }
-                await Task.WhenAll(tasks);
+                if (tasks.Count == 1)
+                {
+                    await tasks.First();
+                }
+                else
+                {
+                    await Task.WhenAll(tasks);
+                }
                 MailDemonLog.Info("Sent {0} batches of messages in {1:0.00} seconds", count, (DateTime.UtcNow - start).TotalSeconds);
             }
             finally
