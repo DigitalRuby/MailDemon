@@ -28,28 +28,25 @@ namespace MailDemon
             await locker.WaitAsync();
             try
             {
-                certCache.TryGetValue(hash, out cert);
-                if (cert != null)
+                if (certCache.TryGetValue(hash, out cert) && cert != null &&
+                    cert.NotAfter <= DateTime.Now.Add(TimeSpan.FromDays(5.0)))
                 {
                     // clean out any cert expiring within 5 days and reload from file
-                    if (cert.NotAfter <= DateTime.Now.Add(TimeSpan.FromDays(5.0)))
+                    certCache.Remove(hash);
+                    X509Certificate2 toDispose = cert;
+                    Task.Run(async () =>
                     {
-                        certCache.Remove(hash);
-                        X509Certificate2 toDispose = cert;
-                        Task.Run(async () =>
+                        // cleanup the old cert after one hour, allowing anyone holding on to it to still use it for a while
+                        await Task.Delay(TimeSpan.FromHours(1.0));
+                        try
                         {
-                            // cleanup the old cert after one hour, allowing anyone holding on to it to still use it for a while
-                            await Task.Delay(TimeSpan.FromHours(1.0));
-                            try
-                            {
-                                toDispose.Dispose();
-                            }
-                            catch
-                            {
-                            }
-                        }).GetAwaiter();
-                        cert = null;
-                    }
+                            toDispose.Dispose();
+                        }
+                        catch
+                        {
+                        }
+                    }).GetAwaiter();
+                    cert = null;
                 }
                 if (cert == null)
                 {
