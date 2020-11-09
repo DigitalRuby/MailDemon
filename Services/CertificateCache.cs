@@ -31,7 +31,8 @@ namespace MailDemon
                 certCache.TryGetValue(hash, out cert);
                 if (cert != null)
                 {
-                    if (cert.NotAfter <= DateTime.Now.Add(TimeSpan.FromDays(1.0)))
+                    // clean out any cert expiring within 5 days and reload from file
+                    if (cert.NotAfter <= DateTime.Now.Add(TimeSpan.FromDays(5.0)))
                     {
                         certCache.Remove(hash);
                         X509Certificate2 toDispose = cert;
