@@ -212,6 +212,11 @@ namespace MailDemon
                                 prepMsg.Subject = $"FW from {result.From}: {prepMsg.Subject}";
                                 prepMsg.Cc.Clear();
                                 prepMsg.Bcc.Clear();
+                                string fromString = result.From.ToString();
+                                if (prepMsg.ReplyTo.Count == 0)
+                                {
+                                    prepMsg.ReplyTo.Add(result.From.Clone());
+                                }
                             }, false).ConfigureAwait(false).GetAwaiter();
                             return true; // only forward to the first valid address
                         }
