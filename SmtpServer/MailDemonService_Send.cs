@@ -196,37 +196,44 @@ namespace MailDemon
             string origSuccessLine = result.SuccessLine;
             int maxCount = (synchronous ? 2 : 1);
 
-            for (int i = 0; i < maxCount; i++)
+            try
             {
-                try
+                for (int i = 0; i < maxCount; i++)
                 {
-                    // wait for call to complete, exception will be propagated to the caller if synchronous
-                    result.SuccessLine = origSuccessLine;
-                    await SendMail(result, true, null, synchronous);
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    if (ex is AggregateException aggEx)
+                    try
                     {
-                        ex = aggEx.InnerExceptions.FirstOrDefault();
+                        // wait for call to complete, exception will be propagated to the caller if synchronous
+                        result.SuccessLine = origSuccessLine;
+                        await SendMail(result, false, null, synchronous);
+                        break;
                     }
+                    catch (Exception ex)
+                    {
+                        if (ex is AggregateException aggEx)
+                        {
+                            ex = aggEx.InnerExceptions.FirstOrDefault();
+                        }
 
-                    // denote failure to the caller
-                    if (ex is SmtpCommandException smtpEx)
-                    {
-                        result.SuccessLine = (int)smtpEx.StatusCode + " " + ex.Message;
-                    }
-                    else
-                    {
-                        result.SuccessLine = "455 Internal Error: " + ex.Message;
-                    }
-                    if (i == 0 && maxCount > 1)
-                    {
-                        // wait a bit and retry
-                        await Task.Delay(10000);
+                        // denote failure to the caller
+                        if (ex is SmtpCommandException smtpEx)
+                        {
+                            result.SuccessLine = (int)smtpEx.StatusCode + " " + ex.Message;
+                        }
+                        else
+                        {
+                            result.SuccessLine = "455 Internal Error: " + ex.Message;
+                        }
+                        if (i == 0 && maxCount > 1)
+                        {
+                            // wait a bit and retry
+                            await Task.Delay(10000);
+                        }
                     }
                 }
+            }
+            finally
+            {
+                result.Dispose();
             }
 
             // denote to caller that we have sent the message successfully
