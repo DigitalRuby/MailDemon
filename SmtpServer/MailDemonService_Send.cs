@@ -85,10 +85,15 @@ namespace MailDemon
             IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX, cancellationToken: cancelToken);
             Exception lastError = null;
 
-            foreach (DnsClient.Protocol.MxRecord record in result.AllRecords)
+            foreach (var potentialMxRecord in result.AllRecords)
             {
+                if (potentialMxRecord is not DnsClient.Protocol.MxRecord record)
+                {
+                    continue;
+                }
+
                 // exit out if synchronous and we have an error
-                if (lastError != null && synchronous)
+                else if (lastError != null && synchronous)
                 {
                     break;
                 }
