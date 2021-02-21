@@ -54,7 +54,7 @@ namespace MailDemon
             catch (Exception ex)
             {
                 // all messages fail for this domain
-                MailDemonLog.Error("Unable to send email messages, dns / other pre-processes have failed", ex);
+                MailDemonLog.Error("Unable to send email messages", ex);
                 foreach (MailToSend message in messages)
                 {
                     message.Callback?.Invoke(message.Subscription, "Dns/other error: " + ex.Message);
