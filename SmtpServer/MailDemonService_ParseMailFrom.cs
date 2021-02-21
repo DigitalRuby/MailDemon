@@ -220,7 +220,7 @@ namespace MailDemon
             else if (line.StartsWith("BDAT", StringComparison.OrdinalIgnoreCase))
             {
                 // https://tools.ietf.org/html/rfc1830
-                string tempFile = Path.GetTempFileName();
+                string tempFile = Path.Combine(AppContext.BaseDirectory, Guid.NewGuid().ToString("N") + ".msg");
                 bool last = false;
                 int totalBytes = 0;
 
