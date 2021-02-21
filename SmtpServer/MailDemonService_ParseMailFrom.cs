@@ -125,7 +125,7 @@ namespace MailDemon
 
                 await writer.WriteLineAsync($"354 ok");
                 await writer.FlushAsync();
-                string tempFile = Path.GetTempFileName();
+                string tempFile = Path.Combine(AppContext.BaseDirectory, Guid.NewGuid().ToString("N") + ".msg");
                 int totalCount = 0;
                 try
                 {

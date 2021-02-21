@@ -295,6 +295,10 @@ namespace MailDemon
         private async Task SendMailInternal(string fileName, MailboxAddress from,
             IEnumerable<MailboxAddress> toAddresses, Action<MimeMessage> prepMessage, bool synchronous)
         {
+            if (!File.Exists(fileName))
+            {
+                throw new InvalidOperationException("Cannot send email, backing file does not exist");
+            }
             using Stream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
             MimeMessage message = await MimeMessage.LoadAsync(fs, true, cancelToken);
             IReadOnlyCollection<MailToSend> toSend = EnumerateMessages(message, from, toAddresses, prepMessage);
