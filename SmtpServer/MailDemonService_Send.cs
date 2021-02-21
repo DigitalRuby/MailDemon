@@ -54,7 +54,7 @@ namespace MailDemon
             catch (Exception ex)
             {
                 // all messages fail for this domain
-                MailDemonLog.Error("Unable to send email messages", ex);
+                MailDemonLog.Error(ex, "Unable to send email messages to {0}", string.Join(';', messages.Select(m => m.Message.To.First().ToString())));
                 foreach (MailToSend message in messages)
                 {
                     message.Callback?.Invoke(message.Subscription, "Error: " + ex.Message);
