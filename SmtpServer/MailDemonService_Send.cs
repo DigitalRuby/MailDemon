@@ -57,7 +57,7 @@ namespace MailDemon
                 MailDemonLog.Error("Unable to send email messages", ex);
                 foreach (MailToSend message in messages)
                 {
-                    message.Callback?.Invoke(message.Subscription, "Dns/other error: " + ex.Message);
+                    message.Callback?.Invoke(message.Subscription, "Error: " + ex.Message);
                 }
                 throw;
             }
