@@ -46,7 +46,7 @@ namespace MailDemon
             {
                 await writer.WriteLineAsync($"500 invalid command - bad from address");
                 await writer.FlushAsync();
-                throw new InvalidOperationException($"Invalid from address - bad from address '{fromAddress}'");
+                throw new InvalidOperationException($"Invalid from address - bad from address '{fromAddress}' != '{fromUser.MailAddress.Address}'");
             }
 
             // denote success for sender and binarymime
