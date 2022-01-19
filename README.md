@@ -2,7 +2,7 @@
 
 Mail Demon is a simple and lightweight C# smtp server and mail list system for sending unlimited emails and text messages. With a focus on simplicity, async and performance, you'll be able to easily send thousands of messages per second even on a cheap Linux VPS. Memory usage and CPU usage are optimized to the max. Security and spam prevention is also built in using SPF validation.
 
-Mail Demon requires .NET 5.0+ runtime installed, or you can build a stand-alone executable to remove this dependancy.
+Mail Demon requires .NET 6.0+ runtime installed, or you can build a stand-alone executable to remove this dependancy.
 
 Make sure to set appsettings.json to your required parameters before attempting to use.
 
@@ -14,7 +14,7 @@ Mail Demon is great for sending notifications, announcements and even text messa
 Mail Demon is integrated with <a href='https://github.com/DigitalRuby/IPBan'>IPBan</a>. If you have installed IPBan on your Linux or Windows box, then Mail Demon will send failed login attempts from SMTP or the mail list login to IPBan via a custom log file, blocking those attackers that exceed the failed login threshold for IPBan.
 
 ## Project Build Instructions
-- Ensure .NET 5.0 SDK or newer installed.
+- Ensure .NET 6.0 SDK or newer installed.
 - Download code, open in Visual Studio or VS Code, set release configuration.
 - Update appsettings.json with your settings. I recommend an SSL certificate. Lets encrypt is a great option. Make sure to set the users to something other than the default.
 - Right click on project, select 'publish' option.
