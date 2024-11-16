@@ -242,10 +242,10 @@ namespace MailDemon
                     try
                     {
                         byte[] bytes = await File.ReadAllBytesAsync(publicKeyFile);
-                        X509Certificate2 newSslCertificate = (password == null ? new X509Certificate2(bytes) : new X509Certificate2(bytes, password));
+                        var newSslCertificate = (password == null ? X509CertificateLoader.LoadCertificate(bytes) : X509CertificateLoader.LoadPkcs12(bytes, password.ToUnsecureString()));
                         if (!newSslCertificate.HasPrivateKey && !string.IsNullOrWhiteSpace(privateKeyFile))
                         {
-                            X509Certificate2 copiedCert = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(await File.ReadAllTextAsync(privateKeyFile)));
+                            var copiedCert = newSslCertificate.CopyWithPrivateKey(GetRSAProviderForPrivateKey(await File.ReadAllTextAsync(privateKeyFile)));
                             newSslCertificate.Dispose();
                             newSslCertificate = copiedCert;
                         }

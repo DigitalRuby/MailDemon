@@ -9,8 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-using AngleSharp;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.Caching.Memory;

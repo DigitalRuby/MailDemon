@@ -100,7 +100,7 @@ namespace MailDemon
                 LogFactory factory = null;
                 try
                 {
-                    factory = LogManager.LoadConfiguration(ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).FilePath);
+                    factory = LogManager.Setup().LoadConfiguration(builder => { }).LogFactory;
                 }
                 catch
                 {
@@ -128,7 +128,7 @@ namespace MailDemon
                     }
                     if (File.Exists(nlogConfigPath))
                     {
-                        factory = LogManager.LoadConfiguration(nlogConfigPath);
+                        factory = LogManager.Setup().LoadConfigurationFromFile(nlogConfigPath).LogFactory;
                     }
                     else
                     {

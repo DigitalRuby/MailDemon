@@ -18,6 +18,7 @@ using MimeKit;
 using MailKit.Net.Smtp;
 using System.Reflection;
 using Microsoft.Extensions.Caching.Memory;
+using NUnit.Framework.Legacy;
 
 #endregion Imports
 
@@ -52,6 +53,7 @@ namespace MailDemonTests
 
         private void Cleanup()
         {
+            dbProvider = null;
             homeController?.Dispose();
             homeController = null;
             MailDemonDatabase.DeleteDatabase(true);
@@ -83,40 +85,40 @@ namespace MailDemonTests
             using (var db = dbProvider.GetDatabase())
             {
                 reg = db.Subscriptions.FirstOrDefault();
-                Assert.NotNull(reg);
-                Assert.AreEqual("Bob", reg.Fields["firstName"]);
-                Assert.AreEqual("Smith", reg.Fields["lastName"]);
-                Assert.AreEqual(mailAddress, reg.EmailAddress);
-                Assert.IsEmpty(reg.Fields["company"] as string);
-                Assert.IsNotNull(reg.SubscribeToken);
-                Assert.IsNull(reg.UnsubscribeToken);
-                Assert.AreEqual(default(DateTime), reg.SubscribedDate);
-                Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
-                Assert.AreNotEqual(default(DateTime), reg.Expires);
+                ClassicAssert.NotNull(reg);
+                ClassicAssert.AreEqual("Bob", reg.Fields["firstName"]);
+                ClassicAssert.AreEqual("Smith", reg.Fields["lastName"]);
+                ClassicAssert.AreEqual(mailAddress, reg.EmailAddress);
+                ClassicAssert.IsEmpty(reg.Fields["company"] as string);
+                ClassicAssert.IsNotNull(reg.SubscribeToken);
+                ClassicAssert.IsNull(reg.UnsubscribeToken);
+                ClassicAssert.AreEqual(default(DateTime), reg.SubscribedDate);
+                ClassicAssert.AreEqual(default(DateTime), reg.UnsubscribedDate);
+                ClassicAssert.AreNotEqual(default(DateTime), reg.Expires);
             }
 
             // verify the subscribe confirm has no errors
             homeController.SubscribeConfirm(listName);
-            Assert.AreEqual(1, sentMailCount);
+            ClassicAssert.AreEqual(1, sentMailCount);
             sentMailCount = 0;
 
             // perform the final subscribe action
             expectedSubject = "Hello2 Bob";
             expectedBody = "<!-- Subject: Hello2 Bob --> Body2: Last Name Smith, Subscribe: , Unsubscribe: https://testdomain.com/Unsubscribe/TestList?token={unsubscribe-token}";
             homeController.SubscribeWelcome(listName, reg.SubscribeToken).Sync();
-            Assert.AreEqual(1, sentMailCount);
+            ClassicAssert.AreEqual(1, sentMailCount);
             sentMailCount = 0;
 
             // validate there is an unsubscribe in the db
             using (var db = dbProvider.GetDatabase())
             {
                 reg = db.Subscriptions.FirstOrDefault();
-                Assert.AreEqual(listName, reg.ListName);
-                Assert.AreEqual("127.0.0.1", reg.IPAddress);
-                Assert.IsNotNull(reg.UnsubscribeToken);
-                Assert.AreNotEqual(default(DateTime), reg.SubscribedDate);
-                Assert.AreEqual(default(DateTime), reg.UnsubscribedDate);
-                Assert.AreEqual(DateTime.MaxValue, reg.Expires);
+                ClassicAssert.AreEqual(listName, reg.ListName);
+                ClassicAssert.AreEqual("127.0.0.1", reg.IPAddress);
+                ClassicAssert.IsNotNull(reg.UnsubscribeToken);
+                ClassicAssert.AreNotEqual(default(DateTime), reg.SubscribedDate);
+                ClassicAssert.AreEqual(default(DateTime), reg.UnsubscribedDate);
+                ClassicAssert.AreEqual(DateTime.MaxValue, reg.Expires);
             }
 
             return reg.UnsubscribeToken;
@@ -130,7 +132,7 @@ namespace MailDemonTests
             // validate that we are unsubscribed
             using var db = dbProvider.GetDatabase();
             MailListSubscription reg = db.Subscriptions.FirstOrDefault();
-            Assert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
+            ClassicAssert.AreNotEqual(default(DateTime), reg.UnsubscribedDate);
         }
 
         [SetUp]
@@ -208,7 +210,7 @@ namespace MailDemonTests
 
             // check database for registration not exist
             using var db = dbProvider.GetDatabase();
-            Assert.AreEqual(0, db.Subscriptions.Count());
+            ClassicAssert.AreEqual(0, db.Subscriptions.Count());
         }
 
         IDictionary<string, object> ITempDataProvider.LoadTempData(HttpContext context)
@@ -235,10 +237,10 @@ namespace MailDemonTests
                 break;
             }
             MimeMessage message = mail?.Message;
-            Assert.NotNull(message);
+            ClassicAssert.NotNull(message);
             string expectedBodyReplaced = expectedBody.Replace("{subscribe-token}", mail.Subscription.SubscribeToken).Replace("{unsubscribe-token}", mail.Subscription.UnsubscribeToken);
-            Assert.AreEqual(expectedSubject, message.Subject);
-            Assert.IsTrue(message.HtmlBody.IndexOf(expectedBodyReplaced) >= 0);
+            ClassicAssert.AreEqual(expectedSubject, message.Subject);
+            ClassicAssert.IsTrue(message.HtmlBody.IndexOf(expectedBodyReplaced) >= 0);
             mail.Callback?.Invoke(mail.Subscription, string.Empty);
             sentMailCount++;
 

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MailDemon
@@ -13,6 +11,7 @@ namespace MailDemon
     public class RecaptchaSettings
     {
         private static readonly string url = "https://www.google.com/recaptcha/api/siteverify?secret={0}&response={1}&remoteip={2}";
+        private static readonly HttpClient client = new();
 
         /// <summary>
         /// Site key
@@ -53,9 +52,8 @@ namespace MailDemon
                 "error-codes": [...]        // optional
             } */
 
-            WebClient client = new WebClient();
             response = (response ?? string.Empty);
-            string jsonReceived = await client.DownloadStringTaskAsync(string.Format(RecaptchaSettings.url, SecretKey, response, remoteip));
+            string jsonReceived = await client.GetStringAsync(string.Format(RecaptchaSettings.url, SecretKey, response, remoteip));
             JToken token = JToken.Parse(jsonReceived);
             string actualAction = token.Value<string>("action");
             bool success = token.Value<bool>("success");
@@ -64,7 +62,7 @@ namespace MailDemon
             {
                 return null;
             }
-            StringBuilder errorCodes = new StringBuilder();
+            StringBuilder errorCodes = new();
             JToken errors = token["error-codes"];
             if (errors != null)
             {

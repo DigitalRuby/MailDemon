@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Design;
@@ -18,8 +19,6 @@ namespace MailDemon
     public class MailDemonDatabase : DbContext
     {
         private readonly DbContextOptions<MailDemonDatabase> options;
-
-        private DbConnection conn;
 
         private void HandlePlatformSpecificDatabaseOptions()
         {
@@ -83,29 +82,7 @@ namespace MailDemon
         public MailDemonDatabase(DbContextOptions<MailDemonDatabase> options) : base(options)
         {
             this.options = options;
-            try
-            {
-                Database.OpenConnection();
-                conn = Database.GetDbConnection();
-            }
-            catch
-            {
-                // ok, probably in memory
-            }
             HandlePlatformSpecificDatabaseOptions();
-        }
-
-        /// <summary>
-        /// Dispose of the connection to the database
-        /// </summary>
-        public override void Dispose()
-        {
-            if (conn != null)
-            {
-                conn.Dispose();
-                conn = null;
-            }
-            base.Dispose();
         }
 
         /// <summary>
@@ -116,6 +93,9 @@ namespace MailDemon
         {
             if (confirm)
             {
+                SqliteConnection.ClearAllPools();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
                 string path = Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.sqlite");
                 if (File.Exists(path))
                 {

@@ -89,7 +89,7 @@ namespace MailDemon
                 }).ConfigureAwait(false).GetAwaiter();
                 MailDemonLog.Info($"Starting ssl connection from client {clientIPAddress}");
                 await sslStream.AuthenticateAsServerAsync(sslCertificate, false, System.Security.Authentication.SslProtocols.Tls12 |
-                    System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls, true);
+                    System.Security.Authentication.SslProtocols.Tls13, true);
                 sslServerEnabled = true;
             }
             catch (Exception ex)

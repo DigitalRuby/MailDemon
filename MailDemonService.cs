@@ -45,7 +45,7 @@ namespace MailDemon
         {
             public TcpListenerActive(IPEndPoint localEP) : base(localEP) { }
             public TcpListenerActive(IPAddress localaddr, int port) : base(localaddr, port) { }
-            public void Dispose() { Stop(); }
+            public new void Dispose() { Stop(); base.Dispose(); }
             public new bool Active => base.Active;
         }
 
