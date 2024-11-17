@@ -12,11 +12,14 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+using DnsClient.Internal;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 using MimeKit;
 
@@ -225,8 +228,10 @@ namespace MailDemon
         /// <param name="publicKeyFile">Public key file</param>
         /// <param name="privateKeyFile">Private key file</param>
         /// <param name="password">Password</param>
+        /// <param name="logger">Logger</param>
         /// <returns>X509Certificate2 or null if error</returns>
-        public static async Task<X509Certificate2> LoadSslCertificateAsync(string publicKeyFile, string privateKeyFile, SecureString password)
+        public static async Task<X509Certificate2> LoadSslCertificateAsync(string publicKeyFile, string privateKeyFile,
+            SecureString password, Microsoft.Extensions.Logging.ILogger logger)
         {
             // if missing files, no certificate possible
             if (!File.Exists(publicKeyFile) || (!string.IsNullOrWhiteSpace(privateKeyFile) && !File.Exists(privateKeyFile)))
@@ -249,7 +254,7 @@ namespace MailDemon
                             newSslCertificate.Dispose();
                             newSslCertificate = copiedCert;
                         }
-                        MailDemonLog.Debug("Loaded ssl certificate {0}", newSslCertificate);
+                        logger.LogDebug("Loaded ssl certificate {cert}", publicKeyFile);
                         return newSslCertificate;
                     }
                     catch (Exception ex)
@@ -263,7 +268,7 @@ namespace MailDemon
             }
             if (error != null)
             {
-                MailDemonLog.Error("Error loading ssl certificate: {0}", error);
+                logger.LogError(error, "Error loading ssl certificate {cert}", publicKeyFile);
             }
             return null;
         }

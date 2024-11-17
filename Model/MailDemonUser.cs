@@ -1,4 +1,8 @@
-﻿using MimeKit;
+﻿using DnsClient.Internal;
+
+using Microsoft.Extensions.Logging;
+
+using MimeKit;
 using System;
 using System.Collections.Generic;
 using System.Security;
@@ -50,10 +54,11 @@ namespace MailDemon
         /// </summary>
         /// <param name="userName">User name</param>
         /// <param name="password">Password</param>
+        /// <param name="logger">Logger</param>
         /// <returns>True if authenticated, false otherwise</returns>
-        public bool Authenticate(string userName, string password)
+        public bool Authenticate(string userName, string password, Microsoft.Extensions.Logging.ILogger logger)
         {
-            MailDemonLog.Debug("Attempting auth {0},{1} against user {2}", userName, password, UserName);
+            logger.LogDebug("Attempting auth for {user}", userName);
             return (UserName.Equals(userName, StringComparison.OrdinalIgnoreCase) &&
                 Password.ToUnsecureString().Equals(password, StringComparison.OrdinalIgnoreCase));
         }

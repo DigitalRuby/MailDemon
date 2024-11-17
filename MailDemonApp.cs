@@ -11,11 +11,15 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using DnsClient;
+using DnsClient.Internal;
 
 using MailKit;
 using MailKit.Net;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 using MimeKit;
 
 namespace MailDemon
@@ -101,11 +105,17 @@ namespace MailDemon
             IConfigurationRoot config = configBuilder.Build();
             CertificateCache cache = new CertificateCache(config); // singleton
 
-            // start mail server
-            mailService = new MailDemonService(args, config);
-            Task mailTask = mailService.StartAsync(cancel.Token);
+            // start web server
+            webApp = new MailDemonWebApp(args, rootDir, config);
+            Task webTask = webApp.StartAsync(cancel.Token);
 
-            MailDemonLog.Info("Mail demon running");
+            // start mail server
+            var mailLogger = webApp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MailDemonService>>();
+            webApp.MailService = mailService = new MailDemonService(args, config, mailLogger);
+            Task mailTask = mailService.StartAsync(cancel.Token);
+                        
+            var logger = webApp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MailDemonApp>>();
+            logger.LogInformation("Mail demon running");
 
             // test sending with the server:
             // test localhost toaddress@domain.com,toaddress@otherdomain.com [full path to file to attach]
@@ -115,12 +125,8 @@ namespace MailDemon
                 string file = args.Length > 3 ? args[3] : null;
                 TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
                 TestClientConnectionAsync(mailService, args[1], args[2], file).ConfigureAwait(false).GetAwaiter().GetResult();
-                args = new string[0];
+                args = [];
             }
-
-            // start web server
-            webApp = new MailDemonWebApp(args, rootDir, config, mailService);
-            Task webTask = webApp.StartAsync(cancel.Token);
 
             return Task.WhenAll(mailTask, webTask);
         }
@@ -128,7 +134,7 @@ namespace MailDemon
         public static Task Main(string[] args)
         {
             Directory.SetCurrentDirectory(AppContext.BaseDirectory);
-            MailDemonApp app = new MailDemonApp();
+            MailDemonApp app = new();
             return app.Run(args);
         }
     }

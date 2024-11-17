@@ -14,6 +14,8 @@ using System.Threading.Tasks;
 
 using DnsClient;
 
+using Microsoft.Extensions.Logging;
+
 using MimeKit;
 
 using NetTools;
@@ -46,7 +48,8 @@ namespace MailDemon
                 return;
             }
 
-            MailDemonLog.Info("Validating spf for end point {0}, from address: {1}, from domain: {2}", connectionEndPoint.Address, fromAddress, fromAddressDomain);
+            logger.LogInformation("Validating spf for end point {endPointAddress}, from address: {fromEmailAddress}, from domain: {fromDomain}",
+                connectionEndPoint.Address, fromAddress, fromAddressDomain);
 
             // example smtp host: mail-it1-f173.google.com
             IPHostEntry entry = await Dns.GetHostEntryAsync(connectionEndPoint.Address);
@@ -203,7 +206,8 @@ namespace MailDemon
                             };
 
                             // forward the message on and clear the forward headers
-                            MailDemonLog.Info("Forwarding message, from: {0}, to: {1}, forward: {2}", result.From, address, forwardToAddress);
+                            logger.LogInformation("Forwarding message, from: {from}, to: {address}, forward: {forwardTo}",
+                                result.From, address, forwardToAddress);
                             result.BackingFile = null; // we took ownership of the file
 
                             // send in background

@@ -19,6 +19,7 @@ using MailKit.Net.Smtp;
 using System.Reflection;
 using Microsoft.Extensions.Caching.Memory;
 using NUnit.Framework.Legacy;
+using Microsoft.Extensions.Logging.Abstractions;
 
 #endregion Imports
 
@@ -173,7 +174,7 @@ namespace MailDemonTests
                 db.SaveChanges();
             }
             mailCreator = new MailCreator(new RazorRenderer(null, Directory.GetCurrentDirectory(), Assembly.GetExecutingAssembly())) { IgnoreElements = authority };
-            homeController = new HomeController(this, null, mailCreator, this, null, this)
+            homeController = new HomeController(this, null, mailCreator, this, null, this, new NullLogger<HomeController>())
             {
                 RequireCaptcha = false,
                 TempData = new TempDataDictionary(httpContext, this)

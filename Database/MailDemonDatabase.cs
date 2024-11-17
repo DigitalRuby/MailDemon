@@ -55,10 +55,12 @@ namespace MailDemon
                 }
                 Database.Migrate();
             }
-            catch (Exception ex)
+            catch
             {
-                // OK, if in memory migration will fail
-                MailDemonLog.Error("Error creating database: {0}", ex);
+                if (Database.ProviderName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    throw;
+                }
             }
         }
 

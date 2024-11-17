@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -24,7 +26,7 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                MailDemonLog.Error(ex, "Error from client connection {0}", tcpClient.Client.RemoteEndPoint);
+                logger.LogError(ex, "Error from client connection {endPoint}", tcpClient.Client.RemoteEndPoint);
             }
             finally
             {
@@ -67,7 +69,7 @@ namespace MailDemon
                 }
             }
             result = MailDemonExtensionMethods.Utf8EncodingNoByteMarker.GetString(ms.GetBuffer().AsSpan(0, (int)ms.Length));
-            MailDemonLog.Debug("CLIENT: {0}", result);
+            logger.LogDebug("CLIENT: {result}", result);
             return result;
         }
 
@@ -150,7 +152,8 @@ namespace MailDemon
             await writer.WriteLineAsync($"250-ENHANCEDSTATUSCODES");
             await writer.WriteLineAsync($"250-BINARYMIME");
             await writer.WriteLineAsync($"250-CHUNKING");
-            var cert = await CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword);
+            var cert = await CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile,
+                sslCertificatePassword, logger);
             if (cert != null && sslStream == null && port != 465 && port != 587)
             {
                 await writer.WriteLineAsync($"250-STARTTLS");
@@ -189,9 +192,9 @@ namespace MailDemon
             }
             foreach (MailDemonUser user in users)
             {
-                if (user.Authenticate(userName, password))
+                if (user.Authenticate(userName, password, logger))
                 {
-                    MailDemonLog.Info("User {0} authenticated", user.UserName);
+                    logger.LogInformation("User {user} authenticated", user.UserName);
                     await writer.WriteLineAsync($"235 2.7.0 Accepted");
                     await writer.FlushAsync();
                     return user;
@@ -199,7 +202,7 @@ namespace MailDemon
             }
 
             // fail
-            MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
+            logger.LogWarning("Authentication failed: {auth}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
             await writer.FlushAsync();
             return new MailDemonUser(userName, userName, password, userName, null, false, false);
@@ -219,7 +222,7 @@ namespace MailDemon
             string sentAuth = userName + ":" + password;
             foreach (MailDemonUser user in users)
             {
-                if (user.Authenticate(userName, password))
+                if (user.Authenticate(userName, password, logger))
                 {
                     foundUser = user;
                     break;
@@ -227,14 +230,14 @@ namespace MailDemon
             }
             if (foundUser != null)
             {
-                MailDemonLog.Info("User {0} authenticated", foundUser.UserName);
+                logger.LogInformation("User {user} authenticated", foundUser.UserName);
                 await writer.WriteLineAsync($"235 2.7.0 Accepted");
                 await writer.FlushAsync();
                 return foundUser;
             }
 
             // fail
-            MailDemonLog.Warn("Authentication failed: {0}", sentAuth);
+            logger.LogWarning("Authentication failed: {auth}", sentAuth);
             await writer.WriteLineAsync($"535 authentication failed");
             await writer.FlushAsync();
             return new MailDemonUser(userName, userName, password, userName, null, false, false);
@@ -260,12 +263,12 @@ namespace MailDemon
             {
                 tcpClient.ReceiveTimeout = tcpClient.SendTimeout = streamTimeoutMilliseconds;
 
-                MailDemonLog.Info("Connection from {0}", ipAddress);
+                logger.LogInformation("Connection from {ip}", ipAddress);
 
                 // immediately drop if client is blocked
                 if (CheckBlocked(ipAddress))
                 {
-                    MailDemonLog.Warn("Blocked {0}", ipAddress);
+                    logger.LogWarning("Blocked {ip}", ipAddress);
                     return;
                 }
 
@@ -278,7 +281,8 @@ namespace MailDemon
 
                 async Task StartSSL()
                 {
-                    sslCert = await CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword);
+                    sslCert = await CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile,
+                        sslCertificatePassword, logger);
                     Tuple <SslStream, Stream, StreamWriter> tls = await StartTls(tcpClient, ipAddress, reader, writer, true, sslCert);
                     if (tls == null)
                     {
@@ -299,7 +303,7 @@ namespace MailDemon
                     await StartSSL();
                 }
 
-                MailDemonLog.Info("Connection accepted from {0}", ipAddress);
+                logger.LogInformation("Connection accepted from {ip}", ipAddress);
 
                 // send greeting
                 await writer.WriteLineAsync($"220 {Domain} {greeting}");
@@ -410,7 +414,7 @@ namespace MailDemon
                         }
                         else
                         {
-                            MailDemonLog.Warn("Ignoring client command: {0}", line);
+                            logger.LogWarning("Ignoring client command: {line}", line);
                         }
                     }
                     else
@@ -445,14 +449,14 @@ namespace MailDemon
                 if (!(ex is SocketException))
                 {
                     IncrementFailure(ipAddress, authenticatedUser?.UserName);
-                    MailDemonLog.Error(ex, "{0} error", ipAddress);
+                    logger.LogError(ex, "{ip} error", ipAddress);
                 }
             }
             finally
             {
                 sslStream?.Dispose();
                 clientStream?.Dispose();
-                MailDemonLog.Info("{0} disconnected", ipAddress);
+                logger.LogInformation("{ip} disconnected", ipAddress);
             }
         }
     }

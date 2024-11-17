@@ -49,7 +49,6 @@ namespace MailDemon
         private IWebHost host;
         private IServiceProvider serviceProvider;
         private readonly ManualResetEvent runningEvent = new ManualResetEvent(false);
-        private readonly MailDemonService mailService;
 
         /// <summary>
         /// Configuration
@@ -92,6 +91,16 @@ namespace MailDemon
         public string Authority { get; private set; }
 
         /// <summary>
+        /// Mail service
+        /// </summary>
+        public MailDemonService MailService { get; set; }
+
+        /// <summary>
+        /// Logger
+        /// </summary>
+        public ILogger Logger { get; private set; }
+
+        /// <summary>
         /// Shared instance
         /// </summary>
         public static MailDemonWebApp Instance { get; private set; }
@@ -110,12 +119,12 @@ namespace MailDemon
             string migrationPath = Path.Combine(Directory.GetCurrentDirectory(), "MailDemon.db");
             if (File.Exists(migrationPath))
             {
-                MailDemonLog.Warn("Migrating from old database {0}", migrationPath);
+                Logger.LogWarning("Migrating from old database {path}", migrationPath);
                 var tran = db.Database.BeginTransaction();
                 try
                 {
                     using (FileStream fs = File.OpenRead(migrationPath))
-                    using (LiteDB.LiteDatabase oldDb = new LiteDB.LiteDatabase(fs))
+                    using (LiteDB.LiteDatabase oldDb = new(fs))
                     {
                         foreach (MailList list in oldDb.GetCollection<MailList>().FindAll())
                         {
@@ -132,7 +141,7 @@ namespace MailDemon
                         db.SaveChanges();
                         tran.Commit();
                         tran = null;
-                        MailDemonLog.Warn("Migration success");
+                        Logger.LogWarning("Migration success");
                     }
                     File.Delete(migrationPath);
                 }
@@ -149,13 +158,11 @@ namespace MailDemon
         /// <param name="args">Args</param>
         /// <param name="rootDirectory">Root directory</param>
         /// <param name="config">Configuration</param>
-        /// <param name="mailService">Mail service</param>
-        public MailDemonWebApp(string[] args, string rootDirectory, IConfigurationRoot config, MailDemonService mailService)
+        public MailDemonWebApp(string[] args, string rootDirectory, IConfigurationRoot config)
         {
             Args = args;
             RootDirectory = rootDirectory;
             Configuration = config;
-            this.mailService = mailService;
             Instance = this;
         }
 
@@ -176,16 +183,6 @@ namespace MailDemon
         public async virtual Task StartAsync(CancellationToken cancelToken)
         {
             IWebHostBuilder builder = WebHost.CreateDefaultBuilder(Args);
-            builder.ConfigureLogging(logging =>
-            {
-
-#if !DEBUG
-
-                logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Warning);
-
-#endif
-
-            });
             Dictionary<string, string> argsDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (Args.Length % 2 != 0)
             {
@@ -199,6 +196,14 @@ namespace MailDemon
             builder.UseIISIntegration();
             builder.UseContentRoot(RootDirectory);
             builder.UseConfiguration(Configuration);
+
+            // configure logging to console
+            builder.ConfigureLogging((context, logging) =>
+            {
+                logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+                logging.AddConsole();
+            });
+
             argsDictionary.TryGetValue("--server.urls", out string serverUrl);
             IConfigurationSection web = Configuration.GetSection("mailDemonWeb");
             Authority = web["authority"];
@@ -215,7 +220,8 @@ namespace MailDemon
                         {
                             sslOpt.ServerCertificateSelector = (ctx, name) =>
                             {
-                                return CertificateCache.Instance.LoadSslCertificateAsync(certPathWeb, certPathPrivateWeb, certPasswordWeb).Sync();
+                                return CertificateCache.Instance.LoadSslCertificateAsync(certPathWeb, certPathPrivateWeb,
+                                    certPasswordWeb, Logger).Sync();
                             };
                         });
                     });
@@ -225,17 +231,11 @@ namespace MailDemon
             {
                 builder.UseUrls(serverUrl.Split(',', '|', ';'));
             }
-            try
+            host = builder.ConfigureServices(services =>
             {
-                host = builder.ConfigureServices(services =>
-                {
-                    services.AddSingleton<IStartup>(this);
-                }).Build();
-            }
-            catch (Exception ex)
-            {
-                MailDemonLog.Error(ex);
-            }
+                services.AddSingleton<IStartup>(this);
+            }).Build();
+            Logger = host.Services.GetRequiredService<ILogger<MailDemonWebApp>>();
             Recaptcha = new RecaptchaSettings(web["recaptchaSiteKey"], web["recaptchaSecretKey"]);
             AdminLogin = new KeyValuePair<string, string>(web["adminUser"], web["adminPassword"]);
             Task runTask = host.RunAsync(CancelToken);
@@ -306,7 +306,7 @@ namespace MailDemon
                 services.AddResponseCompression(options => { options.EnableForHttps = true; });
                 services.AddResponseCaching();
                 services.AddHttpContextAccessor();
-                services.AddSingleton<IMailSender>((provider) => mailService);
+                services.AddSingleton<IMailSender>((provider) => MailService);
                 services.AddSingleton<IViewRenderService, ViewRenderService>();
                 services.AddSingleton<IAuthority>(this);
                 services.AddSingleton<IMailDemonDatabaseProvider>(this);
@@ -340,9 +340,7 @@ namespace MailDemon
         void IStartup.Configure(IApplicationBuilder app)
         {
             IWebHostEnvironment env = app.ApplicationServices.GetService<IWebHostEnvironment>();
-            ILoggerFactory loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
             IHostApplicationLifetime lifetime = app.ApplicationServices.GetService<IHostApplicationLifetime>();
-            loggerFactory.AddProvider(new MailDemonLogProvider());
             bool enableWeb = bool.Parse(Configuration.GetSection("mailDemonWeb")["enable"]);
             IServerAddressesFeature serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
             string address = serverAddressesFeature?.Addresses.LastOrDefault();
@@ -415,7 +413,7 @@ namespace MailDemon
                 Authority = Authority.Trim('/', '?');
             }
             lifetime.ApplicationStopping.Register(OnShutdown);
-            MailDemonLog.Warn("Mail demon web service started");
+            Logger.LogWarning("Mail demon web service started");
             runningEvent.Set();
         }
 

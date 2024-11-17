@@ -16,6 +16,8 @@ using DnsClient;
 
 using MailKit.Net.Smtp;
 
+using Microsoft.Extensions.Logging;
+
 using MimeKit;
 
 namespace MailDemon
@@ -54,7 +56,7 @@ namespace MailDemon
             catch (Exception ex)
             {
                 // all messages fail for this domain
-                MailDemonLog.Error(ex, "Unable to send email messages to {0}", string.Join(';', messages.Select(m => m.Message.To.First().ToString())));
+                logger.LogError(ex, "Unable to send email messages to {addresses}", string.Join(';', messages.Select(m => m.Message.To.First().ToString())));
                 foreach (MailToSend message in messages)
                 {
                     message.Callback?.Invoke(message.Subscription, "Error: " + ex.Message);
@@ -81,7 +83,7 @@ namespace MailDemon
         private async Task PerformSmtpClientOperation(SmtpClient client, string domain, Func<Task> clientAction, bool synchronous)
         {
             LookupClient lookup = new LookupClient();
-            MailDemonLog.Debug("QueryAsync mx for domain {0}", domain);
+            logger.LogDebug("QueryAsync mx for domain {domain}", domain);
             IDnsQueryResponse result = await lookup.QueryAsync(domain, QueryType.MX, cancellationToken: cancelToken);
             Exception lastError = null;
 
@@ -100,7 +102,7 @@ namespace MailDemon
 
                 try
                 {
-                    MailDemonLog.Debug("GetHostEntryAsync for exchange {0}", record.Exchange);
+                    logger.LogDebug("GetHostEntryAsync for {exchange}", record.Exchange);
                     IPHostEntry ip = await Dns.GetHostEntryAsync(record.Exchange);
                     foreach (IPAddress ipAddress in ip.AddressList)
                     {
@@ -121,7 +123,7 @@ namespace MailDemon
                                 lastError = ex;
                                 break;
                             }
-                            MailDemonLog.Error(ex);
+                            logger.LogError(ex, "Error performing action for {domain}", domain);
                         }
                     }
                 }
@@ -151,9 +153,9 @@ namespace MailDemon
             {
                 if (!DisableSending)
                 {
-                    MailDemonLog.Debug("Sending message from {0}, to {1}", message.Message.From, message.Message.To);
+                    logger.LogDebug("Sending message from {from}, to {to}", message.Message.From, message.Message.To);
                     await client.SendAsync(message.Message, cancelToken).TimeoutAfter(30000);
-                    MailDemonLog.Debug("Success message from {0}, to {1}", message.Message.From, message.Message.To);
+                    logger.LogDebug("Success message from {from}, to {to}", message.Message.From, message.Message.To);
                 }
 
                 // callback success
@@ -161,7 +163,7 @@ namespace MailDemon
             }
             catch (Exception exInner)
             {
-                MailDemonLog.Debug("Fail message from {0}, to {1} {2}", message.Message.From, message.Message.To, exInner);
+                logger.LogDebug("Fail message {from}, {to}, {innerError}", message.Message.From, message.Message.To, exInner.Message);
 
                 // TODO: Handle SmtpCommandException: Greylisted, please try again in 180 seconds
                 message.Callback?.Invoke(message.Subscription, exInner.Message);
@@ -272,7 +274,7 @@ namespace MailDemon
                 {
                     await Task.WhenAll(tasks);
                 }
-                MailDemonLog.Info("Sent {0} batches of messages in {1:0.00} seconds", count, (DateTime.UtcNow - start).TotalSeconds);
+                logger.LogInformation("Sent {count} batches of messages in {seconds}", count, (DateTime.UtcNow - start).TotalSeconds);
             }
             finally
             {

@@ -4,6 +4,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 using Newtonsoft.Json.Linq;
 
 namespace MailDemon
@@ -42,8 +44,10 @@ namespace MailDemon
         /// <param name="action">Action</param>
         /// <param name="remoteip">Remote ip</param>
         /// <param name="formFields">Form fields</param>
+        /// <param name="logger">Logger</param>
         /// <returns>String error or null if success in verify</returns>
-        public async Task<string> Verify(string url, string response, string action, string remoteip, Dictionary<string, string> formFields)
+        public async Task<string> Verify(string url, string response, string action, string remoteip,
+            Dictionary<string, string> formFields, ILogger logger)
         {
             /* {
                 "success": true|false,
@@ -76,7 +80,7 @@ namespace MailDemon
                     errorCodes.Length--;
                 }
             }
-            MailDemonLog.Warn("Catpcha failed, url: {0}, success: {1}, score: {2}, action: {3} actual action: {4}, error-codes: {5}, form: {6}",
+            logger.LogWarning("Catpcha failed, url: {url}, success: {success}, score: {score}, action: {action} actual action: {actionAction}, error-codes: {errorCodes}, form: {form}",
                 url, success, score, action, actualAction, errorCodes, DictionaryToString(formFields));
             return "Unknown Error";
         }

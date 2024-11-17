@@ -34,6 +34,8 @@ using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using MimeKit.Cryptography;
+using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 
 #endregion Imports
 
@@ -73,12 +75,14 @@ namespace MailDemon
         private readonly bool requireEhloIpHostMatch;
         private readonly bool requireSpfMatch = true;
         private readonly DkimSigner dkimSigner;
+        private readonly Microsoft.Extensions.Logging.ILogger logger;
 
         public string Domain { get; private set; }
         public IReadOnlyList<MailDemonUser> Users { get { return users; } }
 
-        public MailDemonService(string[] args, IConfiguration configuration)
+        public MailDemonService(string[] args, IConfiguration configuration, Microsoft.Extensions.Logging.ILogger logger)
         {
+            this.logger = logger;
             IConfigurationSection rootSection = configuration.GetSection("mailDemon");
             Domain = (rootSection["domain"] ?? Domain);
             ip = (string.IsNullOrWhiteSpace(rootSection["ip"]) ? IPAddress.Any : IPAddress.Parse(rootSection["ip"]));
@@ -99,7 +103,7 @@ namespace MailDemon
             {
                 MailDemonUser user = new MailDemonUser(child["name"], child["displayName"], child["password"], child["address"], child["forwardAddress"], true);
                 users.Add(user);
-                MailDemonLog.Debug("Loaded user {0}", user);
+                logger.LogDebug("Loaded user {user}", user);
             }
             requireEhloIpHostMatch = rootSection.GetValue<bool>("requireEhloIpHostMatch", requireEhloIpHostMatch);
             requireSpfMatch = rootSection.GetValue<bool>("requireSpfMatch", requireSpfMatch);
@@ -114,11 +118,11 @@ namespace MailDemon
                     object pemObject = pemReader.ReadObject();
                     AsymmetricKeyParameter privateKey = ((AsymmetricCipherKeyPair)pemObject).Private;
                     dkimSigner = new DkimSigner(privateKey, Domain, dkimSelector);
-                    MailDemonLog.Warn("Loaded dkim file at {0}", dkimFile);
+                    logger.LogWarning("Loaded dkim file at {path}", dkimFile);
                 }
                 catch (Exception ex)
                 {
-                    MailDemonLog.Error(ex);
+                    logger.LogError(ex, "Failed to load dkim file at {path}", dkimFile);
                 }
             }
             sslCertificateFile = rootSection["sslCertificateFile"];
@@ -163,9 +167,15 @@ namespace MailDemon
                     {
                         // ignore, happens on shutdown
                     }
+                    catch (OperationCanceledException)
+                    {
+                    }
                     catch (Exception ex)
                     {
-                        MailDemonLog.Error("Error connecting incoming socket", ex);
+                        if (!cancelToken.IsCancellationRequested)
+                        {
+                            logger.LogError(ex, "Error connecting incoming socket");
+                        }
                         continue;
                     }
 
@@ -175,17 +185,17 @@ namespace MailDemon
             }
             catch (Exception ex2)
             {
-                MailDemonLog.Error(ex2);
+                logger.LogError(ex2, "Error shutting down smtp server");
             }
 
-            MailDemonLog.Warn("SMTP server is shutdown");
+            logger.LogWarning("SMTP server is shutdown");
         }
 
         public void Dispose()
         {
             try
             {
-                MailDemonLog.Warn("Disposing SMTP server");
+                logger.LogWarning("Disposing SMTP server");
                 server?.Dispose();
             }
             catch

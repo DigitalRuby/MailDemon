@@ -23,6 +23,8 @@ using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Caching.Memory;
+using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 
 #endregion Imports
 
@@ -38,6 +40,7 @@ namespace MailDemon
         private readonly IMailSender mailSender;
         private readonly IBulkMailSender bulkMailSender;
         private readonly IAuthority authority;
+        private readonly Microsoft.Extensions.Logging.ILogger logger;
 
         public bool RequireCaptcha { get; set;  } = true;
 
@@ -78,7 +81,8 @@ namespace MailDemon
             IMailCreator mailCreator,
             IMailSender mailSender,
             IBulkMailSender bulkMailSender,
-            IAuthority authority)
+            IAuthority authority,
+            Microsoft.Extensions.Logging.ILogger<HomeController> logger)
         {
             this.dbProvider = dbProvider;
             this.memoryCache = memoryCache;
@@ -86,6 +90,7 @@ namespace MailDemon
             this.mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
             this.bulkMailSender = bulkMailSender;
             this.authority = authority;
+            this.logger = logger;
         }
 
         [AllowAnonymous]
@@ -146,7 +151,8 @@ namespace MailDemon
             if (RequireCaptcha)
             {
                 formFields.TryGetValue("captcha", out string captchaValue);
-                error = await MailDemonWebApp.Instance.Recaptcha.Verify(Request.GetDisplayUrl(), captchaValue, nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString(), formFields);
+                error = await MailDemonWebApp.Instance.Recaptcha.Verify(Request.GetDisplayUrl(), captchaValue,
+                    nameof(SubscribeInitial), HttpContext.GetRemoteIPAddress().ToString(), formFields, logger);
             }
             MailListSubscription model = new MailListSubscription { Message = error, Error = !string.IsNullOrWhiteSpace(error) };
             MailList list;
@@ -232,7 +238,7 @@ namespace MailDemon
                 }
                 catch (Exception ex)
                 {
-                    MailDemonLog.Error(ex);
+                    logger.LogError(ex, "Subscribing error");
                     model.Error = true;
                     model.Message += "<br/>" + ex.Message;
                     return View(nameof(SubscribeInitial), model);
@@ -448,7 +454,7 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                MailDemonLog.Error(ex);
+                logger.LogError(ex, "Error editing list {id}", id);
                 model.Error = true;
                 model.Message = ex.Message;
                 return View(model);
@@ -471,7 +477,7 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                MailDemonLog.Error(ex);
+                logger.LogError(ex, "Error deleting list {id}", id);
             }
             return RedirectToAction(nameof(EditList));
         }
@@ -555,7 +561,7 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                MailDemonLog.Error(ex);
+                logger.LogError(ex, "Error editing template {id}", id);
                 model.Error = true;
                 model.Message = ex.Message;
                 return View(model);
@@ -576,7 +582,7 @@ namespace MailDemon
             }
             catch (Exception ex)
             {
-                MailDemonLog.Error(ex);
+                logger.LogError(ex, "Error deleting template {id}", id);
             }
             return RedirectToAction(nameof(EditTemplate));
         }

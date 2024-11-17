@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using System.Dynamic;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace MailDemon
 {
@@ -34,6 +35,7 @@ namespace MailDemon
     public class BulkMailSender : IBulkMailSender
     {
         private readonly IMailDemonDatabaseProvider dbProvider;
+        private readonly ILogger logger;
 
         private async Task<IReadOnlyCollection<MailToSend>> GetMessages(IEnumerable<MailListSubscription> subs, IMailCreator mailCreator, MailList list,
             ExpandoObject viewBag, string fullTemplateName, Action<MailListSubscription, string> callback)
@@ -48,7 +50,7 @@ namespace MailDemon
                 }
                 catch (Exception ex)
                 {
-                    MailDemonLog.Error(ex);
+                    logger.LogError(ex, "Error creating mail app");
                     continue;
                 }
                 message.From.Clear();
@@ -68,15 +70,16 @@ namespace MailDemon
             return messages;
         }
 
-        public BulkMailSender(IMailDemonDatabaseProvider dbProvider)
+        public BulkMailSender(IMailDemonDatabaseProvider dbProvider, ILogger logger)
         {
             this.dbProvider = dbProvider;
+            this.logger = logger;
         }
 
         public async Task SendBulkMail(MailList list, IMailCreator mailCreator, IMailSender mailSender, ExpandoObject viewBag,
             bool all, string fullTemplateName, string unsubscribeUrl)
         {
-            MailDemonLog.Warn("Started bulk send for {0}", fullTemplateName);
+            logger.LogWarning("Started bulk send for {template}", fullTemplateName);
 
             DateTime now = DateTime.UtcNow;
             int successCount = 0;
@@ -110,7 +113,7 @@ namespace MailDemon
 
                 // use a separate database instance to do the query, that way we can update records in our other database instance
                 // preventing locking errors, especially with sqlite drivers
-                MailDemonLog.Warn("Begin bulk send");
+                logger.LogWarning("Begin bulk send");
                 using (var dbBulk = dbProvider.GetDatabase())
                 {
                     IEnumerable<KeyValuePair<string, IEnumerable<MailListSubscription>>> pendingSubs = dbBulk.GetBulkEmailSubscriptions(list, unsubscribeUrl, all);
@@ -125,14 +128,15 @@ namespace MailDemon
                         }
                         catch (Exception ex)
                         {
-                            MailDemonLog.Error(ex);
+                            logger.LogError(ex,"Bulk send error");
                         }
                     }
                 }
 
                 await Task.WhenAll(pendingTasks);
 
-                MailDemonLog.Warn("Finished bulk send for {0}, {1} messages succeeded, {2} messages failed in {3:0.00} seconds.", fullTemplateName, successCount, failCount, timer.Elapsed.TotalSeconds);
+                logger.LogWarning("Finished bulk send for {template}, {successCount} messages succeeded, {failCount} messages failed in {seconds}",
+                    fullTemplateName, successCount, failCount, timer.Elapsed.TotalSeconds);
             }
 
             GC.Collect();

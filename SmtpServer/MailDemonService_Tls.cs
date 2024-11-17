@@ -13,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 using MimeKit;
 
 using Org.BouncyCastle.Crypto.Parameters;
@@ -30,15 +32,22 @@ namespace MailDemon
 
         private void TestSslCertificate()
         {
-            MailDemonLog.Info("Testing ssl certificate file {0}, private key file {1}", sslCertificateFile, sslCertificatePrivateKeyFile);
-            X509Certificate2 sslCert = CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile, sslCertificatePrivateKeyFile, sslCertificatePassword).Sync();
+            if (string.IsNullOrWhiteSpace(sslCertificateFile))
+            {
+                return;
+            }
+
+            logger.LogInformation("Testing ssl certificate file {certFile}, private key file {certFilePrivate}",
+                sslCertificateFile, sslCertificatePrivateKeyFile);
+            X509Certificate2 sslCert = CertificateCache.Instance.LoadSslCertificateAsync(sslCertificateFile,
+                sslCertificatePrivateKeyFile, sslCertificatePassword, logger).Sync();
             if (sslCert == null)
             {
-                MailDemonLog.Error("SSL certificate failed to load or is not setup in config!");
+                logger.LogError("SSL certificate failed to load or is not setup in config!");
             }
             else
             {
-                MailDemonLog.Warn("SSL certificate loaded succesfully!");
+                logger.LogWarning("SSL certificate loaded succesfully!");
             }
         }
 
@@ -87,14 +96,14 @@ namespace MailDemon
                         }
                     }
                 }).ConfigureAwait(false).GetAwaiter();
-                MailDemonLog.Info($"Starting ssl connection from client {clientIPAddress}");
+                logger.LogInformation($"Starting ssl connection from client {clientIPAddress}", clientIPAddress);
                 await sslStream.AuthenticateAsServerAsync(sslCertificate, false, System.Security.Authentication.SslProtocols.Tls12 |
                     System.Security.Authentication.SslProtocols.Tls13, true);
                 sslServerEnabled = true;
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Unable to negotiate ssl from client {clientIPAddress}, error: {ex}");
+                throw new InvalidOperationException($"Unable to negotiate ssl from client {clientIPAddress}", ex);
             }
 
             // create comm streams on top of ssl stream

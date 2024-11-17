@@ -21,7 +21,8 @@ namespace MailDemon
             Instance = this;
         }
 
-        public async Task<X509Certificate2> LoadSslCertificateAsync(string publicKeyFile, string privateKeyFile, SecureString password)
+        public async Task<X509Certificate2> LoadSslCertificateAsync(string publicKeyFile, string privateKeyFile,
+            SecureString password, Microsoft.Extensions.Logging.ILogger logger)
         {
             string hash = (publicKeyFile ?? string.Empty) + "_" + (privateKeyFile ?? string.Empty);
             X509Certificate2 cert = null;
@@ -50,7 +51,7 @@ namespace MailDemon
                 }
                 if (cert == null)
                 {
-                    cert = await MailDemonExtensionMethods.LoadSslCertificateAsync(publicKeyFile, privateKeyFile, password);
+                    cert = await MailDemonExtensionMethods.LoadSslCertificateAsync(publicKeyFile, privateKeyFile, password, logger);
                     certCache[hash] = cert;
                 }
             }
